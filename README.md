@@ -1,6 +1,6 @@
 # Monster Rancher
 
-A game build on the [tfw platform](https://github.com/tfwdev/platform).
+A game built on the [tfw platform](https://github.com/tfwdev/platform).
 
 ## Building
 
