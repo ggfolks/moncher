@@ -28,9 +28,9 @@ const fringeConfig :FringeConfig = [
   Fringer.EASTERN | Fringer.SOUTHERN // 16
 ]
 
-const dirt = "dirt";
-const grass = "grass";
-const cobble = "cobble";
+const dirt = "dirt"
+const grass = "grass"
+const cobble = "cobble"
 
 const dirtInfo = {
   id: dirt,
@@ -61,7 +61,7 @@ const gridConfig :GridTileSceneConfig = {
   fringeConfig: fringeConfig,
 }
 
-const model = new GridTileSceneModel(gridConfig);
+const model = new GridTileSceneModel(gridConfig)
 
 // fill in the scene
 for (let xx = 0; xx < model.config.width; xx++) {

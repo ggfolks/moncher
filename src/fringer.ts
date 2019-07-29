@@ -20,5 +20,5 @@ export const EASTERN = EAST | SOUTHEAST | NORTHEAST
 //]
 
 /** For each fringe tile, put the bits required for it in the corresponding array index. */
-export type FringeConfig = Array<number>;
+export type FringeConfig = Array<number>
 
