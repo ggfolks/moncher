@@ -68,8 +68,8 @@ function makeTiles (glc :GLC, textureConfig :Subject<TextureConfig>,
                     image :string, cfg :GridTileSceneConfig) :Subject<Array<Tile>> {
   return makeTexture(glc, loadImage(image), textureConfig).map(tex => {
     const retval = new Array<Tile>()
-    for (let xx = 0; xx < tex.pixSize[0]; xx += cfg.width) {
-      for (let yy = 0; yy < tex.pixSize[1]; yy += cfg.height) {
+    for (let xx = 0; xx < tex.size[0]; xx += cfg.width) {
+      for (let yy = 0; yy < tex.size[1]; yy += cfg.height) {
         retval.push(
           tex.tile(xx, yy, cfg.width, cfg.height))
       }
