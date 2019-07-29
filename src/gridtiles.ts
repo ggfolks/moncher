@@ -138,7 +138,6 @@ export class GridTileSceneViewMode extends SurfaceMode {
 
   constructor (app :App, protected _model :GridTileSceneModel) {
     super(app)
-    console.log("I am trying things")
     const tcfg = {...Texture.DefaultConfig, scale: new Scale(_model.config.scale)}
     const tss :Subject<GridTileSet> = makeGridTileSet(app.renderer.glc, Value.constant(tcfg),
         _model.config);
