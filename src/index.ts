@@ -65,21 +65,21 @@ const model = new GridTileSceneModel(gridConfig);
 
 // fill in the scene
 for (let xx = 0; xx < model.config.width; xx++) {
-  let col = model.tiles[xx];
+  let col = model.tiles[xx]
   for (let yy = 0; yy < model.config.height; yy++) {
-    col[yy] = dirt;
+    col[yy] = dirt
   }
 }
 
 function addFeatures (tiles :Array<Array<string>>, feature :string, maxNumber :number,
     maxSize :number) :void {
   for (let num = Math.trunc(Math.random() * maxNumber); num > 0; num--) {
-    let size = Math.trunc(Math.random() * maxSize);
-    let xpos = Math.trunc(Math.random() * (tiles.length - size));
-    let ypos = Math.trunc(Math.random() * (tiles[0].length - size));
+    let size = Math.trunc(Math.random() * maxSize)
+    let xpos = Math.trunc(Math.random() * (tiles.length - size))
+    let ypos = Math.trunc(Math.random() * (tiles[0].length - size))
     for (let xx = 0; xx < size; xx++) {
       for (let yy = 0; yy < size; yy++) {
-        model.tiles[xx + xpos][yy + ypos] = feature;
+        model.tiles[xx + xpos][yy + ypos] = feature
       }
     }
   }

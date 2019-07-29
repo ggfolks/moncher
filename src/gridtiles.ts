@@ -39,9 +39,9 @@ export class GridTileSceneModel
   readonly tiles :Array<Array<string>>
 
   constructor (readonly config :GridTileSceneConfig) {
-    this.tiles = new Array<Array<string>>(config.width);
+    this.tiles = new Array<Array<string>>(config.width)
     for (let xx = 0; xx < config.width; xx++) {
-      this.tiles[xx] = new Array<string>(config.height);
+      this.tiles[xx] = new Array<string>(config.height)
     }
   }
 }
@@ -71,7 +71,7 @@ function makeTiles (glc :GLC, textureConfig :Subject<TextureConfig>,
     for (let xx = 0; xx < tex.pixSize[0]; xx += cfg.width) {
       for (let yy = 0; yy < tex.pixSize[1]; yy += cfg.height) {
         retval.push(
-          tex.tile(xx, yy, cfg.width, cfg.height));
+          tex.tile(xx, yy, cfg.width, cfg.height))
       }
     }
     return retval
@@ -100,14 +100,14 @@ function makeGridTileSet (glc :GLC, textureConfig :Subject<TextureConfig>,
 {
   const sets :Array<Subject<GridTile>> = []
   for (const tileset of cfg.tiles) {
-    sets.push(makeGridTile(glc, textureConfig, tileset, cfg));
+    sets.push(makeGridTile(glc, textureConfig, tileset, cfg))
   }
   return Subject.join(...sets).map(v => {
     const tileset :GridTileSet = { sets: {}}
     for (const tset of v) {
-      tileset.sets[tset.id] = tset;
+      tileset.sets[tset.id] = tset
     }
-    return tileset;
+    return tileset
   })
 }
 
@@ -115,21 +115,21 @@ function makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileScen
 {
   const viz = { tiles: new Array<Array<Array<Tile>>>() }
   for (let xx = 0; xx < model.tiles.length; xx++) {
-    const col = new Array<Array<Tile>>();
-    viz.tiles.push(col);
+    const col = new Array<Array<Tile>>()
+    viz.tiles.push(col)
     for (let yy = 0; yy < model.tiles[xx].length; yy++) {
-      let stack = new Array<Tile>();
-      col.push(stack);
+      let stack = new Array<Tile>()
+      col.push(stack)
       // pick a base tile for this spot
-      let base :string = model.tiles[xx][yy];
-      let tileinfo :GridTile = tileset.sets[base];
+      let base :string = model.tiles[xx][yy]
+      let tileinfo :GridTile = tileset.sets[base]
       if (tileinfo) {
-        stack.push(tileinfo.tiles[Math.trunc(Math.random() * tileinfo.tiles.length)]);
+        stack.push(tileinfo.tiles[Math.trunc(Math.random() * tileinfo.tiles.length)])
         // TODO: add fringe tiles
       }
     }
   }
-  return viz;
+  return viz
 }
 
 export class GridTileSceneViewMode extends SurfaceMode {
@@ -141,7 +141,7 @@ export class GridTileSceneViewMode extends SurfaceMode {
     super(app)
     const tcfg = {...Texture.DefaultConfig, scale: new Scale(_model.config.scale)}
     const tss :Subject<GridTileSet> = makeGridTileSet(app.renderer.glc, Value.constant(tcfg),
-        _model.config);
+        _model.config)
     this.onDispose.add(tss.onValue(tileset => {
       this._viz = makeViz(_model, tileset)
     }))
@@ -153,17 +153,17 @@ export class GridTileSceneViewMode extends SurfaceMode {
       surf.clearTo(1, 1, 1, 1)
       const pos = vec2.create()
       for (let xx = 0; xx < viz.tiles.length; xx++) {
-        pos[0] = xx * this._model.config.width;
-        let col = viz.tiles[xx];
+        pos[0] = xx * this._model.config.width
+        let col = viz.tiles[xx]
         for (let yy = 0; yy < col.length; yy++) {
-          pos[1] = yy * this._model.config.height;
+          pos[1] = yy * this._model.config.height
           for (const tile of col[yy]) {
             surf.drawAt(tile, pos)
           }
         }
       }
     } else {
-      surf.clearTo(0.5, 0.5, 0.5, 1);
+      surf.clearTo(0.5, 0.5, 0.5, 1)
     }
   }
 }
