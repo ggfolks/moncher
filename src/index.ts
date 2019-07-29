@@ -85,7 +85,7 @@ function addFeatures (tiles :Array<Array<string>>, feature :string, maxNumber :n
   }
 }
 
-addFeatures(model.tiles, "grass", 20, 10)
-addFeatures(model.tiles, "cobble", 10, 5)
+addFeatures(model.tiles, grass, 20, 10)
+addFeatures(model.tiles, cobble, 10, 5)
 
 app.setMode(new GridTileSceneViewMode(app, model))
