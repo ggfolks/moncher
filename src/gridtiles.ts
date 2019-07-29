@@ -78,8 +78,8 @@ function makeTiles (glc :GLC, textureConfig :Subject<TextureConfig>,
 }
 
 function makeGridTile (glc :GLC, textureConfig :Subject<TextureConfig>,
-                      tileInfo :GridTileInfo,
-                      cfg :GridTileSceneConfig) :Subject<GridTile> {
+                       tileInfo :GridTileInfo,
+                       cfg :GridTileSceneConfig) :Subject<GridTile> {
   let tiles :Array<Subject<Array<Tile>>> = []
   tiles.push(makeTiles(glc, textureConfig, tileInfo.base, cfg.width, cfg.height))
   if (tileInfo.fringe) {
