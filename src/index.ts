@@ -56,7 +56,7 @@ const cobbleInfo = {
 const gridConfig :GridTileSceneConfig = {
   width: 20,
   height: 20,
-  scale: 1,
+  scale: 2,
   tiles: [ dirtInfo, grassInfo, cobbleInfo ],
   fringeConfig: fringeConfig,
 }

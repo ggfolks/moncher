@@ -65,12 +65,13 @@ type GridTileSceneViz = {
 }
 
 function makeTiles (glc :GLC, textureConfig :Subject<TextureConfig>,
-                    image :string, w :number, h :number) :Subject<Array<Tile>> {
+                    image :string, cfg :GridTileSceneConfig) :Subject<Array<Tile>> {
   return makeTexture(glc, loadImage(image), textureConfig).map(tex => {
     const retval = new Array<Tile>()
-    for (let xx = 0; xx < tex.size[0]; xx += w) {
-      for (let yy = 0; yy < tex.size[1]; yy += h) {
-        retval.push(tex.tile(xx, yy, w, h));
+    for (let xx = 0; xx < tex.pixSize[0]; xx += cfg.width) {
+      for (let yy = 0; yy < tex.pixSize[1]; yy += cfg.height) {
+        retval.push(
+          tex.tile(xx/cfg.scale, yy/cfg.scale, cfg.width/cfg.scale, cfg.height/cfg.scale));
       }
     }
     return retval
@@ -81,9 +82,9 @@ function makeGridTile (glc :GLC, textureConfig :Subject<TextureConfig>,
                        tileInfo :GridTileInfo,
                        cfg :GridTileSceneConfig) :Subject<GridTile> {
   let tiles :Array<Subject<Array<Tile>>> = []
-  tiles.push(makeTiles(glc, textureConfig, tileInfo.base, cfg.width, cfg.height))
+  tiles.push(makeTiles(glc, textureConfig, tileInfo.base, cfg))
   if (tileInfo.fringe) {
-    tiles.push(makeTiles(glc, textureConfig, tileInfo.fringe, cfg.width, cfg.height));
+    tiles.push(makeTiles(glc, textureConfig, tileInfo.fringe, cfg))
   }
   return Subject.join(...tiles).map(v => {
     const tile :GridTile = { id: tileInfo.id, tiles: v[0] }
