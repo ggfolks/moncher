@@ -71,7 +71,7 @@ function makeTiles (glc :GLC, textureConfig :Subject<TextureConfig>,
     for (let xx = 0; xx < tex.pixSize[0]; xx += cfg.width) {
       for (let yy = 0; yy < tex.pixSize[1]; yy += cfg.height) {
         retval.push(
-          tex.tile(xx/cfg.scale, yy/cfg.scale, cfg.width/cfg.scale, cfg.height/cfg.scale));
+          tex.tile(xx, yy, cfg.width, cfg.height));
       }
     }
     return retval
