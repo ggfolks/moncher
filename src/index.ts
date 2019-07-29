@@ -1,5 +1,5 @@
 import {App} from "./app"
-import {GridTileSystemConfig, GridTileScene, GridTiledSceneVizSurfaceMode} from "./gridtiles"
+import {GridTileSceneConfig, GridTileSceneModel, GridTileSceneViewMode} from "./gridtiles"
 import {FringeConfig} from "./fringer"
 import * as Fringer from "./fringer"
 
@@ -53,20 +53,20 @@ const cobbleInfo = {
   fringe: "tiles/cobble_fringe.png",
 }
 
-const gridSystem :GridTileSystemConfig = {
-  width: 80,
-  height: 80,
+const gridConfig :GridTileSceneConfig = {
+  width: 20,
+  height: 20,
   scale: 1,
   tiles: [ dirtInfo, grassInfo, cobbleInfo ],
   fringeConfig: fringeConfig,
 }
 
-const scene = new GridTileScene(gridSystem);
+const model = new GridTileSceneModel(gridConfig);
 
 // fill in the scene
-for (let xx = 0; xx < scene.config.width; xx++) {
-  let col = scene.tiles[xx];
-  for (let yy = 0; yy < scene.config.height; yy++) {
+for (let xx = 0; xx < model.config.width; xx++) {
+  let col = model.tiles[xx];
+  for (let yy = 0; yy < model.config.height; yy++) {
     col[yy] = dirt;
   }
 }
@@ -79,13 +79,13 @@ function addFeatures (tiles :Array<Array<string>>, feature :string, maxNumber :n
     let ypos = Math.trunc(Math.random() * (tiles[0].length - size));
     for (let xx = 0; xx < size; xx++) {
       for (let yy = 0; yy < size; yy++) {
-        scene.tiles[xx + xpos][yy + ypos] = feature;
+        model.tiles[xx + xpos][yy + ypos] = feature;
       }
     }
   }
 }
 
-addFeatures(scene.tiles, "grass", 20, 10)
-addFeatures(scene.tiles, "cobble", 10, 5)
+addFeatures(model.tiles, "grass", 20, 10)
+addFeatures(model.tiles, "cobble", 10, 5)
 
-app.setMode(new GridTiledSceneVizSurfaceMode(app, scene))
+app.setMode(new GridTileSceneViewMode(app, model))
