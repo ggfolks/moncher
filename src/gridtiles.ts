@@ -38,10 +38,14 @@ export class GridTileSceneModel
   /** The raw tile data. */
   readonly tiles :Array<Array<string>>
 
-  constructor (readonly config :GridTileSceneConfig) {
-    this.tiles = new Array<Array<string>>(config.width)
-    for (let xx = 0; xx < config.width; xx++) {
-      this.tiles[xx] = new Array<string>(config.height)
+  constructor (
+    readonly config :GridTileSceneConfig,
+    readonly sceneWidth :number,
+    readonly sceneHeight :number
+  ) {
+    this.tiles = new Array<Array<string>>(sceneWidth)
+    for (let xx = 0; xx < sceneWidth; xx++) {
+      this.tiles[xx] = new Array<string>(sceneHeight)
     }
   }
 }
