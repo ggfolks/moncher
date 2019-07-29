@@ -1,4 +1,4 @@
-import {Value, Subject} from "tfw/core/react"
+import {Subject} from "tfw/core/react"
 import {Scale} from "tfw/core/ui"
 import {vec2} from "tfw/core/math"
 import {Clock} from "tfw/core/clock"
@@ -68,7 +68,7 @@ type GridTileSceneViz = {
   tiles :Array<Array<Array<Tile>>>
 }
 
-function makeTiles (glc :GLC, textureConfig :Subject<TextureConfig>,
+function makeTiles (glc :GLC, textureConfig :TextureConfig,
                     image :string, cfg :GridTileSceneConfig) :Subject<Array<Tile>> {
   return makeTexture(glc, loadImage(image), textureConfig).map(tex => {
     const retval = new Array<Tile>()
@@ -82,7 +82,7 @@ function makeTiles (glc :GLC, textureConfig :Subject<TextureConfig>,
   })
 }
 
-function makeGridTile (glc :GLC, textureConfig :Subject<TextureConfig>,
+function makeGridTile (glc :GLC, textureConfig :TextureConfig,
                        tileInfo :GridTileInfo,
                        cfg :GridTileSceneConfig) :Subject<GridTile> {
   let tiles :Array<Subject<Array<Tile>>> = []
@@ -99,7 +99,7 @@ function makeGridTile (glc :GLC, textureConfig :Subject<TextureConfig>,
   })
 }
 
-function makeGridTileSet (glc :GLC, textureConfig :Subject<TextureConfig>,
+function makeGridTileSet (glc :GLC, textureConfig :TextureConfig,
                           cfg :GridTileSceneConfig) :Subject<GridTileSet>
 {
   const sets :Array<Subject<GridTile>> = []
@@ -144,8 +144,7 @@ export class GridTileSceneViewMode extends SurfaceMode {
   constructor (app :App, protected _model :GridTileSceneModel) {
     super(app)
     const tcfg = {...Texture.DefaultConfig, scale: new Scale(_model.config.scale)}
-    const tss :Subject<GridTileSet> = makeGridTileSet(app.renderer.glc, Value.constant(tcfg),
-        _model.config)
+    const tss :Subject<GridTileSet> = makeGridTileSet(app.renderer.glc, tcfg, _model.config)
     this.onDispose.add(tss.onValue(tileset => {
       this._viz = makeViz(_model, tileset)
     }))
