@@ -1,3 +1,6 @@
+import {GridTileSceneModel, GridTileSet} from "./gridtiles"
+import {Tile} from "tfw/scene2/gl"
+
 export const NORTHWEST = 1
 export const NORTH = 2
 export const NORTHEAST = 4
@@ -21,4 +24,24 @@ export const EASTERN = EAST | SOUTHEAST | NORTHEAST
 
 /** For each fringe tile, put the bits required for it in the corresponding array index. */
 export type FringeConfig = Array<number>
+
+export type FringeAdder = (x :number, y :number, fringes :Array<Tile>) => void
+
+export function applyFringe (
+  model :GridTileSceneModel, tileset :GridTileSet, adder :FringeAdder
+) :void {
+  // build a mapping of base type to priority
+  const priorityMap = {}
+  for (let gti of model.config.tiles) {
+    priorityMap[gti.id] = gti.priority
+  }
+  // etc
+  let tiles :Array<Tile> = [ tileset.sets["grass"].fringe![5] ]
+  for (let xx = 0; xx < model.sceneWidth; xx += 2) {
+    for (let yy = 0; yy < model.sceneHeight; yy++) {
+      adder(xx, yy, tiles)
+    }
+  }
+  adder(0, 0, [ tileset.sets["cobble"].fringe![13]])
+}
 

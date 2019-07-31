@@ -6,7 +6,7 @@ import {loadImage} from "tfw/core/assets"
 import {GLC, Texture, TextureConfig, Tile, makeTexture} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {App, SurfaceMode} from "./app"
-import {FringeConfig} from "./fringer"
+import {FringeConfig, FringeAdder, applyFringe} from "./fringer"
 //import {Record} from "tfw/core/data"
 
 export type GridTileInfo = {
@@ -59,7 +59,7 @@ type GridTile = {
   fringe? :Array<Tile>
 }
 
-type GridTileSet = {
+export type GridTileSet = {
   sets: {[key :string] :GridTile}
 }
 
@@ -72,8 +72,8 @@ function makeTiles (glc :GLC, textureConfig :TextureConfig,
                     image :string, cfg :GridTileSceneConfig) :Subject<Array<Tile>> {
   return makeTexture(glc, loadImage(image), textureConfig).map(tex => {
     const retval = new Array<Tile>()
-    for (let xx = 0; xx < tex.size[0]; xx += cfg.width) {
-      for (let yy = 0; yy < tex.size[1]; yy += cfg.height) {
+    for (let xx = 0; xx < tex.pixSize[0]; xx += cfg.width) {
+      for (let yy = 0; yy < tex.pixSize[1]; yy += cfg.height) {
         retval.push(
           tex.tile(xx, yy, cfg.width, cfg.height))
       }
@@ -129,10 +129,13 @@ function makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileScen
       let tileinfo :GridTile = tileset.sets[base]
       if (tileinfo) {
         stack.push(tileinfo.tiles[Math.trunc(Math.random() * tileinfo.tiles.length)])
-        // TODO: add fringe tiles
       }
     }
   }
+  const adder :FringeAdder = (x :number, y :number, fringes :Array<Tile>) :void => {
+    viz.tiles[x][y].push(...fringes)
+  }
+  applyFringe(model, tileset, adder)
   return viz
 }
 
