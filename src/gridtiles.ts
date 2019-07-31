@@ -158,11 +158,12 @@ export class GridTileSceneViewMode extends SurfaceMode {
     if (viz) {
       surf.clearTo(1, 1, 1, 1)
       const pos = vec2.create()
-      for (let xx = 0; xx < viz.tiles.length; xx++) {
-        pos[0] = xx * this._model.config.width
+      const xi = (this._model.config.width / this._model.config.scale)
+      const yi = (this._model.config.height / this._model.config.scale)
+      for (let xx = 0; xx < viz.tiles.length; xx++, pos[0] += xi) {
         let col = viz.tiles[xx]
-        for (let yy = 0; yy < col.length; yy++) {
-          pos[1] = yy * this._model.config.height
+        pos[1] = 0
+        for (let yy = 0; yy < col.length; yy++, pos[1] += yi) {
           for (const tile of col[yy]) {
             surf.drawAt(tile, pos)
           }
