@@ -72,8 +72,8 @@ function makeTiles (glc :GLC, textureConfig :TextureConfig,
                     image :string, cfg :GridTileSceneConfig) :Subject<Array<Tile>> {
   return makeTexture(glc, loadImage(image), textureConfig).map(tex => {
     const retval = new Array<Tile>()
-    for (let xx = 0; xx < tex.pixSize[0]; xx += cfg.width) {
-      for (let yy = 0; yy < tex.pixSize[1]; yy += cfg.height) {
+    for (let xx = 0; xx < tex.size[0]; xx += cfg.width) {
+      for (let yy = 0; yy < tex.size[1]; yy += cfg.height) {
         retval.push(
           tex.tile(xx, yy, cfg.width, cfg.height))
       }
@@ -158,8 +158,8 @@ export class GridTileSceneViewMode extends SurfaceMode {
     if (viz) {
       surf.clearTo(1, 1, 1, 1)
       const pos = vec2.create()
-      const xi = (this._model.config.width / this._model.config.scale)
-      const yi = (this._model.config.height / this._model.config.scale)
+      const xi = this._model.config.width
+      const yi = this._model.config.height
       for (let xx = 0; xx < viz.tiles.length; xx++, pos[0] += xi) {
         let col = viz.tiles[xx]
         pos[1] = 0
