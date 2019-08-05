@@ -52,6 +52,15 @@ export function applyFringe (
   // storage for fringerecs as we examine things
   const fringeMap :Map<string, FringeRec> = new Map()
 
+  const addFringe = (x :number, y :number, rec :FringeRec, bits :number) :boolean => {
+      const index = bitsToIndex.get(bits)
+      if (index !== undefined) {
+        adder(x, y, tileset.sets[rec.info.id].fringe![index])
+        return true
+      }
+      return false
+    }
+
   // examine every tile in the logical scene
   for (let xx = 0; xx < model.sceneWidth; xx++) {
     for (let yy = 0; yy < model.sceneHeight; yy++) {
@@ -82,11 +91,7 @@ export function applyFringe (
           .sort((rec1, rec2) => rec1.info.priority - rec2.info.priority)
       for (const rec of fringeRecs) {
         // if we have a fringe tile for it straightaway, use it
-        const index = bitsToIndex.get(rec.bits)
-        if (index !== undefined) {
-          adder(xx, yy, tileset.sets[rec.info.id].fringe![index])
-          continue
-        }
+        if (addFringe(xx, yy, rec, rec.bits)) continue
 
         // We did not find a single t
         let start = 0
@@ -100,21 +105,14 @@ export function applyFringe (
           if (((1 << ii) & rec.bits) !== 0) {
             weebits |= (1 << ii)
           } else if (weebits !== 0) {
-            const weeIndex = bitsToIndex.get(weebits)
-            if (weeIndex !== undefined) {
-              adder(xx, yy, tileset.sets[rec.info.id].fringe![weeIndex])
-            }
+            addFringe(xx, yy, rec, weebits)
             weebits = 0
           }
         }
         if (weebits !== 0) {
-          const weeIndex = bitsToIndex.get(weebits)
-          if (weeIndex !== undefined) {
-            adder(xx, yy, tileset.sets[rec.info.id].fringe![weeIndex])
-          }
+          addFringe(xx, yy, rec, weebits)
         }
       }
-      //console.log(fringeRecs)
     }
   }
 }
