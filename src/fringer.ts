@@ -25,7 +25,7 @@ const INFLUENCES :Array<Array<number>> = [
 /** For each fringe tile, put the bits required for it in the corresponding array index. */
 export type FringeConfig = Array<number>
 
-export type FringeAdder = (x :number, y :number, fringes :Array<Tile>) => void
+export type FringeAdder = (x :number, y :number, fringes :Tile) => void
 
 class FringeRec {
   constructor (readonly info :GridTileInfo, public bits :number = 0) {}
@@ -46,7 +46,6 @@ export function applyFringe (
   const idMap :Map<string, GridTileInfo> = new Map()
   for (let gti of model.config.tiles) {
     idMap.set(gti.id, gti)
-    //idMap[gti.id] = gti
   }
 
   // storage for fringerecs as we examine things
@@ -84,7 +83,7 @@ export function applyFringe (
         // if we have a fringe tile for it straightaway, use it
         const index = bitsToIndex.get(rec.bits)
         if (index) {
-          adder(xx, yy, [ tileset.sets[rec.info.id].fringe![index] ])
+          adder(xx, yy, tileset.sets[rec.info.id].fringe![index])
         }
       }
       //console.log(fringeRecs)

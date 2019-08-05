@@ -132,8 +132,8 @@ function makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileScen
       }
     }
   }
-  const adder :FringeAdder = (x :number, y :number, fringes :Array<Tile>) :void => {
-    viz.tiles[x][y].push(...fringes)
+  const adder :FringeAdder = (x :number, y :number, fringe :Tile) :void => {
+    viz.tiles[x][y].push(fringe)
   }
   applyFringe(model, tileset, adder)
   return viz
