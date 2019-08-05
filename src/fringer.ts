@@ -55,6 +55,8 @@ export function applyFringe (
   const addFringe = (x :number, y :number, rec :FringeRec, bits :number) :boolean => {
       const index = bitsToIndex.get(bits)
       if (index !== undefined) {
+        // we check that the tileset actually has fringe tiles below, so it's safe to assert
+        // that it's no undefined here.
         adder(x, y, tileset.sets[rec.info.id].fringe![index])
         return true
       }
@@ -78,7 +80,7 @@ export function applyFringe (
           }
           const oTile = model.tiles[curx][cury]
           const oBaseInfo = idMap.get(oTile)
-          if (!oBaseInfo || !oBaseInfo.fringe ||
+          if (!oBaseInfo || !oBaseInfo.fringe || !tileset.sets[oTile].fringe ||
               (oBaseInfo.priority <= baseInfo.priority)) continue
           let oFringe = fringeMap.get(oTile)
           if (!oFringe) fringeMap.set(oTile, oFringe = new FringeRec(oBaseInfo))
