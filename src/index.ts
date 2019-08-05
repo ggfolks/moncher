@@ -10,11 +10,11 @@ const app = new App(root)
 app.start()
 
 const fringeConfig :FringeConfig = [
-  Fringer.SOUTHEAST, // 1
+  Fringer.SOUTHEAST, // 1, according to Rick's legend
   Fringer.SOUTHERN,  // 2
   Fringer.SOUTHWEST, // 3
-  Fringer.WESTERN,
   Fringer.EASTERN,
+  Fringer.WESTERN,
   Fringer.NORTHEAST,
   Fringer.NORTHERN,
   Fringer.NORTHWEST,

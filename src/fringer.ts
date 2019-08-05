@@ -17,10 +17,10 @@ export const EASTERN = EAST | SOUTHEAST | NORTHEAST
 
 /** An array representing the x/y offsets and which fringe bits are represented. */
 const INFLUENCES :Array<Array<number>> = [
-  [ NORTHWEST, NORTHERN, NORTHEAST ],
-  [ WESTERN, 0, EASTERN ],
-  [ SOUTHWEST, SOUTHERN, SOUTHEAST ]
-]
+  [ NORTHWEST, WESTERN, SOUTHWEST ],
+  [ NORTHERN, 0, SOUTHERN ],
+  [ NORTHEAST, EASTERN, SOUTHEAST ]
+ ]
 
 /** For each fringe tile, put the bits required for it in the corresponding array index. */
 export type FringeConfig = Array<number>
