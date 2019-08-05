@@ -1,14 +1,15 @@
 import {GridTileSceneModel, GridTileInfo, GridTileSet} from "./gridtiles"
 import {Tile} from "tfw/scene2/gl"
 
-export const NORTHWEST = 1
-export const NORTH = 2
-export const NORTHEAST = 4
-export const WEST = 8
-export const EAST = 16
+export const NORTH = 1
+export const NORTHEAST = 2
+export const EAST = 4
+export const SOUTHEAST = 8
+export const SOUTH = 16
 export const SOUTHWEST = 32
-export const SOUTH = 64
-export const SOUTHEAST = 128
+export const WEST = 64
+export const NORTHWEST = 128
+const FRINGEBITS = 8
 
 export const SOUTHERN = SOUTH | SOUTHWEST | SOUTHEAST
 export const WESTERN = WEST | SOUTHWEST | NORTHWEST
@@ -77,13 +78,40 @@ export function applyFringe (
       }
 
       // now let's sort according to their priority
-      const fringeRecs :Array<FringeRec> = Array.from(fringeMap.values()).sort(
-        (rec1, rec2) => rec1.info.priority - rec2.info.priority)
+      const fringeRecs :Array<FringeRec> = Array.from(fringeMap.values())
+          .sort((rec1, rec2) => rec1.info.priority - rec2.info.priority)
       for (const rec of fringeRecs) {
         // if we have a fringe tile for it straightaway, use it
         const index = bitsToIndex.get(rec.bits)
         if (index !== undefined) {
           adder(xx, yy, tileset.sets[rec.info.id].fringe![index])
+          continue
+        }
+
+        // We did not find a single t
+        let start = 0
+        while ((((1 << start) & rec.bits) !== 0) && (start < FRINGEBITS)) {
+          start++
+        }
+        // If we never found an empty fringebit then we have nothing else to try
+        if (start == FRINGEBITS) continue
+        let weebits = 0
+        for (let ii = (start + 1) % FRINGEBITS; ii !== start; ii = (ii + 1) % FRINGEBITS) {
+          if (((1 << ii) & rec.bits) !== 0) {
+            weebits |= (1 << ii)
+          } else if (weebits !== 0) {
+            const weeIndex = bitsToIndex.get(weebits)
+            if (weeIndex !== undefined) {
+              adder(xx, yy, tileset.sets[rec.info.id].fringe![weeIndex])
+            }
+            weebits = 0
+          }
+        }
+        if (weebits !== 0) {
+          const weeIndex = bitsToIndex.get(weebits)
+          if (weeIndex !== undefined) {
+            adder(xx, yy, tileset.sets[rec.info.id].fringe![weeIndex])
+          }
         }
       }
       //console.log(fringeRecs)
