@@ -82,7 +82,7 @@ export function applyFringe (
       for (const rec of fringeRecs) {
         // if we have a fringe tile for it straightaway, use it
         const index = bitsToIndex.get(rec.bits)
-        if (index) {
+        if (index !== undefined) {
           adder(xx, yy, tileset.sets[rec.info.id].fringe![index])
         }
       }
