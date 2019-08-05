@@ -71,7 +71,7 @@ export function applyFringe (
       for (let curx = xx - 1, maxx = xx + 2; curx < maxx; curx++) {
         for (let cury = yy - 1, maxy = yy + 2; cury < maxy; cury++) {
           // skip out-of-bounds and our own tile
-          if (((curx == xx) && (cury == yy)) ||
+          if (((curx === xx) && (cury === yy)) ||
               (curx < 0) || (cury < 0) ||
               (curx >= model.sceneWidth) || (cury >= model.sceneHeight)) {
             continue
@@ -99,7 +99,7 @@ export function applyFringe (
           start++
         }
         // If we never found an empty fringebit then we have nothing else to try
-        if (start == FRINGEBITS) continue
+        if (start === FRINGEBITS) continue
         let weebits = 0
         for (let ii = (start + 1) % FRINGEBITS; ii !== start; ii = (ii + 1) % FRINGEBITS) {
           if (((1 << ii) & rec.bits) !== 0) {
