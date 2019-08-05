@@ -122,11 +122,11 @@ function makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileScen
     const col = new Array<Array<Tile>>()
     viz.tiles.push(col)
     for (let yy = 0; yy < model.tiles[xx].length; yy++) {
-      let stack = new Array<Tile>()
+      const stack = new Array<Tile>()
       col.push(stack)
       // pick a base tile for this spot
-      let base :string = model.tiles[xx][yy]
-      let tileinfo :GridTile = tileset.sets[base]
+      const base :string = model.tiles[xx][yy]
+      const tileinfo :GridTile = tileset.sets[base]
       if (tileinfo) {
         stack.push(tileinfo.tiles[Math.trunc(Math.random() * tileinfo.tiles.length)])
       }
@@ -161,7 +161,7 @@ export class GridTileSceneViewMode extends SurfaceMode {
       const xi = this._model.config.width
       const yi = this._model.config.height
       for (let xx = 0; xx < viz.tiles.length; xx++, pos[0] += xi) {
-        let col = viz.tiles[xx]
+        const col = viz.tiles[xx]
         pos[1] = 0
         for (let yy = 0; yy < col.length; yy++, pos[1] += yi) {
           for (const tile of col[yy]) {
