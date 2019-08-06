@@ -33,9 +33,9 @@ export class GridTileInfo extends TileInfo
 export class PropTileInfo extends TileInfo
 {
   constructor (id :string, base :string,
-    /** The width of this prop, or omitted to just use the image size */
+    /** The width of this prop, or omitted to just use the base image size. */
     public readonly width? :number,
-    /** The height of this prop, or omitted to just use the image size */
+    /** The height of this prop, or omitted to just use the base image size. */
     public readonly height? :number
   ) {
     super(id, base)

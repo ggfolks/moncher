@@ -2,6 +2,7 @@ import {App} from "./app"
 import {GridTileInfo, GridTileSceneConfig, GridTileSceneModel, GridTileSceneViewMode} from "./gridtiles"
 import {FringeConfig} from "./fringer"
 import * as Fringer from "./fringer"
+import {CarcTile, generateGridModel} from "./carctiles"
 
 const root = document.getElementById("root")
 if (!root) throw new Error(`No root?`)
@@ -43,32 +44,80 @@ const gridConfig :GridTileSceneConfig = {
   fringeConfig: fringeConfig,
 }
 
-const model = new GridTileSceneModel(gridConfig, 40, 40)
+//const model = new GridTileSceneModel(gridConfig, 42, 42)
+//
+//// populate the scene with dirt
+//for (let xx = 0; xx < model.sceneWidth; xx++) {
+//  let col = model.tiles[xx]
+//  for (let yy = 0; yy < model.sceneHeight; yy++) {
+//    col[yy] = dirt
+//  }
+//}
+//
+//function addFeatures (tiles :Array<Array<string>>, feature :string,
+//    minNumber :number, maxNumber :number, maxSize :number) :void
+//  {
+//  for (let num = minNumber + Math.trunc(Math.random() * (maxNumber - minNumber)); num > 0; num--) {
+//    let size = 1 + Math.trunc(Math.random() * (maxSize - 1))
+//    let xpos = Math.trunc(Math.random() * (tiles.length - size))
+//    let ypos = Math.trunc(Math.random() * (tiles[0].length - size))
+//    for (let xx = 0; xx < size; xx++) {
+//      for (let yy = 0; yy < size; yy++) {
+//        model.tiles[xx + xpos][yy + ypos] = feature
+//      }
+//    }
+//  }
+//}
+//addFeatures(model.tiles, grass, 10, 20, 10)
+//addFeatures(model.tiles, cobble, 5, 10, 5)
 
-// populate the scene with dirt
-for (let xx = 0; xx < model.sceneWidth; xx++) {
-  let col = model.tiles[xx]
-  for (let yy = 0; yy < model.sceneHeight; yy++) {
-    col[yy] = dirt
-  }
-}
-
-function addFeatures (tiles :Array<Array<string>>, feature :string,
-    minNumber :number, maxNumber :number, maxSize :number) :void
-  {
-  for (let num = minNumber + Math.trunc(Math.random() * (maxNumber - minNumber)); num > 0; num--) {
-    let size = 1 + Math.trunc(Math.random() * (maxSize - 1))
-    let xpos = Math.trunc(Math.random() * (tiles.length - size))
-    let ypos = Math.trunc(Math.random() * (tiles[0].length - size))
-    for (let xx = 0; xx < size; xx++) {
-      for (let yy = 0; yy < size; yy++) {
-        model.tiles[xx + xpos][yy + ypos] = feature
-      }
-    }
-  }
-}
-
-addFeatures(model.tiles, grass, 10, 20, 10)
-addFeatures(model.tiles, cobble, 5, 10, 5)
-
+const roadN = new CarcTile(dirt, cobble, dirt,
+                           dirt, cobble, dirt,
+                           dirt, dirt, dirt)
+const roadS = new CarcTile(dirt, dirt, dirt,
+                           dirt, cobble, dirt,
+                           dirt, cobble, dirt)
+const roadE = new CarcTile(dirt, dirt, dirt,
+                           dirt, cobble, cobble,
+                           dirt, dirt, dirt)
+const roadW = new CarcTile(dirt, dirt, dirt,
+                           cobble, cobble, dirt,
+                           dirt, dirt, dirt)
+const roadNS = new CarcTile(dirt, cobble, dirt,
+                            dirt, cobble, dirt,
+                            dirt, cobble, dirt)
+const roadEW = new CarcTile(dirt, dirt, dirt,
+                            cobble, cobble, cobble,
+                            dirt, dirt, dirt)
+const roadNW = new CarcTile(dirt, cobble, dirt,
+                            cobble, cobble, dirt,
+                            dirt, dirt, dirt)
+const roadNE = new CarcTile(dirt, cobble, dirt,
+                            dirt, cobble, cobble,
+                            dirt, dirt, dirt)
+const roadSE = new CarcTile(dirt, dirt, dirt,
+                            dirt, cobble, cobble,
+                            dirt, cobble, dirt)
+const roadSW = new CarcTile(dirt, dirt, dirt,
+                            cobble, cobble, dirt,
+                            dirt, cobble, dirt)
+const roadNEW = new CarcTile(dirt, cobble, dirt,
+                             cobble, cobble, cobble,
+                             dirt, dirt, dirt)
+const roadSEW = new CarcTile(dirt, dirt, dirt,
+                             cobble, cobble, cobble,
+                             dirt, cobble, dirt)
+const roadNWS = new CarcTile(dirt, cobble, dirt,
+                             cobble, cobble, dirt,
+                             dirt, cobble, dirt)
+const dirtNEWS = new CarcTile(dirt, dirt, dirt,
+                              dirt, dirt, dirt,
+                              dirt, dirt, dirt)
+// skip roadNES to give our map ~personality~
+let tiles = [ roadN, roadS, roadE, roadW,
+              roadNS, roadEW,
+              roadNW, roadNE, roadSE, roadSW,
+              roadNEW, roadSEW, roadNWS,
+              dirtNEWS ]
+let model :GridTileSceneModel = generateGridModel(tiles, 12, 12, gridConfig)
 app.setMode(new GridTileSceneViewMode(app, model))
