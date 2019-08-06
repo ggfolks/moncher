@@ -3,11 +3,11 @@ import {Scale} from "tfw/core/ui"
 import {vec2} from "tfw/core/math"
 import {Clock} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
+import {Mouse} from "tfw/input/mouse"
 import {GLC, Texture, TextureConfig, Tile, makeTexture} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {App, SurfaceMode} from "./app"
 import {FringeConfig, FringeAdder, applyFringe} from "./fringer"
-//import {Record} from "tfw/core/data"
 
 export type GridTileInfo = {
   /** An identifier for this type "dirt", "grass". */
@@ -146,23 +146,35 @@ export class GridTileSceneViewMode extends SurfaceMode {
 
   constructor (app :App, protected _model :GridTileSceneModel) {
     super(app)
+    this._mouse = new Mouse(app.root)
     const tcfg = {...Texture.DefaultConfig, scale: new Scale(_model.config.scale)}
     const tss :Subject<GridTileSet> = makeGridTileSet(app.renderer.glc, tcfg, _model.config)
     this.onDispose.add(tss.onValue(tileset => {
       this._viz = makeViz(_model, tileset)
     }))
+    this.onDispose.add(this._mouse)
   }
 
   renderTo (clock :Clock, surf :Surface) {
     const viz = this._viz
     if (viz) {
       surf.clearTo(1, 1, 1, 1)
-      const pos = vec2.create()
+      const mouse = this._mouse.lastOffset
       const xi = this._model.config.width
       const yi = this._model.config.height
+      if (mouse) {
+        const sceneW = xi * this._model.sceneWidth
+        const sceneH = yi * this._model.sceneHeight
+        const surfW = surf.target.size[0] / surf.target.scale[0]
+        const surfH = surf.target.size[1] / surf.target.scale[1]
+        const overlapW = Math.max(0, sceneW - surfW)
+        const overlapH = Math.max(0, sceneH - surfH)
+        vec2.set(this._offset, (mouse[0] / surfW) * -overlapW, (mouse[1] / surfH) * -overlapH)
+      }
+      const pos = vec2.clone(this._offset)
       for (let xx = 0; xx < viz.tiles.length; xx++, pos[0] += xi) {
         const col = viz.tiles[xx]
-        pos[1] = 0
+        pos[1] = this._offset[1]
         for (let yy = 0; yy < col.length; yy++, pos[1] += yi) {
           for (const tile of col[yy]) {
             surf.drawAt(tile, pos)
@@ -173,4 +185,7 @@ export class GridTileSceneViewMode extends SurfaceMode {
       surf.clearTo(0.5, 0.5, 0.5, 1)
     }
   }
+
+  protected readonly _mouse :Mouse
+  protected readonly _offset :vec2 = vec2.create()
 }

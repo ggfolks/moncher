@@ -61,7 +61,7 @@ const gridConfig :GridTileSceneConfig = {
   fringeConfig: fringeConfig,
 }
 
-const model = new GridTileSceneModel(gridConfig, 20, 20)
+const model = new GridTileSceneModel(gridConfig, 40, 40)
 
 // populate the scene with dirt
 for (let xx = 0; xx < model.sceneWidth; xx++) {
