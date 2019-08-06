@@ -1,10 +1,9 @@
-import {Subject} from "tfw/core/react"
+import {Subject, Value} from "tfw/core/react"
 import {Scale} from "tfw/core/ui"
-import {vec2} from "tfw/core/math"
+import {dim2, vec2} from "tfw/core/math"
 import {Clock} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
-import {Mouse} from "tfw/input/mouse"
-import {GLC, Texture, TextureConfig, Tile, makeTexture} from "tfw/scene2/gl"
+import {GLC, Texture, TextureConfig, Tile, makeTexture, windowSize} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {App, SurfaceMode} from "./app"
 import {FringeConfig, FringeAdder, applyFringe} from "./fringer"
@@ -146,31 +145,36 @@ export class GridTileSceneViewMode extends SurfaceMode {
 
   constructor (app :App, protected _model :GridTileSceneModel) {
     super(app)
-    this._mouse = new Mouse(app.root)
+
+    this._canvas = app.root
     const tcfg = {...Texture.DefaultConfig, scale: new Scale(_model.config.scale)}
     const tss :Subject<GridTileSet> = makeGridTileSet(app.renderer.glc, tcfg, _model.config)
     this.onDispose.add(tss.onValue(tileset => {
       this._viz = makeViz(_model, tileset)
     }))
-    this.onDispose.add(this._mouse)
+    this._winSize = windowSize(window)
+    this.onDispose.add(this._winSize.onValue(() => this.adjustOffset()))
+    this._canvas.addEventListener("mousemove", this._onMouseMove)
+    this.onDispose.add(() => this._canvas.removeEventListener("mousemove", this._onMouseMove))
+  }
+
+  adjustOffset () {
+    const sceneW = this._model.config.width * this._model.sceneWidth
+    const sceneH = this._model.config.height * this._model.sceneHeight
+    console.log("Current window size: " + this._winSize.current)
+    const winW = this._winSize.current[0]
+    const winH = this._winSize.current[1]
+    const overlapW = Math.max(0, sceneW - winW)
+    const overlapH = Math.max(0, sceneH - winH)
+    vec2.set(this._offset, (this._mouse[0] / winW) * -overlapW, (this._mouse[1] / winH) * -overlapH)
   }
 
   renderTo (clock :Clock, surf :Surface) {
     const viz = this._viz
     if (viz) {
       surf.clearTo(1, 1, 1, 1)
-      const mouse = this._mouse.lastOffset
       const xi = this._model.config.width
       const yi = this._model.config.height
-      if (mouse) {
-        const sceneW = xi * this._model.sceneWidth
-        const sceneH = yi * this._model.sceneHeight
-        const surfW = surf.target.size[0] / surf.target.scale[0]
-        const surfH = surf.target.size[1] / surf.target.scale[1]
-        const overlapW = Math.max(0, sceneW - surfW)
-        const overlapH = Math.max(0, sceneH - surfH)
-        vec2.set(this._offset, (mouse[0] / surfW) * -overlapW, (mouse[1] / surfH) * -overlapH)
-      }
       const pos = vec2.clone(this._offset)
       for (let xx = 0; xx < viz.tiles.length; xx++, pos[0] += xi) {
         const col = viz.tiles[xx]
@@ -186,6 +190,12 @@ export class GridTileSceneViewMode extends SurfaceMode {
     }
   }
 
-  protected readonly _mouse :Mouse
+  protected readonly _winSize :Value<dim2>
+  protected readonly _canvas :HTMLElement
+  protected readonly _mouse :vec2 = vec2.create()
   protected readonly _offset :vec2 = vec2.create()
+  protected readonly _onMouseMove = (event :MouseEvent) => {
+    vec2.set(this._mouse, event.offsetX, event.offsetY)
+    this.adjustOffset()
+  }
 }
