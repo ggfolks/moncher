@@ -55,8 +55,8 @@ export function applyFringe (
   const addFringe = (x :number, y :number, rec :FringeRec, bits :number) :boolean => {
       const index = bitsToIndex.get(bits)
       if (index !== undefined) {
-        // we check that the tileset actually has fringe tiles below, so it's safe to assert
-        // that it's no undefined here.
+        // We check that the tileset actually has fringe tiles below, so it's safe to assert
+        // that it's not undefined here.
         adder(x, y, tileset.sets[rec.info.id].fringe![index])
         return true
       }
@@ -95,8 +95,8 @@ export function applyFringe (
         // if we have a fringe tile for it straightaway, use it
         if (addFringe(xx, yy, rec, rec.bits)) continue
 
-        // We did not find a single t
-        let start = 0
+        // We did not find a single tile to represent the fringe, see if we can use more than 1.
+        let start = 0 // find an empty fringebit
         while ((((1 << start) & rec.bits) !== 0) && (start < FRINGEBITS)) {
           start++
         }
