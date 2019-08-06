@@ -159,7 +159,6 @@ export class GridTileSceneViewMode extends SurfaceMode {
   adjustOffset () {
     const sceneW = this._model.config.width * this._model.sceneWidth
     const sceneH = this._model.config.height * this._model.sceneHeight
-    //const surfSize = this._app.renderer.scale.inv.scaledDim(this._app.renderer.size.current)
     const surfSize = this._app.renderer.size.current
     const overlapW = Math.max(0, sceneW - surfSize[0])
     const overlapH = Math.max(0, sceneH - surfSize[1])

@@ -71,10 +71,11 @@ for (let xx = 0; xx < model.sceneWidth; xx++) {
   }
 }
 
-function addFeatures (tiles :Array<Array<string>>, feature :string, maxNumber :number,
-    maxSize :number) :void {
-  for (let num = Math.trunc(Math.random() * maxNumber); num > 0; num--) {
-    let size = Math.trunc(Math.random() * maxSize)
+function addFeatures (tiles :Array<Array<string>>, feature :string,
+    minNumber :number, maxNumber :number, maxSize :number) :void
+  {
+  for (let num = minNumber + Math.trunc(Math.random() * (maxNumber - minNumber)); num > 0; num--) {
+    let size = 1 + Math.trunc(Math.random() * (maxSize - 1))
     let xpos = Math.trunc(Math.random() * (tiles.length - size))
     let ypos = Math.trunc(Math.random() * (tiles[0].length - size))
     for (let xx = 0; xx < size; xx++) {
@@ -85,7 +86,7 @@ function addFeatures (tiles :Array<Array<string>>, feature :string, maxNumber :n
   }
 }
 
-addFeatures(model.tiles, grass, 20, 10)
-addFeatures(model.tiles, cobble, 10, 5)
+addFeatures(model.tiles, grass, 10, 20, 10)
+addFeatures(model.tiles, cobble, 5, 10, 5)
 
 app.setMode(new GridTileSceneViewMode(app, model))
