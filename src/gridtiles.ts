@@ -1,9 +1,9 @@
-import {Subject, Value} from "tfw/core/react"
+import {Subject} from "tfw/core/react"
 import {Scale} from "tfw/core/ui"
-import {dim2, vec2} from "tfw/core/math"
+import {vec2} from "tfw/core/math"
 import {Clock} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
-import {GLC, Texture, TextureConfig, Tile, makeTexture, windowSize} from "tfw/scene2/gl"
+import {GLC, Texture, TextureConfig, Tile, makeTexture} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {App, SurfaceMode} from "./app"
 import {FringeConfig, FringeAdder, applyFringe} from "./fringer"
@@ -143,30 +143,28 @@ export class GridTileSceneViewMode extends SurfaceMode {
   /** The visualization of the scene, when we have it. */
   protected _viz :GridTileSceneViz|undefined = undefined
 
-  constructor (app :App, protected _model :GridTileSceneModel) {
-    super(app)
+  constructor (protected _app :App, protected _model :GridTileSceneModel) {
+    super(_app)
 
-    this._canvas = app.root
     const tcfg = {...Texture.DefaultConfig, scale: new Scale(_model.config.scale)}
-    const tss :Subject<GridTileSet> = makeGridTileSet(app.renderer.glc, tcfg, _model.config)
+    const tss :Subject<GridTileSet> = makeGridTileSet(_app.renderer.glc, tcfg, _model.config)
     this.onDispose.add(tss.onValue(tileset => {
       this._viz = makeViz(_model, tileset)
     }))
-    this._winSize = windowSize(window)
-    this.onDispose.add(this._winSize.onValue(() => this.adjustOffset()))
-    this._canvas.addEventListener("mousemove", this._onMouseMove)
-    this.onDispose.add(() => this._canvas.removeEventListener("mousemove", this._onMouseMove))
+    this.onDispose.add(_app.renderer.size.onValue(() => this.adjustOffset()))
+    this._app.root.addEventListener("mousemove", this._onMouseMove)
+    this.onDispose.add(() => this._app.root.removeEventListener("mousemove", this._onMouseMove))
   }
 
   adjustOffset () {
     const sceneW = this._model.config.width * this._model.sceneWidth
     const sceneH = this._model.config.height * this._model.sceneHeight
-    console.log("Current window size: " + this._winSize.current)
-    const winW = this._winSize.current[0]
-    const winH = this._winSize.current[1]
-    const overlapW = Math.max(0, sceneW - winW)
-    const overlapH = Math.max(0, sceneH - winH)
-    vec2.set(this._offset, (this._mouse[0] / winW) * -overlapW, (this._mouse[1] / winH) * -overlapH)
+    //const surfSize = this._app.renderer.scale.inv.scaledDim(this._app.renderer.size.current)
+    const surfSize = this._app.renderer.size.current
+    const overlapW = Math.max(0, sceneW - surfSize[0])
+    const overlapH = Math.max(0, sceneH - surfSize[1])
+    vec2.set(this._offset,
+        (this._mouse[0] / surfSize[0]) * -overlapW, (this._mouse[1] / surfSize[1]) * -overlapH)
   }
 
   renderTo (clock :Clock, surf :Surface) {
@@ -190,8 +188,6 @@ export class GridTileSceneViewMode extends SurfaceMode {
     }
   }
 
-  protected readonly _winSize :Value<dim2>
-  protected readonly _canvas :HTMLElement
   protected readonly _mouse :vec2 = vec2.create()
   protected readonly _offset :vec2 = vec2.create()
   protected readonly _onMouseMove = (event :MouseEvent) => {
