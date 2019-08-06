@@ -8,16 +8,40 @@ import {Surface} from "tfw/scene2/surface"
 import {App, SurfaceMode} from "./app"
 import {FringeConfig, FringeAdder, applyFringe} from "./fringer"
 
-export type GridTileInfo = {
-  /** An identifier for this type "dirt", "grass". */
-  id :string
-  /** Higher priority tiles only fringe atop lower priority. */
-  priority :number
-  /** The image tile strip containing base tiles. */
-  base :string
-  /** The image tile strip to load for fringe tiles, according to the fringe configuration. */
-  fringe? :string
+abstract class TileInfo
+{
+  constructor (
+    /** An identifier for this type "dirt", "grass". */
+    public readonly id :string,
+    /** The image tile strip containing base tiles. */
+    public readonly base :string
+  ) {}
 }
+
+export class GridTileInfo extends TileInfo
+{
+  constructor (id :string, base :string,
+    /** Higher priority tiles only fringe atop lower priority. */
+    public readonly priority :number,
+    /** The image tile strip to load for fringe tiles, according to the fringe configuration. */
+    public readonly fringe? :string
+  ) {
+    super(id, base)
+  }
+}
+
+export class PropTileInfo extends TileInfo
+{
+  constructor (id :string, base :string,
+    /** The width of this prop, or omitted to just use the image size */
+    public readonly width? :number,
+    /** The height of this prop, or omitted to just use the image size */
+    public readonly height? :number
+  ) {
+    super(id, base)
+  }
+}
+
 
 export type GridTileSceneConfig = {
   /** The width of each tile. */
@@ -30,6 +54,20 @@ export type GridTileSceneConfig = {
   tiles :GridTileInfo[]
   /** Fringe tile configuration. */
   fringeConfig? :FringeConfig
+  /** Prop tile configuration. */
+  props? :PropTileInfo[]
+}
+
+export class PropPlacement
+{
+  constructor (
+    /** The id of the prop to place. */
+    public readonly id :string,
+    /** The x coordinate. */
+    public readonly x :number,
+    /** The y coordinate. */
+    public readonly y :number
+  ) {}
 }
 
 export class GridTileSceneModel

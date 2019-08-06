@@ -1,5 +1,5 @@
 import {App} from "./app"
-import {GridTileSceneConfig, GridTileSceneModel, GridTileSceneViewMode} from "./gridtiles"
+import {GridTileInfo, GridTileSceneConfig, GridTileSceneModel, GridTileSceneViewMode} from "./gridtiles"
 import {FringeConfig} from "./fringer"
 import * as Fringer from "./fringer"
 
@@ -31,33 +31,15 @@ const fringeConfig :FringeConfig = [
 const dirt = "dirt"
 const grass = "grass"
 const cobble = "cobble"
-
-const dirtInfo = {
-  id: dirt,
-  priority: 0,
-  base: "tiles/dirt.png",
-  //fringe: "tiles/dirt_fringe.png",
-}
-
-const grassInfo = {
-  id: grass,
-  priority: 1,
-  base: "tiles/grass.png",
-  fringe: "tiles/grass_fringe.png",
-}
-
-const cobbleInfo = {
-  id: cobble,
-  priority: 2,
-  base: "tiles/cobble.png",
-  fringe: "tiles/cobble_fringe.png",
-}
-
 const gridConfig :GridTileSceneConfig = {
   width: 40,
   height: 40,
   scale: 2,
-  tiles: [ dirtInfo, grassInfo, cobbleInfo ],
+  tiles: [
+    new GridTileInfo(dirt, "tiles/dirt.png", 0),
+    new GridTileInfo(grass, "tiles/grass.png", 1, "tiles/grass_fringe.png"),
+    new GridTileInfo(cobble, "tiles/cobble.png", 2, "tiles/cobble_fringe.png"),
+  ],
   fringeConfig: fringeConfig,
 }
 
