@@ -174,7 +174,7 @@ export function generateGridModel (
           }
           if (!oPtiles.length) {
             ptiles.splice(ptiles.indexOf(pickedTile), 1)
-            console.log("We found a zero-ing, skipping that tile")
+            console.log("We found a carctile pick that zero'd neighbors. Trying another...")
             continue PICKING
           }
         }
@@ -184,7 +184,7 @@ export function generateGridModel (
         continue POSSIBLE
       }
       if (ptiles.length === 0) {
-        console.log("Found an impossible situation!")
+        console.log("Can't place a carctile, starting generation over...")
         continue TRIES
       }
     }
