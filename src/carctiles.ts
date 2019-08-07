@@ -106,9 +106,6 @@ export function generateGridModel (
   let decodeX = (encoded :number) => encoded - (Math.trunc(encoded / width) * width)
   let decodeY = (encoded :number) => Math.trunc(encoded / width)
 
-//  let z = encode(5, 7)
-//  console.log("Encoded it's " + z + ", decodeX: " + decodeX(z) + ", decodeY: " + decodeY(z))
-
   TRIES:
   for (let tries = 0; tries < 100; tries++) {
     let board = new Array<Array<CarcTile>>(width)
