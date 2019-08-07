@@ -1,4 +1,5 @@
 import {GridTileSceneConfig, GridTileSceneModel} from "./gridtiles"
+import {vec2} from "tfw/core/math"
 
 export type Direction = "north" | "west" | "east" | "south"
 
@@ -55,6 +56,35 @@ export class CarcTile
   protected _features :Array<string>
 }
 
+type Board = Array<Array<Array<CarcTile>>>
+
+/**
+ * Pick a random CarcTile.
+ */
+function pick (tiles :Array<CarcTile>) :CarcTile
+{
+  // TODO: weighted!
+  return tiles[Math.trunc(Math.random() * tiles.length)]
+}
+
+//function findMostRestrictive (board :Board) :vec2
+//{
+//  let result = vec2.fromValues(-1, -1)
+//  let bestSize = Number.MAX_SAFE_INTEGER
+//
+//  for (let xx = 0; xx < board.length; xx++) {
+//    let col = board[xx]
+//    for (let yy = 0; yy < col.length; yy++) {
+//      let spot = col[yy]
+//      // having 1 tile in a position is what we want
+//      if ((!spot) || (spot.length == 1) || (spot.length >= bestSize)) continue
+//      vec2.set(result, xx, yy)
+//      bestSize = spot.length
+//    }
+//  }
+//  return result
+//}
+
 /**
  * Generate a GridTileSceneModel from a set of CarcTiles.
  * @param width the width in logical carctile units
@@ -64,25 +94,31 @@ export function generateGridModel (
   tiles :Array<CarcTile>, width :number, height :number, cfg :GridTileSceneConfig)
   :GridTileSceneModel
 {
-  let board = new Array<Array<Array<CarcTile>>>(width)
-  for (let xx = 0; xx < width; xx++) {
-    board[xx] = new Array<Array<CarcTile>>(height)
-  }
-
-  // TEMP: populate the board with random tiles
-  for (let xx = 0; xx < width; xx++) {
-    for (let yy = 0; yy < height; yy++) {
-      board[xx][yy] = [ tiles[Math.trunc(Math.random() * tiles.length)] ]
+  for (let tries = 0; tries < 100; tries++) {
+    let board = new Array<Array<Array<CarcTile>>>(width)
+    for (let xx = 0; xx < width; xx++) {
+      board[xx] = new Array<Array<CarcTile>>(height)
     }
-  }
-  // END: TEMP
 
-  // create the model to return
-  let model = new GridTileSceneModel(cfg, width * 3, height * 3)
-  for (let xx = 0; xx < width; xx++) {
-    for (let yy = 0; yy < height; yy++) {
-      board[xx][yy][0].populate(model, xx * 3, yy * 3)
+    // in the very center tile, let it contain all the possible tiles to kick things off
+    board[Math.trunc(width / 2)][Math.trunc(height / 2)] = tiles.concat()
+
+    // TEMP: populate the board with random tiles
+    for (let xx = 0; xx < width; xx++) {
+      for (let yy = 0; yy < height; yy++) {
+        board[xx][yy] = [ pick(tiles) ]
+      }
     }
+    // END: TEMP
+
+    // create the model to return
+    let model = new GridTileSceneModel(cfg, width * 3, height * 3)
+    for (let xx = 0; xx < width; xx++) {
+      for (let yy = 0; yy < height; yy++) {
+        board[xx][yy][0].populate(model, xx * 3, yy * 3)
+      }
+    }
+    return model
   }
-  return model
+  throw new Error("Unable to generate model from tiles")
 }

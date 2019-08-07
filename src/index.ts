@@ -110,14 +110,14 @@ const roadSEW = new CarcTile(dirt, dirt, dirt,
 const roadNWS = new CarcTile(dirt, cobble, dirt,
                              cobble, cobble, dirt,
                              dirt, cobble, dirt)
+// skip roadNES to give our map ~personality~
 const dirtNEWS = new CarcTile(dirt, dirt, dirt,
                               dirt, dirt, dirt,
                               dirt, dirt, dirt)
-// skip roadNES to give our map ~personality~
 let tiles = [ roadN, roadS, roadE, roadW,
               roadNS, roadEW,
               roadNW, roadNE, roadSE, roadSW,
-              roadNEW, roadSEW, roadNWS,
+              roadNEW, roadSEW, roadNWS, /*roadNES,*/
               dirtNEWS ]
 let model :GridTileSceneModel = generateGridModel(tiles, 12, 12, gridConfig)
 app.setMode(new GridTileSceneViewMode(app, model))
