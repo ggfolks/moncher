@@ -33,13 +33,13 @@ export class CarcTile
    * Does this carctile match-up with the specified carctile in the specified direction?
    */
   matches (other :CarcTile, direction :Direction) :boolean {
-    let dex, oDex, inc
+    let dex = 0, oDex, inc
     switch (direction) {
-      case Direction.North: dex = 0; oDex = CarcTile.SIZE * (CarcTile.SIZE - 1); inc = 1; break
-      case Direction.West: dex = 0; oDex = CarcTile.SIZE - 1; inc = CarcTile.SIZE; break
+      case Direction.North: oDex = CarcTile.SIZE * (CarcTile.SIZE - 1); inc = 1; break
+      case Direction.West: oDex = CarcTile.SIZE - 1; inc = CarcTile.SIZE; break
       case Direction.South: return other.matches(this, Direction.North)
       case Direction.East: return other.matches(this, Direction.West)
-      default: throw new Error("Wat")
+      default: throw new Error("Invalid direction " + direction)
     }
     for (let ii = 0; ii < CarcTile.SIZE; ii++, dex += inc, oDex += inc) {
       if (this._base[dex] != other._base[oDex]) {
