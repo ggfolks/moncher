@@ -13,6 +13,9 @@ enum Direction {
  */
 export class CarcTile
 {
+  /** The number of base tiles in a CarcTile in each direction. */
+  static readonly SIZE = 3
+
   constructor (
     /** The three base tiles along the top. */
     nw :string, n :string, ne :string,
@@ -32,13 +35,13 @@ export class CarcTile
   matches (other :CarcTile, direction :Direction) :boolean {
     let dex, oDex, inc
     switch (direction) {
-      case Direction.North: dex = 0; oDex = 6; inc = 1; break
-      case Direction.West: dex = 0; oDex = 2; inc = 3; break
+      case Direction.North: dex = 0; oDex = CarcTile.SIZE * (CarcTile.SIZE - 1); inc = 1; break
+      case Direction.West: dex = 0; oDex = CarcTile.SIZE - 1; inc = CarcTile.SIZE; break
       case Direction.South: return other.matches(this, Direction.North)
       case Direction.East: return other.matches(this, Direction.West)
       default: throw new Error("Wat")
     }
-    for (let ii = 0; ii < 3; ii++, dex += inc, oDex += inc) {
+    for (let ii = 0; ii < CarcTile.SIZE; ii++, dex += inc, oDex += inc) {
       if (this._base[dex] != other._base[oDex]) {
         return false
       }
@@ -50,10 +53,10 @@ export class CarcTile
    * Populate a grid model with this carctile at the specified location. (upper left)
    */
   populate (model :GridTileSceneModel, x :number, y :number) :void {
-    for (let ii = 0; ii < 3; ii++) {
+    for (let ii = 0; ii < CarcTile.SIZE; ii++) {
       let col = model.tiles[x + ii]
       let index = ii
-      for (let jj = 0; jj < 3; jj++, index += 3) {
+      for (let jj = 0; jj < CarcTile.SIZE; jj++, index += CarcTile.SIZE) {
         col[jj + y] = this._base[index]
       }
     }
@@ -190,10 +193,10 @@ export function generateGridModel (
     }
 
     // create the model to return
-    let model = new GridTileSceneModel(cfg, width * 3, height * 3)
+    let model = new GridTileSceneModel(cfg, width * CarcTile.SIZE, height * CarcTile.SIZE)
     for (let xx = 0; xx < width; xx++) {
       for (let yy = 0; yy < height; yy++) {
-        if (board[xx][yy]) board[xx][yy].populate(model, xx * 3, yy * 3)
+        if (board[xx][yy]) board[xx][yy].populate(model, xx * CarcTile.SIZE, yy * CarcTile.SIZE)
       }
     }
     return model
