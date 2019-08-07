@@ -123,8 +123,8 @@ export function generateGridModel (
   :GridTileSceneModel
 {
   let encode = (x :number, y :number) => x + (y * width)
+  let decodeX = (encoded :number) => encoded % width
   let decodeY = (encoded :number) => Math.trunc(encoded / width)
-  let decodeX = (encoded :number) => encoded - (decodeY(encoded) * width)
   const directions :Direction[] =
       [ Direction.North, Direction.South, Direction.West, Direction.East ]
 
