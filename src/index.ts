@@ -46,16 +46,16 @@ const gridConfig :GridTileSceneConfig = {
 
 const roadN = new CarcTile(dirt, cobble, dirt,
                            dirt, cobble, dirt,
-                           dirt, dirt, dirt)
+                           dirt, dirt, dirt, .01)
 const roadS = new CarcTile(dirt, dirt, dirt,
                            dirt, cobble, dirt,
-                           dirt, cobble, dirt)
+                           dirt, cobble, dirt, .01)
 const roadE = new CarcTile(dirt, dirt, dirt,
                            dirt, cobble, cobble,
-                           dirt, dirt, dirt)
+                           dirt, dirt, dirt, .01)
 const roadW = new CarcTile(dirt, dirt, dirt,
                            cobble, cobble, dirt,
-                           dirt, dirt, dirt)
+                           dirt, dirt, dirt, .01)
 const roadNS = new CarcTile(dirt, cobble, dirt,
                             dirt, cobble, dirt,
                             dirt, cobble, dirt)
@@ -114,12 +114,32 @@ const grassSW = new CarcTile(dirt, dirt, dirt,
 const grassSE = new CarcTile(dirt, dirt, dirt,
                              dirt, grass, grass,
                              dirt, grass, grass)
+const grassRoadNS = new CarcTile(grass, cobble, grass,
+                                 grass, cobble, grass,
+                                 grass, cobble, grass)
+const grassRoadN = new CarcTile(grass, cobble, grass,
+                                grass, cobble, grass,
+                                dirt, cobble, dirt)
+const grassRoadS = new CarcTile(dirt, cobble, dirt,
+                                grass, cobble, grass,
+                                grass, cobble, grass)
+const grassRoadEW = new CarcTile(grass, grass, grass,
+                                 cobble, cobble, cobble,
+                                 grass, grass, grass)
+const grassRoadE = new CarcTile(dirt, grass, grass,
+                                cobble, cobble, cobble,
+                                dirt, grass, grass)
+const grassRoadW = new CarcTile(grass, grass, dirt,
+                                cobble, cobble, cobble,
+                                grass, grass, dirt)
 let tiles = [ roadN, roadS, roadE, roadW,
               roadNS, roadEW,
               roadNW, roadNE, roadSE, roadSW,
               roadNEW, roadSEW, roadNWS, /*roadNES,*/
               dirtNEWS, grassNEWS,
               grassN, grassE, grassW, grassS,
-              grassNE, grassNW, grassSE, grassSW ]
+              grassNE, grassNW, grassSE, grassSW,
+              grassRoadNS, grassRoadN, grassRoadS,
+              grassRoadEW, grassRoadW, grassRoadE ]
 let model :GridTileSceneModel = generateGridModel(tiles, 12, 12, gridConfig)
 app.setMode(new GridTileSceneViewMode(app, model))
