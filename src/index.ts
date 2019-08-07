@@ -37,9 +37,9 @@ const gridConfig :GridTileSceneConfig = {
   height: 40,
   scale: 2,
   tiles: [
-    new GridTileInfo(dirt, "tiles/dirt.png", 0),
+    new GridTileInfo(dirt, "tiles/dirt.png", 0, "tiles/dirt_fringe.png"),
     new GridTileInfo(grass, "tiles/grass.png", 1, "tiles/grass_fringe.png"),
-    new GridTileInfo(cobble, "tiles/cobble.png", 2, "tiles/cobble_fringe.png"),
+    new GridTileInfo(cobble, "tiles/cobble.png", -1, "tiles/cobble_fringe.png"),
   ],
   fringeConfig: fringeConfig,
 }
