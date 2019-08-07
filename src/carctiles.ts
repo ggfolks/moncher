@@ -20,6 +20,7 @@ export class CarcTile
     w :string, center: string, e :string,
     /** The three base tiles along the bottom. */
     sw :string, s :string, se :string,
+    /** The weight of this tile relative to others. */
     public readonly weight :number = 1
   ) {
     this._base = [ nw, n, ne, w, center, e, sw, s, se ]
@@ -62,13 +63,17 @@ export class CarcTile
   protected _base :Array<string>
 }
 
+function totalWeight (tiles :Array<CarcTile>) :number
+{
+  return tiles.reduce((w, tile) => w + tile.weight, 0)
+}
+
 /**
  * Pick a random CarcTile.
  */
 function pickCarcTile (tiles :Array<CarcTile>) :CarcTile
 {
-  let totalWeight = tiles.reduce((w, tile) => w + tile.weight, 0)
-  let value = Math.random() * totalWeight
+  let value = Math.random() * totalWeight(tiles)
   for (let tile of tiles) {
     value -= tile.weight
     if (value < 0) {
@@ -80,14 +85,27 @@ function pickCarcTile (tiles :Array<CarcTile>) :CarcTile
   return tiles[tiles.length - 1]
 }
 
+/**
+ * Find the key of the map that has the shortest array value.
+ * Break ties according to the least total weight of available tiles.
+ */
 function findLeastPossible (map :Map<number, Array<CarcTile>>) :number
 {
   let bestSize = Number.MAX_SAFE_INTEGER
+  let bestWeight = Number.MAX_SAFE_INTEGER
   let best = -1
   map.forEach((value, key) => {
     if (value.length < bestSize) {
       bestSize = value.length
+      bestWeight = totalWeight(value)
       best = key
+    } else if (value.length == bestSize) {
+      let weight = totalWeight(value)
+      if (weight < bestWeight) {
+        // (no need to update bestSize)
+        bestWeight = weight
+        best = key
+      }
     }
   })
   return best
