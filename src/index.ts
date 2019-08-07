@@ -159,5 +159,5 @@ let tiles = [ roadN, roadS, roadE, roadW,
               grassRoadEW, grassRoadW, grassRoadE,
               grassRoadNW, grassRoadNE, grassRoadSE, grassRoadSW,
               grassRoadNEWS ]
-let model :GridTileSceneModel = generateGridModel(tiles, 12, 12, gridConfig)
+let model :GridTileSceneModel = generateGridModel(tiles, 30, 30, gridConfig)
 app.setMode(new GridTileSceneViewMode(app, model))
