@@ -19,7 +19,8 @@ export class CarcTile
     /** The three base tiles in the middle. */
     w :string, center: string, e :string,
     /** The three base tiles along the bottom. */
-    sw :string, s :string, se :string
+    sw :string, s :string, se :string,
+    public readonly weight :number = 1
   ) {
     this._base = [ nw, n, ne, w, center, e, sw, s, se ]
   }
@@ -66,8 +67,17 @@ export class CarcTile
  */
 function pickCarcTile (tiles :Array<CarcTile>) :CarcTile
 {
-  // TODO: weighted!
-  return tiles[Math.trunc(Math.random() * tiles.length)]
+  let totalWeight = tiles.reduce((w, tile) => w + tile.weight, 0)
+  let value = Math.random() * totalWeight
+  for (let tile of tiles) {
+    value -= tile.weight
+    if (value < 0) {
+      return tile
+    }
+  }
+
+  // fallback case (shouldn't be needed)
+  return tiles[tiles.length - 1]
 }
 
 function findLeastPossible (map :Map<number, Array<CarcTile>>) :number

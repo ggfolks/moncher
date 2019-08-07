@@ -76,17 +76,17 @@ const roadSW = new CarcTile(dirt, dirt, dirt,
                             dirt, cobble, dirt)
 const roadNEW = new CarcTile(dirt, cobble, dirt,
                              cobble, cobble, cobble,
-                             dirt, dirt, dirt)
+                             dirt, dirt, dirt, .5)
 const roadSEW = new CarcTile(dirt, dirt, dirt,
                              cobble, cobble, cobble,
-                             dirt, cobble, dirt)
+                             dirt, cobble, dirt, .5)
 const roadNWS = new CarcTile(dirt, cobble, dirt,
                              cobble, cobble, dirt,
-                             dirt, cobble, dirt)
+                             dirt, cobble, dirt, .5)
 // skip roadNES to give our map ~personality~
 const dirtNEWS = new CarcTile(dirt, dirt, dirt,
                               dirt, dirt, dirt,
-                              dirt, dirt, dirt)
+                              dirt, dirt, dirt, 5)
 let tiles = [ roadN, roadS, roadE, roadW,
               roadNS, roadEW,
               roadNW, roadNE, roadSE, roadSW,
