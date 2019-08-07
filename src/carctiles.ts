@@ -70,24 +70,6 @@ function pickCarcTile (tiles :Array<CarcTile>) :CarcTile
   return tiles[Math.trunc(Math.random() * tiles.length)]
 }
 
-//function findMostRestrictive (board :Board) :vec2
-//{
-//  let result = vec2.fromValues(-1, -1)
-//  let bestSize = Number.MAX_SAFE_INTEGER
-//
-//  for (let xx = 0; xx < board.length; xx++) {
-//    let col = board[xx]
-//    for (let yy = 0; yy < col.length; yy++) {
-//      let spot = col[yy]
-//      // having 1 tile in a position is what we want
-//      if ((!spot) || (spot.length == 1) || (spot.length >= bestSize)) continue
-//      vec2.set(result, xx, yy)
-//      bestSize = spot.length
-//    }
-//  }
-//  return result
-//}
-
 function findLeastPossible (map :Map<number, Array<CarcTile>>) :number
 {
   let bestSize = Number.MAX_SAFE_INTEGER

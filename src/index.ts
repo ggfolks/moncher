@@ -44,33 +44,6 @@ const gridConfig :GridTileSceneConfig = {
   fringeConfig: fringeConfig,
 }
 
-//const model = new GridTileSceneModel(gridConfig, 42, 42)
-//
-//// populate the scene with dirt
-//for (let xx = 0; xx < model.sceneWidth; xx++) {
-//  let col = model.tiles[xx]
-//  for (let yy = 0; yy < model.sceneHeight; yy++) {
-//    col[yy] = dirt
-//  }
-//}
-//
-//function addFeatures (tiles :Array<Array<string>>, feature :string,
-//    minNumber :number, maxNumber :number, maxSize :number) :void
-//  {
-//  for (let num = minNumber + Math.trunc(Math.random() * (maxNumber - minNumber)); num > 0; num--) {
-//    let size = 1 + Math.trunc(Math.random() * (maxSize - 1))
-//    let xpos = Math.trunc(Math.random() * (tiles.length - size))
-//    let ypos = Math.trunc(Math.random() * (tiles[0].length - size))
-//    for (let xx = 0; xx < size; xx++) {
-//      for (let yy = 0; yy < size; yy++) {
-//        model.tiles[xx + xpos][yy + ypos] = feature
-//      }
-//    }
-//  }
-//}
-//addFeatures(model.tiles, grass, 10, 20, 10)
-//addFeatures(model.tiles, cobble, 5, 10, 5)
-
 const roadN = new CarcTile(dirt, cobble, dirt,
                            dirt, cobble, dirt,
                            dirt, dirt, dirt)
