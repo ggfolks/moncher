@@ -1,7 +1,6 @@
 import {GridTileSceneConfig, GridTileSceneModel} from "./gridtiles"
-//import {vec2} from "tfw/core/math"
 
-enum Direction {
+const enum Direction {
   North,
   East,
   West,
@@ -124,8 +123,8 @@ export function generateGridModel (
   :GridTileSceneModel
 {
   let encode = (x :number, y :number) => x + (y * width)
-  let decodeX = (encoded :number) => encoded - (Math.trunc(encoded / width) * width)
   let decodeY = (encoded :number) => Math.trunc(encoded / width)
+  let decodeX = (encoded :number) => encoded - (decodeY(encoded) * width)
 
   TRIES:
   for (let tries = 0; tries < 100; tries++) {
@@ -143,7 +142,6 @@ export function generateGridModel (
       let key = findLeastPossible(possible)
       let ptiles = possible.get(key)! // we know the key is in there
       possible.delete(key)
-      // otherwise there are valid tiles, pick one!
       let keyX = decodeX(key)
       let keyY = decodeY(key)
       //console.log("working on (" + keyX + ", " + keyY + ")")
