@@ -87,10 +87,39 @@ const roadNWS = new CarcTile(dirt, cobble, dirt,
 const dirtNEWS = new CarcTile(dirt, dirt, dirt,
                               dirt, dirt, dirt,
                               dirt, dirt, dirt, 5)
+const grassNEWS = new CarcTile(grass, grass, grass,
+                               grass, grass, grass,
+                               grass, grass, grass, 5)
+const grassN = new CarcTile(grass, grass, grass,
+                            grass, grass, grass,
+                            dirt, dirt, dirt)
+const grassS = new CarcTile(dirt, dirt, dirt,
+                            grass, grass, grass,
+                            grass, grass, grass)
+const grassW = new CarcTile(grass, grass, dirt,
+                            grass, grass, dirt,
+                            grass, grass, dirt)
+const grassE = new CarcTile(dirt, grass, grass,
+                            dirt, grass, grass,
+                            dirt, grass, grass)
+const grassNW = new CarcTile(grass, grass, dirt,
+                             grass, grass, dirt,
+                             dirt, dirt, dirt)
+const grassNE = new CarcTile(dirt, grass, grass,
+                             dirt, grass, grass,
+                             dirt, dirt, dirt)
+const grassSW = new CarcTile(dirt, dirt, dirt,
+                             grass, grass, dirt,
+                             grass, grass, dirt)
+const grassSE = new CarcTile(dirt, dirt, dirt,
+                             dirt, grass, grass,
+                             dirt, grass, grass)
 let tiles = [ roadN, roadS, roadE, roadW,
               roadNS, roadEW,
               roadNW, roadNE, roadSE, roadSW,
               roadNEW, roadSEW, roadNWS, /*roadNES,*/
-              dirtNEWS ]
+              dirtNEWS, grassNEWS,
+              grassN, grassE, grassW, grassS,
+              grassNE, grassNW, grassSE, grassSW ]
 let model :GridTileSceneModel = generateGridModel(tiles, 12, 12, gridConfig)
 app.setMode(new GridTileSceneViewMode(app, model))
