@@ -1,5 +1,5 @@
 import {GridTileSceneConfig, GridTileSceneModel} from "./gridtiles"
-import {vec2} from "tfw/core/math"
+//import {vec2} from "tfw/core/math"
 
 export type Direction = "north" | "west" | "east" | "south"
 
@@ -56,7 +56,7 @@ export class CarcTile
   protected _features :Array<string>
 }
 
-type Board = Array<Array<Array<CarcTile>>>
+//type Board = Array<Array<Array<CarcTile>>>
 
 /**
  * Pick a random CarcTile.
