@@ -135,44 +135,57 @@ export function generateGridModel (
     // kick things off by making every tile possible in the very center
     possible.set(encode(Math.trunc(width / 2), Math.trunc(height / 2)), tiles.concat())
 
+    POSSIBLE:
     while (possible.size) {
       let key = findLeastPossible(possible)
       let ptiles = possible.get(key)! // we know the key is in there
       possible.delete(key)
-      if (ptiles.length == 0) {
-        console.log("Found an impossible situation!")
-        continue TRIES
-      }
       // otherwise there are valid tiles, pick one!
       let keyX = decodeX(key)
       let keyY = decodeY(key)
-      let pickedTile = pickCarcTile(ptiles)
-      board[keyX][keyY] = pickedTile
+      //console.log("working on (" + keyX + ", " + keyY + ")")
+      // try picking a tile, but if that reduces a neighbor to 0 possible, unpick it
+      PICKING:
+      while (ptiles.length) {
+        let pickedTile = pickCarcTile(ptiles)
+        board[keyX][keyY] = pickedTile
 
-      // see how this new pick affects the possibilities of surrounding tiles
-      for (let dir of [ Direction.North, Direction.South, Direction.West, Direction.East ]) {
-        let xx = keyX, yy = keyY
-        switch (dir) {
-          case Direction.North: yy--; break
-          case Direction.South: yy++; break
-          case Direction.West: xx--; break
-          case Direction.East: xx++; break
-        }
-        if ((xx < 0) || (xx >= width)) continue
-        if ((yy < 0) || (yy >= height)) continue
-        if (board[xx][yy]) continue // skip it if we've already settled on the tile there
-        let oKey = encode(xx, yy)
-        let oPtiles = possible.get(oKey)
-        if (!oPtiles) {
-          // insert all tiles as possible if a newly-initialized spot
-          oPtiles = tiles.concat()
-          possible.set(oKey, oPtiles)
-        }
-        for (let index = oPtiles.length - 1; index >= 0; index--) {
-          if (!pickedTile.matches(oPtiles[index], dir)) {
-            oPtiles.splice(index, 1)
+        // see how this new pick affects the possibilities of surrounding tiles
+        let adjustedPossible = new Map<number, Array<CarcTile>>()
+        for (let dir of [ Direction.North, Direction.South, Direction.West, Direction.East ]) {
+          let xx = keyX, yy = keyY
+          switch (dir) {
+            case Direction.North: yy--; break
+            case Direction.South: yy++; break
+            case Direction.West: xx--; break
+            case Direction.East: xx++; break
+          }
+          if ((xx < 0) || (xx >= width)) continue
+          if ((yy < 0) || (yy >= height)) continue
+          if (board[xx][yy]) continue // skip it if we've already settled on the tile there
+          let oKey = encode(xx, yy)
+          let oPtiles = possible.get(oKey)
+          oPtiles = (oPtiles !== undefined) ? oPtiles.concat() : tiles.concat()
+          adjustedPossible.set(oKey, oPtiles)
+          for (let index = oPtiles.length - 1; index >= 0; index--) {
+            if (!pickedTile.matches(oPtiles[index], dir)) {
+              oPtiles.splice(index, 1)
+            }
+          }
+          if (!oPtiles.length) {
+            ptiles.splice(ptiles.indexOf(pickedTile), 1)
+            console.log("We found a zero-ing, skipping that tile")
+            continue PICKING
           }
         }
+        //console.log("Calculated new neighbor possibilities...")
+        // update possible with these new values
+        adjustedPossible.forEach((value, key) => possible.set(key, value))
+        continue POSSIBLE
+      }
+      if (ptiles.length === 0) {
+        console.log("Found an impossible situation!")
+        continue TRIES
       }
     }
 
