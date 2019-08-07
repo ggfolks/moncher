@@ -125,6 +125,8 @@ export function generateGridModel (
   let encode = (x :number, y :number) => x + (y * width)
   let decodeY = (encoded :number) => Math.trunc(encoded / width)
   let decodeX = (encoded :number) => encoded - (decodeY(encoded) * width)
+  const directions :Direction[] =
+      [ Direction.North, Direction.South, Direction.West, Direction.East ]
 
   TRIES:
   for (let tries = 0; tries < 100; tries++) {
@@ -153,7 +155,7 @@ export function generateGridModel (
 
         // see how this new pick affects the possibilities of surrounding tiles
         let adjustedPossible = new Map<number, Array<CarcTile>>()
-        for (let dir of [ Direction.North, Direction.South, Direction.West, Direction.East ]) {
+        for (let dir of directions) {
           let xx = keyX, yy = keyY
           switch (dir) {
             case Direction.North: yy--; break
