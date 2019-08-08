@@ -170,7 +170,7 @@ const grassRoadNES = new CarcTile(grass, cobble, grass,
 const grassWithTree = new CarcTile(grass, grass, grass,
                                    grass, grass, grass,
                                    grass, grass, grass, 1,
-                                   new PropPlacement(tree, 1.5, 1.5))
+                                   new PropPlacement(tree, .5, .5))
 
 let tiles = [ roadN, roadS, roadE, roadW,
               roadNS, roadEW,

@@ -62,7 +62,8 @@ export class CarcTile
       }
     }
     for (const prop of this._props) {
-      model.props.push(new PropPlacement(prop.id, x + prop.x, y + prop.y))
+      model.props.push(
+          new PropPlacement(prop.id, x + (prop.x * CarcTile.SIZE), y + (prop.y * CarcTile.SIZE)))
     }
   }
 
