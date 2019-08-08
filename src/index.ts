@@ -177,12 +177,51 @@ const grassWithTree = new CarcTile(grass, grass, grass,
                                    grass, grass, grass,
                                    grass, grass, grass, 1,
                                    new PropPlacement(tree, 1.5, 1.5))
+const grassWithCopse = new CarcTile(grass, grass, grass,
+                                   grass, grass, grass,
+                                   grass, grass, grass, 50,
+                                   new PropPlacement(tree, .2, .2),
+                                   new PropPlacement(tree, 2.2, .6),
+                                   new PropPlacement(tree, .5, 1),
+                                   new PropPlacement(tree, 1.8, 1.4),
+                                   new PropPlacement(tree, 2.9, 1.8),
+                                   new PropPlacement(tree, .3, 2.2),
+                                   new PropPlacement(tree, 2.3, 2.6))
+
+// ADDITIONAL TILES, created so that all road types are represented on both grass and dirt,
+// to see if this eases the pain that the solver has in building a scene.
+const roadNES = new CarcTile(dirt, cobble, dirt,
+                             dirt, cobble, cobble,
+                             dirt, cobble, dirt, .5)
+const grassRoadNEW = new CarcTile(grass, cobble, grass,
+                                  cobble, cobble, cobble,
+                                  grass, grass, grass, .5)
+const grassRoadSEW = new CarcTile(grass, grass, grass,
+                                  cobble, cobble, cobble,
+                                  grass, cobble, grass, .5)
+const grassRoadNWS = new CarcTile(grass, cobble, grass,
+                                  cobble, cobble, grass,
+                                  grass, cobble, grass, .5)
+const grassRoadNend = new CarcTile(grass, cobble, grass,
+                           grass, cobble, grass,
+                           grass, grass, grass, .01)
+const grassRoadSend = new CarcTile(grass, grass, grass,
+                           grass, cobble, grass,
+                           grass, cobble, grass, .01)
+const grassRoadEend = new CarcTile(grass, grass, grass,
+                           grass, cobble, cobble,
+                           grass, grass, grass, .01)
+const grassRoadWend = new CarcTile(grass, grass, grass,
+                           cobble, cobble, grass,
+                           grass, grass, grass, .01)
+let additional = [ roadNES, grassRoadNEW, grassRoadSEW, grassRoadNWS,
+                   grassRoadNend, grassRoadSend, grassRoadWend, grassRoadEend ]
 
 let tiles = [ roadN, roadS, roadE, roadW,
               roadNS, roadEW,
               roadNW, roadNE, roadSE, roadSW,
               roadNEW, roadSEW, roadNWS, /*roadNES,*/
-              dirtNEWS, grassNEWS, grassWithTree,
+              dirtNEWS, grassNEWS, grassWithTree, grassWithCopse,
               grassN, grassE, grassW, grassS,
               grassNE, grassNW, grassSE, grassSW,
               grassNE2, grassNW2, grassSE2, grassSW2,
@@ -191,5 +230,5 @@ let tiles = [ roadN, roadS, roadE, roadW,
               grassRoadNW, grassRoadNE, grassRoadSE, grassRoadSW,
               grassRoadNES,
               grassRoadNEWS ]
-let model :GridTileSceneModel = generateGridModel(tiles, 40, 40, gridConfig)
+let model :GridTileSceneModel = generateGridModel(tiles.concat(additional), 40, 40, gridConfig)
 app.setMode(new GridTileSceneViewMode(app, model))
