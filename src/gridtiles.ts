@@ -132,8 +132,8 @@ function chopTiles (tex :Texture, w :number, h :number) :Tile[]
   return retval
 }
 
-function makeProp (glc :GLC, textureConfig :TextureConfig, cfg :PropTileInfo) :Subject<PropTile> {
-  return makeTexture(glc, loadImage(cfg.base), textureConfig).map(tex => {
+function makeProp (glc :GLC, tcfg :TextureConfig, cfg :PropTileInfo) :Subject<PropTile> {
+  return makeTexture(glc, loadImage(cfg.base), tcfg).map(tex => {
     let tiles :Array<Tile>
     if (cfg.width !== undefined && cfg.height !== undefined) {
       tiles = chopTiles(tex, cfg.width, cfg.height)
@@ -144,19 +144,19 @@ function makeProp (glc :GLC, textureConfig :TextureConfig, cfg :PropTileInfo) :S
   })
 }
 
-function makeGridTiles (glc :GLC, textureConfig :TextureConfig,
-                    image :string, cfg :GridTileSceneConfig) :Subject<Array<Tile>> {
-  return makeTexture(glc, loadImage(image), textureConfig)
+function makeGridTiles (glc :GLC, tcfg :TextureConfig, image :string, cfg :GridTileSceneConfig)
+    :Subject<Array<Tile>> {
+  return makeTexture(glc, loadImage(image), tcfg)
       .map(tex => chopTiles(tex, cfg.width, cfg.height))
 }
 
-function makeGridTile (glc :GLC, textureConfig :TextureConfig,
-                       tileInfo :GridTileInfo,
-                       cfg :GridTileSceneConfig) :Subject<GridTile> {
+function makeGridTile (
+  glc :GLC, tcfg :TextureConfig, tileInfo :GridTileInfo, cfg :GridTileSceneConfig
+) :Subject<GridTile> {
   let tiles :Array<Subject<Array<Tile>>> = []
-  tiles.push(makeGridTiles(glc, textureConfig, tileInfo.base, cfg))
+  tiles.push(makeGridTiles(glc, tcfg, tileInfo.base, cfg))
   if (tileInfo.fringe) {
-    tiles.push(makeGridTiles(glc, textureConfig, tileInfo.fringe, cfg))
+    tiles.push(makeGridTiles(glc, tcfg, tileInfo.fringe, cfg))
   }
   return Subject.join(...tiles).map(v => {
     const tile :GridTile = { id: tileInfo.id, tiles: v[0] }
@@ -167,17 +167,17 @@ function makeGridTile (glc :GLC, textureConfig :TextureConfig,
   })
 }
 
-function makeGridTileSet (glc :GLC, textureConfig :TextureConfig,
-                          cfg :GridTileSceneConfig) :Subject<GridTileSet>
+function makeGridTileSet (glc :GLC, cfg :GridTileSceneConfig) :Subject<GridTileSet>
 {
+  const tcfg = { ...Texture.DefaultConfig, scale: new Scale(cfg.scale) }
   const sets :Array<Subject<GridTile>> = []
   for (const tileset of cfg.tiles) {
-    sets.push(makeGridTile(glc, textureConfig, tileset, cfg))
+    sets.push(makeGridTile(glc, tcfg, tileset, cfg))
   }
   const propSets :Array<Subject<PropTile>> = []
   if (cfg.props) {
     for (const prop of cfg.props) {
-      propSets.push(makeProp(glc, textureConfig, prop))
+      propSets.push(makeProp(glc, tcfg, prop))
     }
   }
   return Subject.join2(Subject.join(...sets), Subject.join(...propSets)).map(v => {
@@ -232,8 +232,7 @@ export class GridTileSceneViewMode extends SurfaceMode {
   constructor (protected _app :App, protected _model :GridTileSceneModel) {
     super(_app)
 
-    const tcfg = {...Texture.DefaultConfig, scale: new Scale(_model.config.scale)}
-    const tss :Subject<GridTileSet> = makeGridTileSet(_app.renderer.glc, tcfg, _model.config)
+    const tss :Subject<GridTileSet> = makeGridTileSet(_app.renderer.glc, _model.config)
     this.onDispose.add(tss.onValue(tileset => {
       this._viz = makeViz(_model, tileset)
     }))
