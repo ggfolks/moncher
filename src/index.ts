@@ -34,6 +34,7 @@ const dirt = "dirt"
 const grass = "grass"
 const cobble = "cobble"
 const tree = "tree"
+const rock = "rock"
 const gridConfig :GridTileSceneConfig = {
   width: 40,
   height: 40,
@@ -46,21 +47,26 @@ const gridConfig :GridTileSceneConfig = {
   fringeConfig: fringeConfig,
   props: [
     new PropTileInfo(tree, "props/tree_1.png"),
+    new PropTileInfo(rock, "props/rock_1a.png"),
   ]
 }
 
 const roadN = new CarcTile(dirt, cobble, dirt,
                            dirt, cobble, dirt,
-                           dirt, dirt, dirt, .01)
+                           dirt, dirt, dirt, .01,
+                           new PropPlacement(rock, 1.5, 2.5))
 const roadS = new CarcTile(dirt, dirt, dirt,
                            dirt, cobble, dirt,
-                           dirt, cobble, dirt, .01)
+                           dirt, cobble, dirt, .01,
+                           new PropPlacement(rock, 1.5, .5))
 const roadE = new CarcTile(dirt, dirt, dirt,
                            dirt, cobble, cobble,
-                           dirt, dirt, dirt, .01)
+                           dirt, dirt, dirt, .01,
+                           new PropPlacement(rock, .5, 1.5))
 const roadW = new CarcTile(dirt, dirt, dirt,
                            cobble, cobble, dirt,
-                           dirt, dirt, dirt, .01)
+                           dirt, dirt, dirt, .01,
+                           new PropPlacement(rock, 2.5, 1.5))
 const roadNS = new CarcTile(dirt, cobble, dirt,
                             dirt, cobble, dirt,
                             dirt, cobble, dirt)
@@ -170,7 +176,7 @@ const grassRoadNES = new CarcTile(grass, cobble, grass,
 const grassWithTree = new CarcTile(grass, grass, grass,
                                    grass, grass, grass,
                                    grass, grass, grass, 1,
-                                   new PropPlacement(tree, .5, .5))
+                                   new PropPlacement(tree, 1.5, 1.5))
 
 let tiles = [ roadN, roadS, roadE, roadW,
               roadNS, roadEW,
