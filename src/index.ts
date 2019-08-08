@@ -1,5 +1,6 @@
 import {App} from "./app"
-import {GridTileInfo, GridTileSceneConfig, GridTileSceneModel, GridTileSceneViewMode} from "./gridtiles"
+import {GridTileInfo, GridTileSceneConfig, GridTileSceneModel, GridTileSceneViewMode,
+        PropPlacement, PropTileInfo} from "./gridtiles"
 import {FringeConfig} from "./fringer"
 import * as Fringer from "./fringer"
 import {CarcTile, generateGridModel} from "./carctiles"
@@ -32,6 +33,7 @@ const fringeConfig :FringeConfig = [
 const dirt = "dirt"
 const grass = "grass"
 const cobble = "cobble"
+const tree = "tree"
 const gridConfig :GridTileSceneConfig = {
   width: 40,
   height: 40,
@@ -42,6 +44,9 @@ const gridConfig :GridTileSceneConfig = {
     new GridTileInfo(cobble, "tiles/cobble.png", -1, "tiles/cobble_fringe.png"),
   ],
   fringeConfig: fringeConfig,
+  props: [
+    new PropTileInfo(tree, "props/tree_1.png"),
+  ]
 }
 
 const roadN = new CarcTile(dirt, cobble, dirt,
@@ -177,4 +182,5 @@ let tiles = [ roadN, roadS, roadE, roadW,
               grassRoadNES,
               grassRoadNEWS ]
 let model :GridTileSceneModel = generateGridModel(tiles, 40, 40, gridConfig)
+model.props.push(new PropPlacement(tree, 3.3, 4.5))
 app.setMode(new GridTileSceneViewMode(app, model))

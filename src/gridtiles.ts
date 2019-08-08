@@ -74,6 +74,7 @@ export class GridTileSceneModel
 {
   /** The raw tile data. */
   readonly tiles :Array<Array<string>>
+  readonly props :Array<PropPlacement> = []
 
   constructor (
     readonly config :GridTileSceneConfig,
@@ -96,36 +97,66 @@ type GridTile = {
   fringe? :Array<Tile>
 }
 
+type PropTile = {
+  id :string
+  tiles :Array<Tile>
+}
+
 export type GridTileSet = {
   sets: {[key :string] :GridTile}
+  props: {[key :string] :PropTile}
+}
+
+type PropViz = {
+  tile :Tile
+  pos :vec2
 }
 
 type GridTileSceneViz = {
   /** At each x/y position, a stack of Tiles to render. */
   tiles :Array<Array<Array<Tile>>>
+  props :Array<PropViz>
 }
 
-function makeTiles (glc :GLC, textureConfig :TextureConfig,
-                    image :string, cfg :GridTileSceneConfig) :Subject<Array<Tile>> {
-  return makeTexture(glc, loadImage(image), textureConfig).map(tex => {
-    const retval = new Array<Tile>()
-    for (let xx = 0; xx < tex.size[0]; xx += cfg.width) {
-      for (let yy = 0; yy < tex.size[1]; yy += cfg.height) {
-        retval.push(
-          tex.tile(xx, yy, cfg.width, cfg.height))
-      }
+/**
+ * Chop the texture into uniform tiles of size [w, h], ignoring any extra pixels.
+ */
+function chopTiles (tex :Texture, w :number, h :number) :Tile[]
+{
+  const retval = new Array<Tile>()
+  for (let xx = 0; xx < tex.size[0]; xx += w) {
+    for (let yy = 0; yy < tex.size[1]; yy += h) {
+      retval.push(tex.tile(xx, yy, w, h))
     }
-    return retval
+  }
+  return retval
+}
+
+function makeProp (glc :GLC, textureConfig :TextureConfig, cfg :PropTileInfo) :Subject<PropTile> {
+  return makeTexture(glc, loadImage(cfg.base), textureConfig).map(tex => {
+    let tiles :Array<Tile>
+    if (cfg.width !== undefined && cfg.height !== undefined) {
+      tiles = chopTiles(tex, cfg.width, cfg.height)
+    } else {
+      tiles = [ tex ] // just use the whole thing!
+    }
+    return { id: cfg.id, tiles: tiles }
   })
+}
+
+function makeGridTiles (glc :GLC, textureConfig :TextureConfig,
+                    image :string, cfg :GridTileSceneConfig) :Subject<Array<Tile>> {
+  return makeTexture(glc, loadImage(image), textureConfig)
+      .map(tex => chopTiles(tex, cfg.width, cfg.height))
 }
 
 function makeGridTile (glc :GLC, textureConfig :TextureConfig,
                        tileInfo :GridTileInfo,
                        cfg :GridTileSceneConfig) :Subject<GridTile> {
   let tiles :Array<Subject<Array<Tile>>> = []
-  tiles.push(makeTiles(glc, textureConfig, tileInfo.base, cfg))
+  tiles.push(makeGridTiles(glc, textureConfig, tileInfo.base, cfg))
   if (tileInfo.fringe) {
-    tiles.push(makeTiles(glc, textureConfig, tileInfo.fringe, cfg))
+    tiles.push(makeGridTiles(glc, textureConfig, tileInfo.fringe, cfg))
   }
   return Subject.join(...tiles).map(v => {
     const tile :GridTile = { id: tileInfo.id, tiles: v[0] }
@@ -143,10 +174,19 @@ function makeGridTileSet (glc :GLC, textureConfig :TextureConfig,
   for (const tileset of cfg.tiles) {
     sets.push(makeGridTile(glc, textureConfig, tileset, cfg))
   }
-  return Subject.join(...sets).map(v => {
-    const tileset :GridTileSet = { sets: {}}
-    for (const tset of v) {
+  const propSets :Array<Subject<PropTile>> = []
+  if (cfg.props) {
+    for (const prop of cfg.props) {
+      propSets.push(makeProp(glc, textureConfig, prop))
+    }
+  }
+  return Subject.join2(Subject.join(...sets), Subject.join(...propSets)).map(v => {
+    const tileset :GridTileSet = { sets: {}, props: {}}
+    for (const tset of v[0]) {
       tileset.sets[tset.id] = tset
+    }
+    for (const pset of v[1]) {
+      tileset.props[pset.id] = pset
     }
     return tileset
   })
@@ -154,7 +194,7 @@ function makeGridTileSet (glc :GLC, textureConfig :TextureConfig,
 
 function makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileSceneViz
 {
-  const viz = { tiles: new Array<Array<Array<Tile>>>() }
+  const viz = { tiles: new Array<Array<Array<Tile>>>(), props: new Array<PropViz>() }
   for (let xx = 0; xx < model.tiles.length; xx++) {
     const col = new Array<Array<Tile>>()
     viz.tiles.push(col)
@@ -168,6 +208,11 @@ function makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileScen
         stack.push(tileinfo.tiles[Math.trunc(Math.random() * tileinfo.tiles.length)])
       }
     }
+  }
+  for (let placement of model.props) {
+    const prop :PropTile = tileset.props[placement.id]
+    viz.props.push({ tile: prop.tiles[Math.trunc(Math.random() * prop.tiles.length)],
+        pos: vec2.fromValues(23, 25) })
   }
   const adder :FringeAdder = (x :number, y :number, fringe :Tile) :void => {
     viz.tiles[x][y].push(fringe)
@@ -219,6 +264,10 @@ export class GridTileSceneViewMode extends SurfaceMode {
             surf.drawAt(tile, pos)
           }
         }
+      }
+      for (let prop of viz.props) {
+        vec2.add(pos, prop.pos, this._offset)
+        surf.drawAt(prop.tile, pos)
       }
     } else {
       surf.clearTo(0.5, 0.5, 0.5, 1)
