@@ -192,6 +192,10 @@ function makeGridTileSet (glc :GLC, cfg :GridTileSceneConfig) :Subject<GridTileS
   })
 }
 
+/**
+ * Make the visualization model for the scene. This involves picking specific tiles
+ * for features where more than one will do.
+ */
 function makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileSceneViz
 {
   const viz = { tiles: new Array<Array<Array<Tile>>>(), props: new Array<PropViz>() }
