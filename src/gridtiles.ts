@@ -209,10 +209,13 @@ function makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileScen
       }
     }
   }
+  // calculate the placement of props
   for (let placement of model.props) {
     const prop :PropTile = tileset.props[placement.id]
-    viz.props.push({ tile: prop.tiles[Math.trunc(Math.random() * prop.tiles.length)],
-        pos: vec2.fromValues(23, 25) })
+    const tile :Tile = prop.tiles[Math.trunc(Math.random() * prop.tiles.length)]
+    const x :number = (placement.x * model.config.width) - (tile.size[0] / 2)
+    const y :number = (placement.y * model.config.height) - (tile.size[1] / 2)
+    viz.props.push({ tile: tile, pos: vec2.fromValues(x, y) })
   }
   const adder :FringeAdder = (x :number, y :number, fringe :Tile) :void => {
     viz.tiles[x][y].push(fringe)
@@ -251,26 +254,28 @@ export class GridTileSceneViewMode extends SurfaceMode {
 
   renderTo (clock :Clock, surf :Surface) {
     const viz = this._viz
-    if (viz) {
-      surf.clearTo(1, 1, 1, 1)
-      const xi = this._model.config.width
-      const yi = this._model.config.height
-      const pos = vec2.clone(this._offset)
-      for (let xx = 0; xx < viz.tiles.length; xx++, pos[0] += xi) {
-        const col = viz.tiles[xx]
-        pos[1] = this._offset[1]
-        for (let yy = 0; yy < col.length; yy++, pos[1] += yi) {
-          for (const tile of col[yy]) {
-            surf.drawAt(tile, pos)
-          }
+    if (!viz) {
+      surf.clearTo(0.5, 0.5, 0.5, 1)
+      return
+    }
+    surf.clearTo(1, 1, 1, 1)
+    const xi = this._model.config.width
+    const yi = this._model.config.height
+    const pos = vec2.clone(this._offset)
+    // draw tiles
+    for (let xx = 0; xx < viz.tiles.length; xx++, pos[0] += xi) {
+      const col = viz.tiles[xx]
+      pos[1] = this._offset[1]
+      for (let yy = 0; yy < col.length; yy++, pos[1] += yi) {
+        for (const tile of col[yy]) {
+          surf.drawAt(tile, pos)
         }
       }
-      for (let prop of viz.props) {
-        vec2.add(pos, prop.pos, this._offset)
-        surf.drawAt(prop.tile, pos)
-      }
-    } else {
-      surf.clearTo(0.5, 0.5, 0.5, 1)
+    }
+    // draw props
+    for (let prop of viz.props) {
+      vec2.add(pos, prop.pos, this._offset)
+      surf.drawAt(prop.tile, pos)
     }
   }
 

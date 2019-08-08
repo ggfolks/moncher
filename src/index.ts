@@ -182,5 +182,5 @@ let tiles = [ roadN, roadS, roadE, roadW,
               grassRoadNES,
               grassRoadNEWS ]
 let model :GridTileSceneModel = generateGridModel(tiles, 40, 40, gridConfig)
-model.props.push(new PropPlacement(tree, 3.3, 4.5))
+model.props.push(new PropPlacement(tree, 1.5, 1.5))
 app.setMode(new GridTileSceneViewMode(app, model))
