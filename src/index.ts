@@ -167,12 +167,16 @@ const grassSE2 = new CarcTile(dirt, grass, grass,
 const grassRoadNES = new CarcTile(grass, cobble, grass,
                                   grass, cobble, cobble,
                                   grass, cobble, grass)
+const grassWithTree = new CarcTile(grass, grass, grass,
+                                   grass, grass, grass,
+                                   grass, grass, grass, 1,
+                                   new PropPlacement(tree, 1.5, 1.5))
 
 let tiles = [ roadN, roadS, roadE, roadW,
               roadNS, roadEW,
               roadNW, roadNE, roadSE, roadSW,
               roadNEW, roadSEW, roadNWS, /*roadNES,*/
-              dirtNEWS, grassNEWS,
+              dirtNEWS, grassNEWS, grassWithTree,
               grassN, grassE, grassW, grassS,
               grassNE, grassNW, grassSE, grassSW,
               grassNE2, grassNW2, grassSE2, grassSW2,
@@ -182,5 +186,4 @@ let tiles = [ roadN, roadS, roadE, roadW,
               grassRoadNES,
               grassRoadNEWS ]
 let model :GridTileSceneModel = generateGridModel(tiles, 40, 40, gridConfig)
-model.props.push(new PropPlacement(tree, 1.5, 1.5))
 app.setMode(new GridTileSceneViewMode(app, model))

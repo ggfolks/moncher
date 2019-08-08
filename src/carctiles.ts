@@ -1,4 +1,4 @@
-import {GridTileSceneConfig, GridTileSceneModel} from "./gridtiles"
+import {GridTileSceneConfig, GridTileSceneModel, PropPlacement} from "./gridtiles"
 
 const enum Direction {
   North,
@@ -23,9 +23,12 @@ export class CarcTile
     /** The three base tiles along the bottom. */
     sw :string, s :string, se :string,
     /** The weight of this tile relative to others. */
-    public readonly weight :number = 1
+    public readonly weight :number = 1,
+    /** Any prop placements. */
+    ...props :PropPlacement[]
   ) {
     this._base = [ nw, n, ne, w, center, e, sw, s, se ]
+    this._props = props
   }
 
   /**
@@ -54,15 +57,18 @@ export class CarcTile
   populate (model :GridTileSceneModel, x :number, y :number) :void {
     for (let ii = 0; ii < CarcTile.SIZE; ii++) {
       let col = model.tiles[x + ii]
-      let index = ii
-      for (let jj = 0; jj < CarcTile.SIZE; jj++, index += CarcTile.SIZE) {
+      for (let jj = 0, index = ii; jj < CarcTile.SIZE; jj++, index += CarcTile.SIZE) {
         col[jj + y] = this._base[index]
       }
+    }
+    for (const prop of this._props) {
+      model.props.push(new PropPlacement(prop.id, x + prop.x, y + prop.y))
     }
   }
 
   /** The base tiles of this CarcTile. */
   protected _base :Array<string>
+  protected _props :Array<PropPlacement>
 }
 
 function totalWeight (tiles :Array<CarcTile>) :number
