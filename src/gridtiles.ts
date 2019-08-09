@@ -1,12 +1,12 @@
 import {Subject} from "tfw/core/react"
 import {Scale} from "tfw/core/ui"
-import {vec2, vec2zero} from "tfw/core/math"
+import {mat2d, vec2, vec2zero} from "tfw/core/math"
 import {Clock} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
-import {DenseValueComponent, Domain, Matcher, System, Vec2Component} from "tfw/entity/entity"
+import {Component, DenseValueComponent, Domain, Matcher, System, Vec2Component} from "tfw/entity/entity"
 import {GLC, Texture, TextureConfig, Tile, makeTexture} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
-import {TransformComponent, RenderSystem, DynamicsSystem} from "tfw/scene2/entity"
+import {TransformComponent, DynamicsSystem} from "tfw/scene2/entity"
 import {App, SurfaceMode} from "./app"
 import {FringeConfig, FringeAdder, applyFringe} from "./fringer"
 
@@ -264,6 +264,33 @@ class BounceSystem extends System {
   }
 }
 
+class SurfaceRenderSystem extends System {
+  //private readonly ttrans = mat2d.create()
+
+  constructor (domain :Domain,
+               readonly trans :TransformComponent,
+               readonly tile :Component<Tile>) {
+    super(domain, Matcher.hasAllC(trans.id, tile.id))
+  }
+
+  update () {
+    this.trans.updateMatrices()
+  }
+
+  render (surf :Surface, offset :vec2) {
+    surf.saveTx()
+    this.onEntities(id => {
+      const tile = this.tile.read(id)
+      this.trans.readMatrix(id, surf.tx)
+      mat2d.scale(surf.tx, surf.tx, [2 , 2])
+      surf.translate(offset)
+      surf.drawAt(tile, vec2zero)
+    })
+    surf.restoreTx()
+  }
+}
+
+
 export class GridTileSceneViewMode extends SurfaceMode {
 
   /** The visualization of the scene, when we have it. */
@@ -340,7 +367,7 @@ export class GridTileSceneViewMode extends SurfaceMode {
     this._domain = new Domain({}, { trans, tile, vel })
     this._dynamicsSys = new DynamicsSystem(this._domain, trans, vel)
     this._bounceSys = new BounceSystem(this._domain, this, trans, vel)
-    this._renderSys = new RenderSystem(this._domain, trans, tile)
+    this._renderSys = new SurfaceRenderSystem(this._domain, trans, tile)
   }
 
   adjustOffset () {
@@ -358,13 +385,15 @@ export class GridTileSceneViewMode extends SurfaceMode {
       return
     }
     surf.clearTo(1, 1, 1, 1)
+    surf.saveTx()
+    surf.translate(this._offset)
     const xi = this._model.config.width
     const yi = this._model.config.height
-    const pos = vec2.clone(this._offset)
+    const pos = vec2.create() //vec2.clone(this._offset)
     // draw tiles
     for (let xx = 0; xx < viz.tiles.length; xx++, pos[0] += xi) {
       const col = viz.tiles[xx]
-      pos[1] = this._offset[1]
+      pos[1] = 0 //this._offset[1]
       for (let yy = 0; yy < col.length; yy++, pos[1] += yi) {
         for (const tile of col[yy]) {
           surf.drawAt(tile, pos)
@@ -373,16 +402,18 @@ export class GridTileSceneViewMode extends SurfaceMode {
     }
     // draw props
     for (let prop of viz.props) {
-      vec2.add(pos, prop.pos, this._offset)
-      surf.drawAt(prop.tile, pos)
+      //vec2.add(pos, prop.pos, this._offset)
+      //surf.drawAt(prop.tile, pos)
+      surf.drawAt(prop.tile, prop.pos)
     }
 
     if (this._domain) {
       this._dynamicsSys!.update(clock)
       this._bounceSys!.update()
       this._renderSys!.update()
-      this._renderSys!.render(this.batch)
+      this._renderSys!.render(surf, this._offset)
     }
+    surf.restoreTx()
   }
 
   protected readonly _mouse :vec2 = vec2.create()
@@ -397,5 +428,5 @@ export class GridTileSceneViewMode extends SurfaceMode {
   protected _velComp? :Vec2Component
   protected _dynamicsSys? :DynamicsSystem
   protected _bounceSys? :BounceSystem
-  protected _renderSys? :RenderSystem
+  protected _renderSys? :SurfaceRenderSystem
 }

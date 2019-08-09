@@ -230,7 +230,7 @@ let tiles = [ roadN, roadS, roadE, roadW,
               grassRoadNW, grassRoadNE, grassRoadSE, grassRoadSW,
               grassRoadNES,
               grassRoadNEWS ]
-let model :GridTileSceneModel = generateGridModel(tiles.concat(additional), 4, 4, gridConfig)
+let model :GridTileSceneModel = generateGridModel(tiles.concat(additional), 30, 30, gridConfig)
 let mode = new GridTileSceneViewMode(app, model)
 app.setMode(mode)
 mode.addMonster("props/mountain_1.png")
