@@ -231,7 +231,7 @@ function makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileScen
 }
 
 /**
- * Copy Mike's "flappy" bounce system.
+ * Adapt Mike's "flappy" bounce system.
  */
 class BounceSystem extends System {
   constructor (domain :Domain,
@@ -242,18 +242,23 @@ class BounceSystem extends System {
   }
 
   update () {
-    const tmpv = vec2.create(), tmpm = vec2.create()
+    const tmp = vec2.create()
     const sw = this.view.width, sh = this.view.height
     this.onEntities(id => {
-      this.trans.readTranslation(id, tmpv)
-      vec2.set(tmpm, 1, 1)
-      const tx = tmpv[0], ty = tmpv[1]
-      let bounce = false
-      if (tx < 0 || tx > sw) { bounce = true; tmpm[0] = -1 }
-      if (ty < 0 || ty > sh) { bounce = true; tmpm[1] = -1 }
-      if (bounce) {
-        this.vel.read(id, tmpv)
-        this.vel.update(id, vec2.mul(tmpm, tmpv, tmpm))
+      this.trans.readTranslation(id, tmp)
+      const tx = tmp[0], ty = tmp[1]
+      let dx = 0, dy = 0 // desired directions
+      if (tx < 0) dx = 1; else if (tx > sw) dx = -1
+      if (ty < 0) dy = 1; else if (ty > sh) dy = -1
+      if (dx != 0 || dy != 0) {
+        this.vel.read(id, tmp)
+        if (dx != 0 && ((tmp[0] < 0) != (dx < 0))) {
+          tmp[0] *= -1
+        }
+        if (dy != 0 && ((tmp[1] < 0) != (dy < 0))) {
+          tmp[1] *= -1
+        }
+        this.vel.update(id, tmp)
       }
     })
   }
