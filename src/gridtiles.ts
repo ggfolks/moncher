@@ -300,8 +300,8 @@ export class GridTileSceneViewMode extends SurfaceMode {
     this.addMonsterTexture(makeTexture(this._app.renderer.glc, loadImage(url), tcfg))
   }
 
-  addMonsterTexture (img :Subject<Texture>) {
-    img.once(tex => this.addMonsterTile(tex))
+  addMonsterTexture (img :Subject<Tile>) {
+    this.onDispose.add(img.onValue(tex => this.addMonsterTile(tex)))
   }
 
   addMonsterTile (monster :Tile) {
