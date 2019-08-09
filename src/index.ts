@@ -36,8 +36,8 @@ const cobble = "cobble"
 const tree = "tree"
 const rock = "rock"
 const gridConfig :GridTileSceneConfig = {
-  width: 40,
-  height: 40,
+  tileWidth: 40,
+  tileHeight: 40,
   scale: 2,
   tiles: [
     new GridTileInfo(dirt, "tiles/dirt.png", 0, "tiles/dirt_fringe.png"),

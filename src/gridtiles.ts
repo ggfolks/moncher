@@ -47,9 +47,9 @@ export class PropTileInfo extends TileInfo
 
 export type GridTileSceneConfig = {
   /** The width of each tile. */
-  width :number
+  tileWidth :number
   /** The height of each tile. */
-  height :number
+  tileHeight :number
   /** The scale factor. */
   scale :number
   /** The tile information. */
@@ -149,7 +149,7 @@ function makeProp (glc :GLC, tcfg :TextureConfig, cfg :PropTileInfo) :Subject<Pr
 function makeGridTiles (glc :GLC, tcfg :TextureConfig, image :string, cfg :GridTileSceneConfig)
     :Subject<Array<Tile>> {
   return makeTexture(glc, loadImage(image), tcfg)
-      .map(tex => chopTiles(tex, cfg.width, cfg.height))
+      .map(tex => chopTiles(tex, cfg.tileWidth, cfg.tileHeight))
 }
 
 function makeGridTile (
@@ -219,8 +219,8 @@ function makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileScen
   for (let placement of model.props) {
     const prop :PropTile = tileset.props[placement.id]
     const tile :Tile = prop.tiles[Math.trunc(Math.random() * prop.tiles.length)]
-    const x :number = (placement.x * model.config.width) - (tile.size[0] / 2)
-    const y :number = (placement.y * model.config.height) - (tile.size[1] / 2)
+    const x :number = (placement.x * model.config.tileWidth) - (tile.size[0] / 2)
+    const y :number = (placement.y * model.config.tileHeight) - (tile.size[1] / 2)
     viz.props.push({ tile: tile, pos: vec2.fromValues(x, y) })
   }
   const adder :FringeAdder = (x :number, y :number, fringe :Tile) :void => {
@@ -319,12 +319,12 @@ export class GridTileSceneViewMode extends SurfaceMode {
 
   /** Get the logical width of the scene we're rendering. */
   protected get logicalWidth () :number {
-    return this._model.config.width * this._model.sceneWidth
+    return this._model.config.tileWidth * this._model.sceneWidth
   }
 
   /** Get the logical height of the scene we're rendering. */
   protected get logicalHeight () :number {
-    return this._model.config.height * this._model.sceneHeight
+    return this._model.config.tileHeight * this._model.sceneHeight
   }
 
   addMonster (url :string) {
@@ -387,8 +387,8 @@ export class GridTileSceneViewMode extends SurfaceMode {
     surf.clearTo(1, 1, 1, 1)
     surf.saveTx()
     surf.translate(this._offset)
-    const xi = this._model.config.width
-    const yi = this._model.config.height
+    const xi = this._model.config.tileWidth
+    const yi = this._model.config.tileHeight
     const pos = vec2.create() //vec2.clone(this._offset)
     // draw tiles
     for (let xx = 0; xx < viz.tiles.length; xx++, pos[0] += xi) {
