@@ -1,10 +1,12 @@
 import {Subject} from "tfw/core/react"
 import {Scale} from "tfw/core/ui"
-import {vec2} from "tfw/core/math"
+import {vec2, vec2zero} from "tfw/core/math"
 import {Clock} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
+import {DenseValueComponent, Domain, Matcher, System, Vec2Component} from "tfw/entity/entity"
 import {GLC, Texture, TextureConfig, Tile, makeTexture} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
+import {TransformComponent, RenderSystem, DynamicsSystem} from "tfw/scene2/entity"
 import {App, SurfaceMode} from "./app"
 import {FringeConfig, FringeAdder, applyFringe} from "./fringer"
 
@@ -228,10 +230,39 @@ function makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileScen
   return viz
 }
 
+/**
+ * Copy Mike's "flappy" bounce system.
+ */
+class BounceSystem extends System {
+  constructor (domain :Domain,
+               readonly view :GridTileSceneViewMode,
+               readonly trans :TransformComponent,
+               readonly vel :Vec2Component) {
+    super(domain, Matcher.hasAllC(trans.id, vel.id))
+  }
+
+  update () {
+    const tmpv = vec2.create(), tmpm = vec2.create()
+    const sw = this.view.width, sh = this.view.height
+    this.onEntities(id => {
+      this.trans.readTranslation(id, tmpv)
+      vec2.set(tmpm, 1, 1)
+      const tx = tmpv[0], ty = tmpv[1]
+      let bounce = false
+      if (tx < 0 || tx > sw) { bounce = true; tmpm[0] = -1 }
+      if (ty < 0 || ty > sh) { bounce = true; tmpm[1] = -1 }
+      if (bounce) {
+        this.vel.read(id, tmpv)
+        this.vel.update(id, vec2.mul(tmpm, tmpv, tmpm))
+      }
+    })
+  }
+}
+
 export class GridTileSceneViewMode extends SurfaceMode {
 
   /** The visualization of the scene, when we have it. */
-  protected _viz :GridTileSceneViz|undefined = undefined
+  protected _viz? :GridTileSceneViz
 
   constructor (protected _app :App, protected _model :GridTileSceneModel) {
     super(_app)
@@ -243,14 +274,74 @@ export class GridTileSceneViewMode extends SurfaceMode {
     this.onDispose.add(_app.renderer.size.onValue(() => this.adjustOffset()))
     this._app.root.addEventListener("mousemove", this._onMouseMove)
     this.onDispose.add(() => this._app.root.removeEventListener("mousemove", this._onMouseMove))
+
+  }
+
+  get width () :number {
+    return this.logicalWidth * this._model.config.scale
+  }
+
+  get height () :number {
+    return this.logicalHeight * this._model.config.scale
+  }
+
+  /** Get the logical width of the scene we're rendering. */
+  protected get logicalWidth () :number {
+    return this._model.config.width * this._model.sceneWidth
+  }
+
+  /** Get the logical height of the scene we're rendering. */
+  protected get logicalHeight () :number {
+    return this._model.config.height * this._model.sceneHeight
+  }
+
+  addMonster (url :string) {
+    const tcfg = { ...Texture.DefaultConfig, scale: new Scale(this._model.config.scale) }
+    this.addMonsterTexture(makeTexture(this._app.renderer.glc, loadImage(url), tcfg))
+  }
+
+  addMonsterTexture (img :Subject<Texture>) {
+    img.once(tex => this.addMonsterTile(tex))
+  }
+
+  addMonsterTile (monster :Tile) {
+    if (!this._domain) {
+      this.configureEcs(monster)
+    }
+
+    const econfig = {
+      components: {
+        trans: {},
+        tile: { initial: monster },
+        vel: {}
+      }
+    }
+    const id = this._domain!.add(econfig)
+    this._transComp!.updateOrigin(id, monster.size[0]/2, monster.size[1]/2)
+    this._transComp!.updateTranslation(id,
+       Math.random() * this.logicalWidth, Math.random() * this.logicalHeight)
+    this._velComp!.update(id,
+        vec2.fromValues((Math.random() * -.5) * 200, (Math.random() * -.5) * 200))
+  }
+
+  protected configureEcs (defaultTile :Tile) :void {
+
+    // set up our ECS for controlling monsters?
+    const batchBits = 10
+    const trans = this._transComp = new TransformComponent("trans", batchBits)
+    const tile = new DenseValueComponent<Tile>("tile", defaultTile)
+    const vel = this._velComp = new Vec2Component("vel", vec2zero, batchBits)
+
+    this._domain = new Domain({}, { trans, tile, vel })
+    this._dynamicsSys = new DynamicsSystem(this._domain, trans, vel)
+    this._bounceSys = new BounceSystem(this._domain, this, trans, vel)
+    this._renderSys = new RenderSystem(this._domain, trans, tile)
   }
 
   adjustOffset () {
-    const sceneW = this._model.config.width * this._model.sceneWidth
-    const sceneH = this._model.config.height * this._model.sceneHeight
     const surfSize = this._app.renderer.size.current
-    const overlapW = Math.max(0, sceneW - surfSize[0])
-    const overlapH = Math.max(0, sceneH - surfSize[1])
+    const overlapW = Math.max(0, this.logicalWidth - surfSize[0])
+    const overlapH = Math.max(0, this.logicalHeight - surfSize[1])
     vec2.set(this._offset,
         (this._mouse[0] / surfSize[0]) * -overlapW, (this._mouse[1] / surfSize[1]) * -overlapH)
   }
@@ -280,6 +371,13 @@ export class GridTileSceneViewMode extends SurfaceMode {
       vec2.add(pos, prop.pos, this._offset)
       surf.drawAt(prop.tile, pos)
     }
+
+    if (this._domain) {
+      this._dynamicsSys!.update(clock)
+      this._bounceSys!.update()
+      this._renderSys!.update()
+      this._renderSys!.render(this.batch)
+    }
   }
 
   protected readonly _mouse :vec2 = vec2.create()
@@ -288,4 +386,11 @@ export class GridTileSceneViewMode extends SurfaceMode {
     vec2.set(this._mouse, event.offsetX, event.offsetY)
     this.adjustOffset()
   }
+
+  protected _domain? :Domain
+  protected _transComp? :TransformComponent
+  protected _velComp? :Vec2Component
+  protected _dynamicsSys? :DynamicsSystem
+  protected _bounceSys? :BounceSystem
+  protected _renderSys? :RenderSystem
 }
