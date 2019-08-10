@@ -1,9 +1,18 @@
 import {Subject} from "tfw/core/react"
 import {Scale} from "tfw/core/ui"
+import {Remover} from "tfw/core/util"
 import {mat2d, vec2, vec2zero} from "tfw/core/math"
 import {Clock} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
-import {Component, DenseValueComponent, Domain, Matcher, System, Vec2Component} from "tfw/entity/entity"
+import {MapChange, MutableMap, RMap} from "tfw/core/rcollect"
+import {
+  Component,
+  DenseValueComponent,
+  Domain,
+  ID,
+  Matcher,
+  System,
+  Vec2Component} from "tfw/entity/entity"
 import {GLC, Texture, TextureConfig, Tile, makeTexture} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {TransformComponent, DynamicsSystem} from "tfw/scene2/entity"
@@ -44,7 +53,6 @@ export class PropTileInfo extends TileInfo
   }
 }
 
-
 export type GridTileSceneConfig = {
   /** The width of each tile. */
   tileWidth :number
@@ -58,6 +66,32 @@ export type GridTileSceneConfig = {
   fringeConfig? :FringeConfig
   /** Prop tile configuration. */
   props? :PropTileInfo[]
+}
+
+/**
+ * Configuration of a monster.
+ */
+export class MonsterConfig
+{
+  constructor (
+    /** What the monster looks like, can be a shared object between multiple monsters. */
+    readonly info :PropTileInfo
+  ) {}
+}
+
+/**
+ * Runtime information about the monster in the scene.
+ */
+export class MonsterData
+{
+  constructor (
+    /** An id only guaranteed to be unique among monsters. */
+    readonly id :ID,
+    /** The monster's configuration. TODO: in a separate map? */
+    readonly config :MonsterConfig,
+    /** The current location of the monster. Uses grid tile coordinates. */
+    readonly location :vec2 = vec2.create()
+  ) {}
 }
 
 export class PropPlacement
@@ -77,6 +111,7 @@ export class GridTileSceneModel
   /** The raw tile data. */
   readonly tiles :Array<Array<string>>
   readonly props :Array<PropPlacement> = []
+  readonly monsters :RMap<ID, MonsterData>
 
   constructor (
     readonly config :GridTileSceneConfig,
@@ -87,7 +122,23 @@ export class GridTileSceneModel
     for (let xx = 0; xx < sceneWidth; xx++) {
       this.tiles[xx] = new Array<string>(sceneHeight)
     }
+    this.monsters = this._monsters = MutableMap.local()
   }
+
+  addMonster (monster :MonsterConfig) :MonsterData {
+    const id = this._nextId++
+    const data = new MonsterData(id, monster)
+    this._monsters.set(id, data)
+    return data
+  }
+
+  updateMonster (monster :MonsterData)
+  {
+    this._monsters.set(monster.id, monster)
+  }
+
+  protected _monsters :MutableMap<ID, MonsterData>
+  protected _nextId :number = 0
 }
 
 type GridTile = {
@@ -114,10 +165,18 @@ type PropViz = {
   pos :vec2
 }
 
+type MonsterViz = {
+  tile? :Tile
+  pos :vec2
+  remover? :Remover
+}
+
 type GridTileSceneViz = {
   /** At each x/y position, a stack of Tiles to render. */
   tiles :Array<Array<Array<Tile>>>
   props :Array<PropViz>
+  /** The present location of monsters, indexed by their ID. */
+  monsters :Map<ID, MonsterViz>
 }
 
 /**
@@ -195,42 +254,6 @@ function makeGridTileSet (glc :GLC, cfg :GridTileSceneConfig) :Subject<GridTileS
 }
 
 /**
- * Make the visualization model for the scene. This involves picking specific tiles
- * for features where more than one will do.
- */
-function makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileSceneViz
-{
-  const viz = { tiles: new Array<Array<Array<Tile>>>(), props: new Array<PropViz>() }
-  for (let xx = 0; xx < model.tiles.length; xx++) {
-    const col = new Array<Array<Tile>>()
-    viz.tiles.push(col)
-    for (let yy = 0; yy < model.tiles[xx].length; yy++) {
-      const stack = new Array<Tile>()
-      col.push(stack)
-      // pick a base tile for this spot
-      const base :string = model.tiles[xx][yy]
-      const tileinfo :GridTile = tileset.sets[base]
-      if (tileinfo) {
-        stack.push(tileinfo.tiles[Math.trunc(Math.random() * tileinfo.tiles.length)])
-      }
-    }
-  }
-  // calculate the placement of props
-  for (let placement of model.props) {
-    const prop :PropTile = tileset.props[placement.id]
-    const tile :Tile = prop.tiles[Math.trunc(Math.random() * prop.tiles.length)]
-    const x :number = (placement.x * model.config.tileWidth) - (tile.size[0] / 2)
-    const y :number = (placement.y * model.config.tileHeight) - (tile.size[1] / 2)
-    viz.props.push({ tile: tile, pos: vec2.fromValues(x, y) })
-  }
-  const adder :FringeAdder = (x :number, y :number, fringe :Tile) :void => {
-    viz.tiles[x][y].push(fringe)
-  }
-  applyFringe(model, tileset, adder)
-  return viz
-}
-
-/**
  * Adapt Mike's "flappy" bounce system.
  */
 class BounceSystem extends System {
@@ -290,23 +313,21 @@ class SurfaceRenderSystem extends System {
   }
 }
 
-
 export class GridTileSceneViewMode extends SurfaceMode {
-
-  /** The visualization of the scene, when we have it. */
-  protected _viz? :GridTileSceneViz
-
   constructor (protected _app :App, protected _model :GridTileSceneModel) {
     super(_app)
 
     const tss :Subject<GridTileSet> = makeGridTileSet(_app.renderer.glc, _model.config)
     this.onDispose.add(tss.onValue(tileset => {
-      this._viz = makeViz(_model, tileset)
+      this._viz = this.makeViz(_model, tileset)
+      _model.monsters.forEach((monster, id) => {
+        this.updateMonster(id, monster)
+      })
+      this.onDispose.add(_model.monsters.onChange(change => this.monsterChange(change)))
     }))
     this.onDispose.add(_app.renderer.size.onValue(() => this.adjustOffset()))
     this._app.root.addEventListener("mousemove", this._onMouseMove)
     this.onDispose.add(() => this._app.root.removeEventListener("mousemove", this._onMouseMove))
-
   }
 
   get width () :number {
@@ -370,6 +391,62 @@ export class GridTileSceneViewMode extends SurfaceMode {
     this._renderSys = new SurfaceRenderSystem(this._domain, trans, tile)
   }
 
+  /**
+   * Called when there's a change to monster data in our underlying map.
+   */
+  protected monsterChange (change :MapChange<ID, MonsterData>) {
+    if (change.type == "set") {
+      this.updateMonster(change.key, change.value)
+
+    } else { // deleted
+      this.deleteMonster(change.key, change.prev)
+    }
+  }
+
+  protected updateMonster (id :ID, monster :MonsterData)
+  {
+    const viz = this._viz
+    if (!viz) return
+    let sprite = viz.monsters.get(id)
+    if (!sprite) {
+      sprite = { pos: vec2.create() }
+      viz.monsters.set(id, sprite)
+      // Async lookup monster sprite tile
+      const tcfg = { ...Texture.DefaultConfig, scale: new Scale(this._model.config.scale) }
+      const img :Subject<Texture> = makeTexture(
+        this._app.renderer.glc, loadImage(monster.config.info.base), tcfg)
+      const remover = img.onValue(tex => {
+         if (sprite) {
+           sprite.tile = tex
+           sprite.pos[0] -= tex.size[0] / 2
+           sprite.pos[1] -= tex.size[1] / 2
+        }
+      })
+      this.onDispose.add(remover)
+      sprite.remover = remover
+    }
+    let xx = monster.location[0] * this._model.config.tileWidth
+    let yy = monster.location[1] * this._model.config.tileHeight
+    if (sprite.tile) {
+      xx -= (sprite.tile.size[0] / 2)
+      yy -= (sprite.tile.size[1] / 2)
+    }
+    vec2.set(sprite.pos, xx, yy)
+  }
+
+  protected deleteMonster (id :ID, monster :MonsterData)
+  {
+    const viz = this._viz
+    if (!viz) return
+    const sprite = viz.monsters.get(id)
+    if (!sprite) return
+    viz.monsters.delete(id)
+    if (sprite.remover) {
+      this.onDispose.remove(sprite.remover)
+      sprite.remover()
+    }
+  }
+
   adjustOffset () {
     const surfSize = this._app.renderer.size.current
     const overlapW = Math.max(0, this.logicalWidth - surfSize[0])
@@ -406,6 +483,12 @@ export class GridTileSceneViewMode extends SurfaceMode {
       //surf.drawAt(prop.tile, pos)
       surf.drawAt(prop.tile, prop.pos)
     }
+    // draw monsters
+    for (let monst of viz.monsters.values()) {
+      if (monst.tile) {
+        surf.drawAt(monst.tile, monst.pos)
+      }
+    }
 
     if (this._domain) {
       this._dynamicsSys!.update(clock)
@@ -415,6 +498,48 @@ export class GridTileSceneViewMode extends SurfaceMode {
     }
     surf.restoreTx()
   }
+
+  /**
+   * Make the visualization model for the scene. This involves picking specific tiles
+   * for features where more than one will do.
+   */
+  protected makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileSceneViz
+  {
+    const viz = {
+      tiles: new Array<Array<Array<Tile>>>(),
+      props: new Array<PropViz>(),
+      monsters: new Map<ID, MonsterViz>() }
+    for (let xx = 0; xx < model.tiles.length; xx++) {
+      const col = new Array<Array<Tile>>()
+      viz.tiles.push(col)
+      for (let yy = 0; yy < model.tiles[xx].length; yy++) {
+        const stack = new Array<Tile>()
+        col.push(stack)
+        // pick a base tile for this spot
+        const base :string = model.tiles[xx][yy]
+        const tileinfo :GridTile = tileset.sets[base]
+        if (tileinfo) {
+          stack.push(tileinfo.tiles[Math.trunc(Math.random() * tileinfo.tiles.length)])
+        }
+      }
+    }
+    // calculate the placement of props
+    for (let placement of model.props) {
+      const prop :PropTile = tileset.props[placement.id]
+      const tile :Tile = prop.tiles[Math.trunc(Math.random() * prop.tiles.length)]
+      const x :number = (placement.x * model.config.tileWidth) - (tile.size[0] / 2)
+      const y :number = (placement.y * model.config.tileHeight) - (tile.size[1] / 2)
+      viz.props.push({ tile: tile, pos: vec2.fromValues(x, y) })
+    }
+    const adder :FringeAdder = (x :number, y :number, fringe :Tile) :void => {
+      viz.tiles[x][y].push(fringe)
+    }
+    applyFringe(model, tileset, adder)
+    return viz
+  }
+
+  /** The visualization of the scene, when we have it. */
+  protected _viz? :GridTileSceneViz
 
   protected readonly _mouse :vec2 = vec2.create()
   protected readonly _offset :vec2 = vec2.create()

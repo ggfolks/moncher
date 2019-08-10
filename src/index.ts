@@ -1,6 +1,15 @@
+import {vec2} from "tfw/core/math"
 import {App} from "./app"
-import {GridTileInfo, GridTileSceneConfig, GridTileSceneModel, GridTileSceneViewMode,
-        PropPlacement, PropTileInfo} from "./gridtiles"
+import {
+  GridTileInfo,
+  GridTileSceneConfig,
+  GridTileSceneModel,
+  GridTileSceneViewMode,
+  MonsterConfig,
+  MonsterData,
+  PropPlacement,
+  PropTileInfo
+} from "./gridtiles"
 import {FringeConfig} from "./fringer"
 import * as Fringer from "./fringer"
 import {CarcTile, generateGridModel} from "./carctiles"
@@ -232,6 +241,15 @@ let tiles = [ roadN, roadS, roadE, roadW,
               grassRoadNEWS ]
 let model :GridTileSceneModel = generateGridModel(tiles.concat(additional), 30, 30, gridConfig)
 let mode = new GridTileSceneViewMode(app, model)
+const mountain :MonsterData = model.addMonster(
+  new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png")))
+vec2.set(mountain.location, 4.5, 4.5)
 app.setMode(mode)
+
+setInterval(() => {
+  vec2.add(mountain.location, mountain.location, [.04 , .05])
+  model.updateMonster(mountain)
+}, 10)
+
 mode.addMonster("props/mountain_1.png")
 mode.addMonster("props/rock_1a.png")
