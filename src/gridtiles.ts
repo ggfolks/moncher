@@ -94,7 +94,7 @@ export class MonsterData
     /** The current location of the monster. Uses grid tile coordinates. */
     location? :vec2
   ) {
-    this.location = Mutable.local(location || vec2.create(), vec2.equals)
+    this.location = Mutable.local(location || vec2.create(), (x, y) => { return false })
   }
 }
 
@@ -145,9 +145,9 @@ export class GridTileSceneModel
   {
     for (const monst of this._monsters.values()) {
       const loc = monst.location.current
-      const newLoc = vec2.add(vec2.create(), loc, [.04, .04])
-      monst.location.update(newLoc)
-//      monst.location.update(vec2.add(loc, loc, [.04, .04]))
+//      const newLoc = vec2.add(vec2.create(), loc, [.04, .04])
+//      monst.location.update(newLoc)
+      monst.location.update(vec2.add(loc, loc, [.04, .04]))
     }
   }
 
