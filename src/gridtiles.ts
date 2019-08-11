@@ -1,6 +1,6 @@
-import {Subject} from "tfw/core/react"
+import {Mutable, Subject} from "tfw/core/react"
 import {Scale} from "tfw/core/ui"
-import {Remover} from "tfw/core/util"
+import {Disposer} from "tfw/core/util"
 import {mat2d, vec2, vec2zero} from "tfw/core/math"
 import {Clock} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
@@ -84,14 +84,18 @@ export class MonsterConfig
  */
 export class MonsterData
 {
+  readonly location :Mutable<vec2>
+
   constructor (
     /** An id only guaranteed to be unique among monsters. */
     readonly id :ID,
     /** The monster's configuration. TODO: in a separate map? */
     readonly config :MonsterConfig,
     /** The current location of the monster. Uses grid tile coordinates. */
-    readonly location :vec2 = vec2.create()
-  ) {}
+    location? :vec2
+  ) {
+    this.location = Mutable.local(location || vec2.create(), vec2.equals)
+  }
 }
 
 export class PropPlacement
@@ -125,9 +129,9 @@ export class GridTileSceneModel
     this.monsters = this._monsters = MutableMap.local()
   }
 
-  addMonster (monster :MonsterConfig) :MonsterData {
+  addMonster (monster :MonsterConfig, location? :vec2) :MonsterData {
     const id = this._nextId++
-    const data = new MonsterData(id, monster)
+    const data = new MonsterData(id, monster, location)
     this._monsters.set(id, data)
     return data
   }
@@ -135,6 +139,16 @@ export class GridTileSceneModel
   updateMonster (monster :MonsterData)
   {
     this._monsters.set(monster.id, monster)
+  }
+
+  public tick () :void
+  {
+    for (const monst of this._monsters.values()) {
+      const loc = monst.location.current
+      const newLoc = vec2.add(vec2.create(), loc, [.04, .04])
+      monst.location.update(newLoc)
+//      monst.location.update(vec2.add(loc, loc, [.04, .04]))
+    }
   }
 
   protected _monsters :MutableMap<ID, MonsterData>
@@ -168,7 +182,7 @@ type PropViz = {
 type MonsterViz = {
   tile? :Tile
   pos :vec2
-  remover? :Remover
+  disposer :Disposer
 }
 
 type GridTileSceneViz = {
@@ -409,8 +423,10 @@ export class GridTileSceneViewMode extends SurfaceMode {
     if (!viz) return
     let sprite = viz.monsters.get(id)
     if (!sprite) {
-      sprite = { pos: vec2.create() }
+      sprite = { pos: vec2.create(), disposer: new Disposer() }
       viz.monsters.set(id, sprite)
+      this.onDispose.add(sprite.disposer)
+
       // Async lookup monster sprite tile
       const tcfg = { ...Texture.DefaultConfig, scale: new Scale(this._model.config.scale) }
       const img :Subject<Texture> = makeTexture(
@@ -422,11 +438,18 @@ export class GridTileSceneViewMode extends SurfaceMode {
            sprite.pos[1] -= tex.size[1] / 2
         }
       })
-      this.onDispose.add(remover)
-      sprite.remover = remover
+      sprite.disposer.add(remover)
+      // also let's listen to the value
+      sprite.disposer.add(
+        monster.location.onEmit((val) => { this.updateMonsterLocation(id, monster, sprite!) }))
     }
-    let xx = monster.location[0] * this._model.config.tileWidth
-    let yy = monster.location[1] * this._model.config.tileHeight
+    this.updateMonsterLocation(id, monster, sprite)
+  }
+
+  protected updateMonsterLocation (id :ID, monster :MonsterData, sprite :MonsterViz)
+  {
+    let xx = monster.location.current[0] * this._model.config.tileWidth
+    let yy = monster.location.current[1] * this._model.config.tileHeight
     if (sprite.tile) {
       xx -= (sprite.tile.size[0] / 2)
       yy -= (sprite.tile.size[1] / 2)
@@ -441,10 +464,8 @@ export class GridTileSceneViewMode extends SurfaceMode {
     const sprite = viz.monsters.get(id)
     if (!sprite) return
     viz.monsters.delete(id)
-    if (sprite.remover) {
-      this.onDispose.remove(sprite.remover)
-      sprite.remover()
-    }
+    this.onDispose.remove(sprite.disposer)
+    sprite.disposer.dispose()
   }
 
   adjustOffset () {
