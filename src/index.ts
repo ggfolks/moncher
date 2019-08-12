@@ -255,7 +255,6 @@ let viz = new MonsterVisualState(4.5, 4.5, "")
 const val = Mutable.local(viz, MonsterVisualState.eq)
 mode.addMonster(new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png")), val)
 
-//const batchBits = 10
 const hunger = new DenseValueComponent<number>("hunger", 0)
 const lonliness = new DenseValueComponent<number>("lonliness", 0)
 const boredom = new DenseValueComponent<number>("boredom", 0)
@@ -267,5 +266,12 @@ const state = new DenseValueComponent<Mutable<MonsterVisualState>>("state",
 const domain = new Domain({}, { hunger, lonliness, boredom, crowding, locationMemory, state })
 console.log("I am satisfying the compiler: " + domain)
 
+
+const econfig = {
+  components: {hunger: {}, lonliness: {}, boredom: {}, crowding: {}, locationMemory: {}, state: {}}
+}
+
+const id = domain.add(econfig)
+state.update(id, val)
 
 //setInterval(() => { model.tick() }, 200)
