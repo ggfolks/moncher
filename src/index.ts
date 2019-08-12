@@ -243,11 +243,6 @@ let model :GridTileSceneModel = generateGridModel(tiles.concat(additional), 30, 
 let mode = new GridTileSceneViewMode(app, model)
 app.setMode(mode)
 
-//console.log(" " + MonsterConfig + vec2)
-//model.addMonster(
-//  new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png")),
-//  vec2.fromValues(4.5, 4.5))
-
 //const batchBits = 10
 //const hunger =
 let viz = new MonsterVisualState(4.5, 4.5, "")
