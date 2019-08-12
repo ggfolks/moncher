@@ -1,19 +1,11 @@
 import {Scale} from "tfw/core/ui"
 import {Disposer} from "tfw/core/util"
-import {mat2d, vec2, vec2zero} from "tfw/core/math"
+import {vec2} from "tfw/core/math"
 import {Clock} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
 import {Subject, Value} from "tfw/core/react"
-import {
-  Component,
-  DenseValueComponent,
-  Domain,
-  Matcher,
-  System,
-  Vec2Component} from "tfw/entity/entity"
 import {GLC, Texture, TextureConfig, Tile, makeTexture} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
-import {TransformComponent, DynamicsSystem} from "tfw/scene2/entity"
 import {App, SurfaceMode} from "./app"
 import {FringeConfig, FringeAdder, applyFringe} from "./fringer"
 
@@ -251,66 +243,6 @@ function makeGridTileSet (glc :GLC, cfg :GridTileSceneConfig) :Subject<GridTileS
   })
 }
 
-/**
- * Adapt Mike's "flappy" bounce system.
- */
-class BounceSystem extends System {
-  constructor (domain :Domain,
-               readonly view :GridTileSceneViewMode,
-               readonly trans :TransformComponent,
-               readonly vel :Vec2Component) {
-    super(domain, Matcher.hasAllC(trans.id, vel.id))
-  }
-
-  update () {
-    const tmp = vec2.create()
-    const sw = 1000, sh = 1000 //this.view.width, sh = this.view.height
-    this.onEntities(id => {
-      this.trans.readTranslation(id, tmp)
-      const tx = tmp[0], ty = tmp[1]
-      let dx = 0, dy = 0 // desired directions
-      if (tx < 0) dx = 1; else if (tx > sw) dx = -1
-      if (ty < 0) dy = 1; else if (ty > sh) dy = -1
-      if (dx != 0 || dy != 0) {
-        this.vel.read(id, tmp)
-        if (dx != 0 && ((tmp[0] < 0) != (dx < 0))) {
-          tmp[0] *= -1
-        }
-        if (dy != 0 && ((tmp[1] < 0) != (dy < 0))) {
-          tmp[1] *= -1
-        }
-        this.vel.update(id, tmp)
-      }
-    })
-  }
-}
-
-class SurfaceRenderSystem extends System {
-  //private readonly ttrans = mat2d.create()
-
-  constructor (domain :Domain,
-               readonly trans :TransformComponent,
-               readonly tile :Component<Tile>) {
-    super(domain, Matcher.hasAllC(trans.id, tile.id))
-  }
-
-  update () {
-    this.trans.updateMatrices()
-  }
-
-  render (surf :Surface, offset :vec2) {
-    surf.saveTx()
-    this.onEntities(id => {
-      const tile = this.tile.read(id)
-      this.trans.readMatrix(id, surf.tx)
-      mat2d.scale(surf.tx, surf.tx, [2 , 2])
-      surf.translate(offset)
-      surf.drawAt(tile, vec2zero)
-    })
-    surf.restoreTx()
-  }
-}
-
 export class GridTileSceneViewMode extends SurfaceMode {
   constructor (protected _app :App, protected _model :GridTileSceneModel) {
     super(_app)
@@ -362,20 +294,6 @@ export class GridTileSceneViewMode extends SurfaceMode {
    */
   removeMonster (...TODO :any[]) :void {
     // remove from map, remove the disposer from our dispose, but then call the disposer
-  }
-
-  protected configureEcs (defaultTile :Tile) :void {
-
-    // set up our ECS for controlling monsters?
-    const batchBits = 10
-    const trans = this._transComp = new TransformComponent("trans", batchBits)
-    const tile = new DenseValueComponent<Tile>("tile", defaultTile)
-    const vel = this._velComp = new Vec2Component("vel", vec2zero, batchBits)
-
-    this._domain = new Domain({}, { trans, tile, vel })
-    this._dynamicsSys = new DynamicsSystem(this._domain, trans, vel)
-    this._bounceSys = new BounceSystem(this._domain, this, trans, vel)
-    this._renderSys = new SurfaceRenderSystem(this._domain, trans, tile)
   }
 
   /**
@@ -435,13 +353,6 @@ export class GridTileSceneViewMode extends SurfaceMode {
         surf.drawAt(monst.tile, monst.pos)
       }
     }
-
-    if (this._domain) {
-      this._dynamicsSys!.update(clock)
-      this._bounceSys!.update()
-      this._renderSys!.update()
-      this._renderSys!.render(surf, this._offset)
-    }
     surf.restoreTx()
   }
 
@@ -494,11 +405,4 @@ export class GridTileSceneViewMode extends SurfaceMode {
     vec2.set(this._mouse, event.offsetX, event.offsetY)
     this.adjustOffset()
   }
-
-  protected _domain? :Domain
-  protected _transComp? :TransformComponent
-  protected _velComp? :Vec2Component
-  protected _dynamicsSys? :DynamicsSystem
-  protected _bounceSys? :BounceSystem
-  protected _renderSys? :SurfaceRenderSystem
 }
