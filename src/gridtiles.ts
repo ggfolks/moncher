@@ -188,6 +188,9 @@ function chopTiles (tex :Texture, w :number, h :number) :Tile[]
   return retval
 }
 
+/**
+ * Load the tiles for a prop.
+ */
 function makeProp (glc :GLC, tcfg :TextureConfig, cfg :PropTileInfo) :Subject<PropTile> {
   return makeTexture(glc, loadImage(cfg.base), tcfg).map(tex => {
     let tiles :Array<Tile>
@@ -331,6 +334,9 @@ export class GridTileSceneViewMode extends SurfaceMode {
     return this._model.config.tileHeight * this._model.sceneHeight
   }
 
+  /**
+   * Add a monster to the system.
+   */
   addMonster (config :MonsterConfig, viz :Value<MonsterVisualState>) :void {
     const sprite = new MonsterSprite(viz.current)
     this._monsters.set(viz, sprite)
@@ -338,6 +344,8 @@ export class GridTileSceneViewMode extends SurfaceMode {
     sprite.disposer.add(viz.onEmit(val => this.updateMonsterSprite(sprite, val)))
 
     // Async lookup monster sprite tile
+    // TODO: monster resources can be shared by monsters with the same look
+    // (maybe the texture system already does this?)
     const tcfg = { ...Texture.DefaultConfig, scale: new Scale(this._model.config.scale) }
     const img :Subject<Texture> = makeTexture(
         this._app.renderer.glc, loadImage(config.info.base), tcfg)
@@ -349,6 +357,9 @@ export class GridTileSceneViewMode extends SurfaceMode {
     sprite.disposer.add(remover)
   }
 
+  /**
+   * Remove a monster from the system.
+   */
   removeMonster (...TODO :any[]) :void {
     // remove from map, remove the disposer from our dispose, but then call the disposer
   }

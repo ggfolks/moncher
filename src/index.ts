@@ -1,3 +1,4 @@
+import {vec2} from "tfw/core/math"
 import {Mutable} from "tfw/core/react"
 import {App} from "./app"
 import {
@@ -13,6 +14,13 @@ import {
 import {FringeConfig} from "./fringer"
 import * as Fringer from "./fringer"
 import {CarcTile, generateGridModel} from "./carctiles"
+import {
+//  Component,
+  DenseValueComponent,
+  Domain,
+//  Matcher,
+//  System
+} from "tfw/entity/entity"
 
 const root = document.getElementById("root")
 if (!root) throw new Error(`No root?`)
@@ -243,11 +251,21 @@ let model :GridTileSceneModel = generateGridModel(tiles.concat(additional), 30, 
 let mode = new GridTileSceneViewMode(app, model)
 app.setMode(mode)
 
-//const batchBits = 10
-//const hunger =
 let viz = new MonsterVisualState(4.5, 4.5, "")
 const val = Mutable.local(viz, MonsterVisualState.eq)
 mode.addMonster(new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png")), val)
+
+//const batchBits = 10
+const hunger = new DenseValueComponent<number>("hunger", 0)
+const lonliness = new DenseValueComponent<number>("lonliness", 0)
+const boredom = new DenseValueComponent<number>("boredom", 0)
+const crowding = new DenseValueComponent<number>("crowding", 0)
+const locationMemory = new DenseValueComponent<Array<vec2>>("locationMemory", new Array<vec2>())
+const state = new DenseValueComponent<Mutable<MonsterVisualState>>("state",
+    Mutable.local(new MonsterVisualState(0, 0, "")))
+
+const domain = new Domain({}, { hunger, lonliness, boredom, crowding, locationMemory, state })
+console.log("I am satisfying the compiler: " + domain)
 
 
 //setInterval(() => { model.tick() }, 200)
