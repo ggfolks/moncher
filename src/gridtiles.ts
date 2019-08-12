@@ -330,11 +330,11 @@ export class GridTileSceneViewMode extends SurfaceMode {
     surf.translate(this._offset)
     const xi = this._model.config.tileWidth
     const yi = this._model.config.tileHeight
-    const pos = vec2.create() //vec2.clone(this._offset)
+    const pos = vec2.create()
     // draw tiles
     for (let xx = 0; xx < viz.tiles.length; xx++, pos[0] += xi) {
       const col = viz.tiles[xx]
-      pos[1] = 0 //this._offset[1]
+      pos[1] = 0
       for (let yy = 0; yy < col.length; yy++, pos[1] += yi) {
         for (const tile of col[yy]) {
           surf.drawAt(tile, pos)
@@ -343,8 +343,6 @@ export class GridTileSceneViewMode extends SurfaceMode {
     }
     // draw props
     for (let prop of viz.props) {
-      //vec2.add(pos, prop.pos, this._offset)
-      //surf.drawAt(prop.tile, pos)
       surf.drawAt(prop.tile, prop.pos)
     }
     // draw monsters
