@@ -1,4 +1,4 @@
-import {vec2} from "tfw/core/math"
+import {Mutable} from "tfw/core/react"
 import {App} from "./app"
 import {
   GridTileInfo,
@@ -6,6 +6,7 @@ import {
   GridTileSceneModel,
   GridTileSceneViewMode,
   MonsterConfig,
+  MonsterVisualState,
   PropPlacement,
   PropTileInfo
 } from "./gridtiles"
@@ -243,8 +244,15 @@ let mode = new GridTileSceneViewMode(app, model)
 app.setMode(mode)
 
 //console.log(" " + MonsterConfig + vec2)
-model.addMonster(
-  new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png")),
-  vec2.fromValues(4.5, 4.5))
+//model.addMonster(
+//  new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png")),
+//  vec2.fromValues(4.5, 4.5))
 
-setInterval(() => { model.tick() }, 200)
+//const batchBits = 10
+//const hunger =
+let viz = new MonsterVisualState(4.5, 4.5, "")
+const val = Mutable.local(viz, MonsterVisualState.eq)
+mode.addMonster(new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png")), val)
+
+
+//setInterval(() => { model.tick() }, 200)

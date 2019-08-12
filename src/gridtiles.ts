@@ -4,6 +4,7 @@ import {Disposer} from "tfw/core/util"
 import {mat2d, vec2, vec2zero} from "tfw/core/math"
 import {Clock} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
+import {Value} from "tfw/core/react"
 import {MapChange, MutableMap, RMap} from "tfw/core/rcollect"
 import {
   Component,
@@ -98,6 +99,26 @@ export class MonsterData
   }
 }
 
+/**
+ * Runtime information about a monster's visual state.
+ */
+export class MonsterVisualState
+{
+  constructor (
+    readonly x :number,
+    readonly y :number,
+    readonly state :string // TODO: walking, eating, pooping, mating...
+  ) {}
+
+  /**
+   * Compares two MonsterVisualState's for equality.
+   */
+  static eq (a :MonsterVisualState, b :MonsterVisualState) :boolean
+  {
+    return (a.x === b.x) && (a.y === b.y) && (a.state === b.state)
+  }
+}
+
 export class PropPlacement
 {
   constructor (
@@ -179,10 +200,28 @@ type PropViz = {
   pos :vec2
 }
 
+// TODO: remove
 type MonsterViz = {
   tile? :Tile
   pos :vec2
   disposer :Disposer
+}
+
+class MonsterSprite
+{
+  /** The tile for drawing the monster. */
+  public tile? :Tile
+
+  /** Position. */
+  public pos :vec2 = vec2.create()
+
+  /** A disposer just for this sprite. */
+  public disposer :Disposer = new Disposer()
+
+  constructor (
+    /** The most recent state. */
+    public state :MonsterVisualState
+  ) {}
 }
 
 type GridTileSceneViz = {
@@ -344,10 +383,12 @@ export class GridTileSceneViewMode extends SurfaceMode {
     this.onDispose.add(() => this._app.root.removeEventListener("mousemove", this._onMouseMove))
   }
 
+  // TODO: remove  (pixel width)
   get width () :number {
     return this.logicalWidth * this._model.config.scale
   }
 
+  // TODO: remove  (pixel height)
   get height () :number {
     return this.logicalHeight * this._model.config.scale
   }
@@ -362,10 +403,32 @@ export class GridTileSceneViewMode extends SurfaceMode {
     return this._model.config.tileHeight * this._model.sceneHeight
   }
 
-  addMonster (url :string) {
+  addMonster (config :MonsterConfig, viz :Value<MonsterVisualState>) :void {
+    const sprite = new MonsterSprite(viz.current)
+    this._monsters.set(viz, sprite)
+    this.onDispose.add(sprite.disposer)
+    sprite.disposer.add(viz.onEmit(val => this.updateMonsterSprite(sprite, val)))
+
+    // Async lookup monster sprite tile
     const tcfg = { ...Texture.DefaultConfig, scale: new Scale(this._model.config.scale) }
-    this.addMonsterTexture(makeTexture(this._app.renderer.glc, loadImage(url), tcfg))
+    const img :Subject<Texture> = makeTexture(
+        this._app.renderer.glc, loadImage(config.info.base), tcfg)
+    const remover = img.onValue(tex => {
+      sprite.tile = tex
+      // let's just call into updateMonsterSprite to rejiggle the location
+      this.updateMonsterSprite(sprite, sprite.state)
+    })
+    sprite.disposer.add(remover)
   }
+
+  removeMonster (...TODO :any[]) :void {
+    // remove from map, remove the disposer from our dispose, but then call the disposer
+  }
+
+//  addMonster (url :string) {
+//    const tcfg = { ...Texture.DefaultConfig, scale: new Scale(this._model.config.scale) }
+//    this.addMonsterTexture(makeTexture(this._app.renderer.glc, loadImage(url), tcfg))
+//  }
 
   addMonsterTexture (img :Subject<Tile>) {
     this.onDispose.add(img.onValue(tex => this.addMonsterTile(tex)))
@@ -457,6 +520,21 @@ export class GridTileSceneViewMode extends SurfaceMode {
     vec2.set(sprite.pos, xx, yy)
   }
 
+  /**
+   * Update a monster sprite.
+   */
+  protected updateMonsterSprite (sprite :MonsterSprite, state :MonsterVisualState)
+  {
+    sprite.state = state // just copy the latest state in
+    let xx = state.x * this._model.config.tileWidth
+    let yy = state.y * this._model.config.tileHeight
+    if (sprite.tile) {
+      xx -= sprite.tile.size[0] / 2
+      yy -= sprite.tile.size[1] / 2
+    }
+    vec2.set(sprite.pos, xx, yy)
+  }
+
   protected deleteMonster (id :ID, monster :MonsterData)
   {
     const viz = this._viz
@@ -504,8 +582,14 @@ export class GridTileSceneViewMode extends SurfaceMode {
       //surf.drawAt(prop.tile, pos)
       surf.drawAt(prop.tile, prop.pos)
     }
-    // draw monsters
+    // draw monsters (old)
     for (let monst of viz.monsters.values()) {
+      if (monst.tile) {
+        surf.drawAt(monst.tile, monst.pos)
+      }
+    }
+    // draw monsters
+    for (const monst of this._monsters.values()) {
       if (monst.tile) {
         surf.drawAt(monst.tile, monst.pos)
       }
@@ -561,6 +645,8 @@ export class GridTileSceneViewMode extends SurfaceMode {
 
   /** The visualization of the scene, when we have it. */
   protected _viz? :GridTileSceneViz
+
+  protected readonly _monsters :Map<Value<MonsterVisualState>, MonsterSprite> = new Map()
 
   protected readonly _mouse :vec2 = vec2.create()
   protected readonly _offset :vec2 = vec2.create()
