@@ -238,7 +238,8 @@ let tiles = [ roadN, roadS, roadE, roadW,
               grassRoadNEWS ]
 let model :GridTileSceneModel = generateGridModel(tiles.concat(additional), 30, 30, gridConfig)
 let ranch :RanchModel = new RanchModel(model)
-ranch.addMonster(new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png")), 4.5, 4.5)
+ranch.addMonster(new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png")), 4, 4)
+ranch.addMonster(new MonsterConfig(new PropTileInfo("rk2", "props/rock_1b.png")), 6, 6)
 
 app.setMode(new MonsterRancherMode(app, ranch))
 

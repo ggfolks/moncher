@@ -62,7 +62,15 @@ class MonsterData
 
   public toVisualState () :MonsterVisualState
   {
-    return new MonsterVisualState(this.x, this.y, this.state)
+    // TODO: Rethink? We keep monsters in tile coords but we center it for the visual state
+    return new MonsterVisualState(this.x + .5, this.y + .5, this.state)
+  }
+
+  public setLocation (x :number, y :number) :void
+  {
+    this.x = x
+    this.y = y
+    this.rememberLocation(x, y)
   }
 
   public rememberLocation (x :number, y :number) :void
@@ -82,9 +90,9 @@ class MonsterData
     this.locationMemory.unshift(newLoc)
   }
 
-  public isInMemory (loc :vec2) :boolean
+  public isInMemory (x :number, y :number) :boolean
   {
-    return this.getMemoryIndex(loc) > -1
+    return this.getMemoryIndex(vec2.fromValues(x, y)) > -1
   }
 
   protected getMemoryIndex (loc :vec2) :number
@@ -118,10 +126,59 @@ export class RanchModel
   public addMonster (config :MonsterConfig, x :number, y :number) :void
   {
     const id = this._nextMonsterId++
-    const data = new MonsterData(id, config, x, y)
+    const data = new MonsterData(id, config, Math.trunc(x), Math.trunc(y))
     this.monsterConfig.set(id, config)
     this._monsterData.set(id, data)
-    this._monsters.set(id, data.toVisualState())
+    // move the monster to its current location to map it by location and publish state
+    this.moveMonster(data, data.x, data.y)
+  }
+
+  protected moveMonster (data :MonsterData, newX :number, newY :number)
+  {
+    // remove from the old location in the map
+    const oldKey = this.locToKey(data.x, data.y)
+    const oldVals = this._monstersByLocation.get(oldKey)
+    if (oldVals) {
+      const dex = oldVals.indexOf(data)
+      if (dex !== -1) {
+        oldVals.splice(dex, 1)
+      }
+    }
+
+    // actually update the location
+    data.setLocation(newX, newY)
+    const newKey = this.locToKey(newX, newY)
+    let newVals = this._monstersByLocation.get(newKey)
+    if (!newVals) {
+      newVals = new Array<MonsterData>()
+      this._monstersByLocation.set(newKey, newVals)
+    }
+    newVals.push(data)
+
+    this._monsters.set(data.id, data.toVisualState())
+  }
+
+  protected getMonsters (x :number, y :number) :Array<MonsterData>
+  {
+    if (x >= 0 && y >= 0 && x < this.model.sceneWidth && y < this.model.sceneHeight) {
+      const array = this._monstersByLocation.get(this.locToKey(x, y))
+      if (array) return array
+    }
+    return []
+  }
+
+  protected getFeature (x :number, y :number) :string
+  {
+    if (x >= 0 && y >= 0 && x < this.model.sceneWidth && y < this.model.sceneHeight) {
+      return this.model.tiles[x][y]
+    }
+    return ""
+  }
+
+  protected locToKey (x :number, y :number) :number
+  {
+    // TODO: maybe we quantize to tile here?
+    return (y * this.model.sceneWidth) + x
   }
 
   /**
@@ -129,18 +186,92 @@ export class RanchModel
    */
   public tick () :void
   {
+    // first update the internal states of all monsters
     for (const monst of this._monsterData.values()) {
-      // TODO: do this well, somehow
-      monst.x += .2
-      monst.y += .2
-      this._monsters.set(monst.id, monst.toVisualState())
+      // see what kind of tile we're on and react to that
+      switch (this.getFeature(monst.x, monst.y)) {
+      case "dirt":
+        monst.hunger++
+        monst.boredom += 2
+        break
+
+      case "grass":
+        monst.hunger = Math.max(0, monst.hunger - 20)
+        monst.boredom++
+        break
+
+      case "cobble":
+        monst.hunger++
+        // no change to boredom
+        break
+      }
+
+      // examine the nearby tiles for monsters
+      let social = 0
+      for (let xx = -1; xx < 2; xx++) {
+        for (let yy = -1; yy < 2; yy++) {
+          const neighbs = this.getMonsters(monst.x + xx, monst.y + yy)
+          if (xx === 0 && yy === 0) {
+            monst.crowding += neighbs.length - 1 // subtract one for ourselves
+            social += neighbs.length - 1
+          } else if (xx === 0 || yy === 0) {
+            social += neighbs.length
+          } else {
+            social += neighbs.length / 2 // lesser influence at the corners
+          }
+        }
+      }
+      if (social === 0) {
+        monst.lonliness++
+        monst.crowding = Math.max(0, monst.crowding - 50)
+      } else {
+        monst.lonliness = Math.max(0, monst.lonliness - social)
+      }
+    }
+
+    // then figure out if a monster wants to update state/loc
+    for (const monst of this._monsterData.values()) {
+      let scorer = (x :number, y :number) => 0
+      if (monst.boredom > 50) {
+        scorer = (x, y) => {
+          // find a location that hasn't been visited
+          return monst.isInMemory(x, y) ? 0 : 10
+        }
+      } else {
+        continue
+      }
+      let best :Array<vec2> = []
+      let bestScore = Number.MIN_SAFE_INTEGER
+      for (let xx = -1; xx < 2; xx++) {
+        for (let yy = -1; yy < 2; yy++) {
+          if (xx === 0 && yy === 0) continue
+          const mx = xx + monst.x
+          const my = yy + monst.y
+          if (mx < 0 || my < 0 || mx >= this.model.sceneWidth || my >= this.model.sceneHeight) {
+            continue
+          }
+          const score = scorer(mx, my)
+          if (score > bestScore) {
+            bestScore = score
+            best = [ vec2.fromValues(mx, my) ]
+
+          } else if (score == bestScore) {
+            best.push(vec2.fromValues(mx, my))
+          }
+        }
+      }
+      if (bestScore !== Number.MIN_SAFE_INTEGER) {
+        const bestLoc = best[Math.trunc(Math.random() * best.length)]
+        this.moveMonster(monst, bestLoc[0], bestLoc[1])
+      }
     }
   }
 
   protected _nextMonsterId :number = 0
-  protected _monsterData :Map<number, MonsterData> = new Map<number, MonsterData>()
+  protected _monsterData :Map<number, MonsterData> = new Map()
   /** A mutable view of our public monsters RMap. */
   protected _monsters :MutableMap<number, MonsterVisualState>
+  protected _monstersByLocation :Map<number, Array<MonsterData>> = new Map()
 }
 
 class MonsterSprite
