@@ -70,10 +70,12 @@ class MonsterData
   {
     this.x = x
     this.y = y
-    this.rememberLocation(x, y)
+    if (this.rememberLocation(x, y)) {
+      this.boredom = Math.max(0, this.boredom - 20)
+    }
   }
 
-  public rememberLocation (x :number, y :number) :void
+  public rememberLocation (x :number, y :number) :boolean
   {
     const newLoc = vec2.fromValues(x, y)
     const index = this.getMemoryIndex(newLoc)
@@ -88,6 +90,7 @@ class MonsterData
 
     // always add the new location to the front
     this.locationMemory.unshift(newLoc)
+    return (index === -1)
   }
 
   public isInMemory (x :number, y :number) :boolean
@@ -101,7 +104,7 @@ class MonsterData
   }
 
   /** How much memory to keep. */
-  protected static readonly MEMORY_SIZE = 10
+  protected static readonly MEMORY_SIZE = 16
 }
 
 export class RanchModel
