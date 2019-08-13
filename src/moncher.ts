@@ -49,14 +49,51 @@ class MonsterData
   public lonliness :number = 0
   public boredom :number = 0
   public crowding :number = 0
+  /** Recently visited locations, most recent at index 0. */
   public locationMemory :Array<vec2> = new Array<vec2>()
   public state :string = ""
 
   constructor (
+    readonly id :number,
     readonly config :MonsterConfig,
     public x :number,
     public y :number
   ) {}
+
+  public toVisualState () :MonsterVisualState
+  {
+    return new MonsterVisualState(this.x, this.y, this.state)
+  }
+
+  public rememberLocation (x :number, y :number) :void
+  {
+    const newLoc = vec2.fromValues(x, y)
+    const index = this.getMemoryIndex(newLoc)
+    if (index !== -1) {
+      // splice it out of the old location
+      this.locationMemory.splice(index, 1)
+
+    } else if (this.locationMemory.length === MonsterData.MEMORY_SIZE) {
+      // if we're already at the size, make room for the new location
+      this.locationMemory.pop()
+    }
+
+    // always add the new location to the front
+    this.locationMemory.unshift(newLoc)
+  }
+
+  public isInMemory (loc :vec2) :boolean
+  {
+    return this.getMemoryIndex(loc) > -1
+  }
+
+  protected getMemoryIndex (loc :vec2) :number
+  {
+    return this.locationMemory.findIndex(v => vec2.equals(loc, v))
+  }
+
+  /** How much memory to keep. */
+  protected static readonly MEMORY_SIZE = 10
 }
 
 export class RanchModel
@@ -64,13 +101,15 @@ export class RanchModel
   /** The public view of monster state. */
   public monsters :RMap<number, MonsterVisualState>
 
+  /** The configuration data for a monster, guaranteed to be populated prior to
+   *  'monsters' being updated. */
   public monsterConfig :Map<number, MonsterConfig> = new Map<number, MonsterConfig>()
 
   constructor (
     /** The model we're on. */
     public readonly model :GridTileSceneModel
   ) {
-    this.monsters = this._monsterViz = MutableMap.local()
+    this.monsters = this._monsters = MutableMap.local()
   }
 
   /**
@@ -78,10 +117,11 @@ export class RanchModel
    */
   public addMonster (config :MonsterConfig, x :number, y :number) :void
   {
-    let id = this._nextMonsterId++
+    const id = this._nextMonsterId++
+    const data = new MonsterData(id, config, x, y)
     this.monsterConfig.set(id, config)
-    const viz = new MonsterVisualState(x, y, "")
-    this._monsterViz.set(id, viz)
+    this._monsterData.set(id, data)
+    this._monsters.set(id, data.toVisualState())
   }
 
   /**
@@ -89,13 +129,18 @@ export class RanchModel
    */
   public tick () :void
   {
-    // TODO
+    for (const monst of this._monsterData.values()) {
+      // TODO: do this well, somehow
+      monst.x += .2
+      monst.y += .2
+      this._monsters.set(monst.id, monst.toVisualState())
+    }
   }
 
   protected _nextMonsterId :number = 0
-  protected _monsters :Map<number, MonsterData> = new Map<number, MonsterData>()
+  protected _monsterData :Map<number, MonsterData> = new Map<number, MonsterData>()
   /** A mutable view of our public monsters RMap. */
-  protected _monsterViz :MutableMap<number, MonsterVisualState>
+  protected _monsters :MutableMap<number, MonsterVisualState>
 }
 
 class MonsterSprite

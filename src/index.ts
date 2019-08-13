@@ -242,4 +242,4 @@ ranch.addMonster(new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png
 
 app.setMode(new MonsterRancherMode(app, ranch))
 
-//setInterval(() => { ranch.tick() }, 200)
+setInterval(() => { ranch.tick() }, 200)
