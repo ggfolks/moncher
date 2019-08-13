@@ -13,10 +13,10 @@ import {GridTileSceneModel, GridTileSceneViewMode, PropTileInfo} from "./gridtil
  */
 export class MonsterConfig
 {
-	constructor (
-		/** What the monster looks like, can be a shared object between multiple monsters. */
-		readonly info :PropTileInfo
-	) {}
+  constructor (
+    /** What the monster looks like, can be a shared object between multiple monsters. */
+    readonly info :PropTileInfo
+  ) {}
 }
 
 /**
@@ -24,19 +24,19 @@ export class MonsterConfig
  */
 export class MonsterVisualState
 {
-	constructor (
-		readonly x :number,
-		readonly y :number,
-		readonly state :string // TODO: walking, eating, pooping, mating...
-	) {}
+  constructor (
+    readonly x :number,
+    readonly y :number,
+    readonly state :string // TODO: walking, eating, pooping, mating...
+  ) {}
 
-	/**
-	 * Compares two MonsterVisualState's for equality.
-	 */
-	static eq (a :MonsterVisualState, b :MonsterVisualState) :boolean
-	{
-		return (a.x === b.x) && (a.y === b.y) && (a.state === b.state)
-	}
+  /**
+   * Compares two MonsterVisualState's for equality.
+   */
+  static eq (a :MonsterVisualState, b :MonsterVisualState) :boolean
+  {
+    return (a.x === b.x) && (a.y === b.y) && (a.state === b.state)
+  }
 }
 
 
