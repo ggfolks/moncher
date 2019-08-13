@@ -269,16 +269,17 @@ export class RanchModel
   {
     let fns = new Array<ScoreFn>()
     if (monst.hunger > 50) {
-      fns.push((x, y) => ("grass" === this.getFeature(x, y)) ? 10 : 0)
+      fns.push((x, y) => ("grass" === this.getFeature(x, y)) ? monst.hunger : 0)
     }
     if (monst.lonliness > 50) {
-      fns.push((x, y) => this.getMonsters(x, y).length) // TODO: counting monsters during move
+      // TODO: this is counting monsters during moves, so it will count wrong
+      fns.push((x, y) => (this.getMonsters(x, y).length > 0) ? monst.lonliness : 0)
     }
     if (monst.boredom > 50) {
-      fns.push((x, y) => monst.isInMemory(x, y) ? 0 : 10)
+      fns.push((x, y) => monst.isInMemory(x, y) ? 0 : monst.boredom)
     }
     if (monst.crowding > 50) {
-      fns.push((x, y) => -2 * this.getMonsters(x, y).length)
+      fns.push((x, y) => (this.getMonsters(x, y).length > 0) ? 0 : monst.crowding)
     }
     switch (fns.length) {
       case 0: return undefined
