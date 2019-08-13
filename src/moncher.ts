@@ -1,6 +1,7 @@
 import {Clock} from "tfw/core/clock"
 import {vec2} from "tfw/core/math"
-import {Subject, Value} from "tfw/core/react"
+import {Subject} from "tfw/core/react"
+import {MapChange, MutableMap, RMap} from "tfw/core/rcollect"
 import {Disposer} from "tfw/core/util"
 import {Texture, Tile} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
@@ -60,15 +61,27 @@ class MonsterData
 
 export class RanchModel
 {
+  /** The public view of monster state. */
+  public monsters :RMap<number, MonsterVisualState>
+
+  public monsterConfig :Map<number, MonsterConfig> = new Map<number, MonsterConfig>()
+
   constructor (
+    /** The model we're on. */
     public readonly model :GridTileSceneModel
-  ) {}
+  ) {
+    this.monsters = this._monsterViz = MutableMap.local()
+  }
 
   /**
    * Add a new monster.
    */
   public addMonster (config :MonsterConfig, x :number, y :number) :void
   {
+    let id = this._nextMonsterId++
+    this.monsterConfig.set(id, config)
+    const viz = new MonsterVisualState(x, y, "")
+    this._monsterViz.set(id, viz)
   }
 
   /**
@@ -76,10 +89,13 @@ export class RanchModel
    */
   public tick () :void
   {
+    // TODO
   }
 
   protected _nextMonsterId :number = 0
   protected _monsters :Map<number, MonsterData> = new Map<number, MonsterData>()
+  /** A mutable view of our public monsters RMap. */
+  protected _monsterViz :MutableMap<number, MonsterVisualState>
 }
 
 class MonsterSprite
@@ -97,41 +113,15 @@ class MonsterSprite
   ) {}
 }
 
-
 export class MonsterRancherMode extends GridTileSceneViewMode {
   constructor (
     app :App,
     protected _ranch :RanchModel
   ) {
     super(app, _ranch.model)
-  }
 
-  /**
-   * Add a monster to the ranch.
-   */
-  addMonster (config :MonsterConfig, viz :Value<MonsterVisualState>) :void {
-    const sprite = new MonsterSprite(viz.current)
-    this._monsters.set(viz, sprite)
-    this.onDispose.add(sprite.disposer)
-    sprite.disposer.add(viz.onEmit(val => this.updateMonsterSprite(sprite, val)))
-
-    // Async lookup monster sprite tile
-    // TODO: monster resources can be shared by monsters with the same look
-    // (maybe the texture system already does this?)
-    const img :Subject<Texture> = this.getTexture(config.info.base)
-    const remover = img.onValue(tex => {
-      sprite.tile = tex
-      // let's just call into updateMonsterSprite to rejiggle the location
-      this.updateMonsterSprite(sprite, sprite.state)
-    })
-    sprite.disposer.add(remover)
-  }
-
-  /**
-   * Remove a monster from the system.
-   */
-  removeMonster (...TODO :any[]) :void {
-    // remove from map, remove the disposer from our dispose, but then call the disposer
+    this.onDispose.add(_ranch.monsters.onChange(this._monsterChange))
+    _ranch.monsters.forEach((monster, id) => { this.updateMonster(id, monster) })
   }
 
   /**
@@ -160,5 +150,46 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     }
   }
 
-  protected readonly _monsters :Map<Value<MonsterVisualState>, MonsterSprite> = new Map()
+  protected updateMonster (id :number, state :MonsterVisualState)
+  {
+    let sprite = this._monsters.get(id)
+    if (!sprite) {
+      // async lookup tile
+      const cfg = this._ranch.monsterConfig.get(id)
+      if (!cfg) {
+        throw new Error("Monster doesn't have a config in the model")
+      }
+
+      sprite = new MonsterSprite(state)
+      this._monsters.set(id, sprite)
+      this.onDispose.add(sprite.disposer)
+      const img :Subject<Texture> = this.getTexture(cfg.info.base)
+      const remover = img.onValue(tex => {
+        sprite!.tile = tex
+        // let's just call into updateMonsterSprite to rejiggle the location
+        this.updateMonsterSprite(sprite!, sprite!.state)
+      })
+      sprite.disposer.add(remover)
+    }
+    this.updateMonsterSprite(sprite, state)
+  }
+
+  protected deleteMonster (id :number)
+  {
+    const sprite = this._monsters.get(id)
+    if (!sprite) return
+    this._monsters.delete(id)
+    this.onDispose.remove(sprite.disposer)
+    sprite.disposer.dispose()
+  }
+
+  protected readonly _monsterChange = (change :MapChange<number, MonsterVisualState>) => {
+    if (change.type === "set") {
+      this.updateMonster(change.key, change.value)
+    } else {
+      this.deleteMonster(change.key)
+    }
+  }
+
+  protected readonly _monsters :Map<number, MonsterSprite> = new Map()
 }

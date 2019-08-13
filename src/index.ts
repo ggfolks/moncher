@@ -9,7 +9,7 @@ import {
 import {FringeConfig} from "./fringer"
 import * as Fringer from "./fringer"
 import {CarcTile, generateGridModel} from "./carctiles"
-import {RanchModel, MonsterRancherMode} from "./moncher"
+import {RanchModel, MonsterRancherMode, MonsterConfig} from "./moncher"
 
 const root = document.getElementById("root")
 if (!root) throw new Error(`No root?`)
@@ -238,11 +238,8 @@ let tiles = [ roadN, roadS, roadE, roadW,
               grassRoadNEWS ]
 let model :GridTileSceneModel = generateGridModel(tiles.concat(additional), 30, 30, gridConfig)
 let ranch :RanchModel = new RanchModel(model)
+ranch.addMonster(new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png")), 4.5, 4.5)
 
 app.setMode(new MonsterRancherMode(app, ranch))
 
-//let viz = new MonsterVisualState(4.5, 4.5, "")
-//const val = Mutable.local(viz, MonsterVisualState.eq)
-//ranch.addMonster(new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png")), val)
-
-//setInterval(() => { model.tick() }, 200)
+//setInterval(() => { ranch.tick() }, 200)
