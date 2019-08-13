@@ -202,7 +202,7 @@ export class GridTileSceneViewMode extends SurfaceMode {
     this.onDispose.add(tss.onValue(tileset => {
       this._viz = this.makeViz(_model, tileset)
     }))
-    this.onDispose.add(_app.renderer.size.onValue(() => this.adjustOffset()))
+    this.onDispose.add(_app.renderer.size.onValue(this._adjustOffset))
     this._app.root.addEventListener("mousemove", this._onMouseMove)
     this.onDispose.add(() => this._app.root.removeEventListener("mousemove", this._onMouseMove))
   }
@@ -224,14 +224,6 @@ export class GridTileSceneViewMode extends SurfaceMode {
   {
     const tcfg = { ...Texture.DefaultConfig, scale: new Scale(this._model.config.scale) }
     return makeTexture(this._app.renderer.glc, loadImage(texture), tcfg)
-  }
-
-  adjustOffset () {
-    const surfSize = this._app.renderer.size.current
-    const overlapW = Math.max(0, this.logicalWidth - surfSize[0])
-    const overlapH = Math.max(0, this.logicalHeight - surfSize[1])
-    vec2.set(this._offset,
-        (this._mouse[0] / surfSize[0]) * -overlapW, (this._mouse[1] / surfSize[1]) * -overlapH)
   }
 
   renderTo (clock :Clock, surf :Surface) {
@@ -271,7 +263,7 @@ export class GridTileSceneViewMode extends SurfaceMode {
    */
   protected drawActors (clock :Clock, surf :Surface) :void
   {
-    // nothing here
+    // nothing here, see subclasses
   }
 
   /**
@@ -317,8 +309,19 @@ export class GridTileSceneViewMode extends SurfaceMode {
 
   protected readonly _mouse :vec2 = vec2.create()
   protected readonly _offset :vec2 = vec2.create()
-  protected readonly _onMouseMove = (event :MouseEvent) => {
-    vec2.set(this._mouse, event.offsetX, event.offsetY)
-    this.adjustOffset()
-  }
+  protected readonly _onMouseMove = (event :MouseEvent) =>
+    {
+      vec2.set(this._mouse, event.offsetX, event.offsetY)
+      this._adjustOffset()
+    }
+
+  /** Adjust our drawing offset after the mouse moves or renderer changes size. */
+  protected readonly _adjustOffset = () =>
+    {
+      const surfSize = this._app.renderer.size.current
+      const overlapW = Math.max(0, this.logicalWidth - surfSize[0])
+      const overlapH = Math.max(0, this.logicalHeight - surfSize[1])
+      vec2.set(this._offset,
+          (this._mouse[0] / surfSize[0]) * -overlapW, (this._mouse[1] / surfSize[1]) * -overlapH)
+    }
 }
