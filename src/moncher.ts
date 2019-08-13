@@ -39,6 +39,8 @@ export class MonsterVisualState
   }
 }
 
+type ScoreFn = (x :number, y :number) => number
+
 
 /**
  * Secret internal monster data.
@@ -234,15 +236,8 @@ export class RanchModel
 
     // then figure out if a monster wants to update state/loc
     for (const monst of this._monsterData.values()) {
-      let scorer = (x :number, y :number) => 0
-      if (monst.boredom > 50) {
-        scorer = (x, y) => {
-          // find a location that hasn't been visited
-          return monst.isInMemory(x, y) ? 0 : 10
-        }
-      } else {
-        continue
-      }
+      const scoreFn :ScoreFn|undefined = this.getScoreFn(monst)
+      if (scoreFn === undefined) continue
       let best :Array<vec2> = []
       let bestScore = Number.MIN_SAFE_INTEGER
       for (let xx = -1; xx < 2; xx++) {
@@ -253,7 +248,7 @@ export class RanchModel
           if (mx < 0 || my < 0 || mx >= this.model.sceneWidth || my >= this.model.sceneHeight) {
             continue
           }
-          const score = scorer(mx, my)
+          const score = scoreFn(mx, my)
           if (score > bestScore) {
             bestScore = score
             best = [ vec2.fromValues(mx, my) ]
@@ -267,6 +262,34 @@ export class RanchModel
         const bestLoc = best[Math.trunc(Math.random() * best.length)]
         this.moveMonster(monst, bestLoc[0], bestLoc[1])
       }
+    }
+  }
+
+  protected getScoreFn (monst :MonsterData) :ScoreFn|undefined
+  {
+    let fns = new Array<ScoreFn>()
+    if (monst.hunger > 50) {
+      fns.push((x, y) => ("grass" === this.getFeature(x, y)) ? 10 : 0)
+    }
+    if (monst.lonliness > 50) {
+      fns.push((x, y) => this.getMonsters(x, y).length) // TODO: counting monsters during move
+    }
+    if (monst.boredom > 50) {
+      fns.push((x, y) => monst.isInMemory(x, y) ? 0 : 10)
+    }
+    if (monst.crowding > 50) {
+      fns.push((x, y) => -2 * this.getMonsters(x, y).length)
+    }
+    switch (fns.length) {
+      case 0: return undefined
+      case 1: return fns[0]
+      default: return (x, y) => {
+          let weight = 0
+          for (const fn of fns) {
+            weight += fn(x, y)
+          }
+          return weight
+        }
     }
   }
 
