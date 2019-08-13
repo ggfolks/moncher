@@ -1,26 +1,15 @@
-import {vec2} from "tfw/core/math"
-import {Mutable} from "tfw/core/react"
 import {App} from "./app"
 import {
   GridTileInfo,
   GridTileSceneConfig,
   GridTileSceneModel,
-  GridTileSceneViewMode,
-  MonsterConfig,
-  MonsterVisualState,
   PropPlacement,
   PropTileInfo
 } from "./gridtiles"
 import {FringeConfig} from "./fringer"
 import * as Fringer from "./fringer"
 import {CarcTile, generateGridModel} from "./carctiles"
-import {
-//  Component,
-  DenseValueComponent,
-  Domain,
-//  Matcher,
-//  System
-} from "tfw/entity/entity"
+import {RanchModel, MonsterRancherMode} from "./moncher"
 
 const root = document.getElementById("root")
 if (!root) throw new Error(`No root?`)
@@ -248,30 +237,12 @@ let tiles = [ roadN, roadS, roadE, roadW,
               grassRoadNES,
               grassRoadNEWS ]
 let model :GridTileSceneModel = generateGridModel(tiles.concat(additional), 30, 30, gridConfig)
-let mode = new GridTileSceneViewMode(app, model)
-app.setMode(mode)
+let ranch :RanchModel = new RanchModel(model)
 
-let viz = new MonsterVisualState(4.5, 4.5, "")
-const val = Mutable.local(viz, MonsterVisualState.eq)
-mode.addMonster(new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png")), val)
+app.setMode(new MonsterRancherMode(app, ranch))
 
-const hunger = new DenseValueComponent<number>("hunger", 0)
-const lonliness = new DenseValueComponent<number>("lonliness", 0)
-const boredom = new DenseValueComponent<number>("boredom", 0)
-const crowding = new DenseValueComponent<number>("crowding", 0)
-const locationMemory = new DenseValueComponent<Array<vec2>>("locationMemory", new Array<vec2>())
-const state = new DenseValueComponent<Mutable<MonsterVisualState>>("state",
-    Mutable.local(new MonsterVisualState(0, 0, "")))
-
-const domain = new Domain({}, { hunger, lonliness, boredom, crowding, locationMemory, state })
-console.log("I am satisfying the compiler: " + domain)
-
-
-const econfig = {
-  components: {hunger: {}, lonliness: {}, boredom: {}, crowding: {}, locationMemory: {}, state: {}}
-}
-
-const id = domain.add(econfig)
-state.update(id, val)
+//let viz = new MonsterVisualState(4.5, 4.5, "")
+//const val = Mutable.local(viz, MonsterVisualState.eq)
+//ranch.addMonster(new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png")), val)
 
 //setInterval(() => { model.tick() }, 200)

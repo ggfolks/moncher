@@ -1,9 +1,8 @@
 import {Scale} from "tfw/core/ui"
-import {Disposer} from "tfw/core/util"
 import {vec2} from "tfw/core/math"
 import {Clock} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
-import {Subject, Value} from "tfw/core/react"
+import {Subject} from "tfw/core/react"
 import {GLC, Texture, TextureConfig, Tile, makeTexture} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {App, SurfaceMode} from "./app"
@@ -58,37 +57,6 @@ export type GridTileSceneConfig = {
   props? :PropTileInfo[]
 }
 
-/**
- * Configuration of a monster.
- */
-export class MonsterConfig
-{
-  constructor (
-    /** What the monster looks like, can be a shared object between multiple monsters. */
-    readonly info :PropTileInfo
-  ) {}
-}
-
-/**
- * Runtime information about a monster's visual state.
- */
-export class MonsterVisualState
-{
-  constructor (
-    readonly x :number,
-    readonly y :number,
-    readonly state :string // TODO: walking, eating, pooping, mating...
-  ) {}
-
-  /**
-   * Compares two MonsterVisualState's for equality.
-   */
-  static eq (a :MonsterVisualState, b :MonsterVisualState) :boolean
-  {
-    return (a.x === b.x) && (a.y === b.y) && (a.state === b.state)
-  }
-}
-
 export class PropPlacement
 {
   constructor (
@@ -141,23 +109,6 @@ export type GridTileSet = {
 type PropViz = {
   tile :Tile
   pos :vec2
-}
-
-class MonsterSprite
-{
-  /** The tile for drawing the monster. */
-  public tile? :Tile
-
-  /** Position. */
-  public pos :vec2 = vec2.create()
-
-  /** A disposer just for this sprite. */
-  public disposer :Disposer = new Disposer()
-
-  constructor (
-    /** The most recent state. */
-    public state :MonsterVisualState
-  ) {}
 }
 
 type GridTileSceneViz = {
@@ -267,48 +218,12 @@ export class GridTileSceneViewMode extends SurfaceMode {
   }
 
   /**
-   * Add a monster to the system.
+   * Helper for subclass.
    */
-  addMonster (config :MonsterConfig, viz :Value<MonsterVisualState>) :void {
-    const sprite = new MonsterSprite(viz.current)
-    this._monsters.set(viz, sprite)
-    this.onDispose.add(sprite.disposer)
-    sprite.disposer.add(viz.onEmit(val => this.updateMonsterSprite(sprite, val)))
-
-    // Async lookup monster sprite tile
-    // TODO: monster resources can be shared by monsters with the same look
-    // (maybe the texture system already does this?)
-    const tcfg = { ...Texture.DefaultConfig, scale: new Scale(this._model.config.scale) }
-    const img :Subject<Texture> = makeTexture(
-        this._app.renderer.glc, loadImage(config.info.base), tcfg)
-    const remover = img.onValue(tex => {
-      sprite.tile = tex
-      // let's just call into updateMonsterSprite to rejiggle the location
-      this.updateMonsterSprite(sprite, sprite.state)
-    })
-    sprite.disposer.add(remover)
-  }
-
-  /**
-   * Remove a monster from the system.
-   */
-  removeMonster (...TODO :any[]) :void {
-    // remove from map, remove the disposer from our dispose, but then call the disposer
-  }
-
-  /**
-   * Update a monster sprite.
-   */
-  protected updateMonsterSprite (sprite :MonsterSprite, state :MonsterVisualState)
+  protected getTexture (texture :string) :Subject<Texture>
   {
-    sprite.state = state // just copy the latest state in
-    let xx = state.x * this._model.config.tileWidth
-    let yy = state.y * this._model.config.tileHeight
-    if (sprite.tile) {
-      xx -= sprite.tile.size[0] / 2
-      yy -= sprite.tile.size[1] / 2
-    }
-    vec2.set(sprite.pos, xx, yy)
+    const tcfg = { ...Texture.DefaultConfig, scale: new Scale(this._model.config.scale) }
+    return makeTexture(this._app.renderer.glc, loadImage(texture), tcfg)
   }
 
   adjustOffset () {
@@ -345,13 +260,18 @@ export class GridTileSceneViewMode extends SurfaceMode {
     for (let prop of viz.props) {
       surf.drawAt(prop.tile, prop.pos)
     }
-    // draw monsters
-    for (const monst of this._monsters.values()) {
-      if (monst.tile) {
-        surf.drawAt(monst.tile, monst.pos)
-      }
-    }
+    // draw any actors
+    this.drawActors(clock, surf)
+
     surf.restoreTx()
+  }
+
+  /**
+   * Override to do additional drawing.
+   */
+  protected drawActors (clock :Clock, surf :Surface) :void
+  {
+    // nothing here
   }
 
   /**
@@ -394,8 +314,6 @@ export class GridTileSceneViewMode extends SurfaceMode {
 
   /** The visualization of the scene, when we have it. */
   protected _viz? :GridTileSceneViz
-
-  protected readonly _monsters :Map<Value<MonsterVisualState>, MonsterSprite> = new Map()
 
   protected readonly _mouse :vec2 = vec2.create()
   protected readonly _offset :vec2 = vec2.create()
