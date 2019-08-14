@@ -8,11 +8,11 @@ import {dim2} from "tfw/core/math"
 export class App {
   readonly renderer :Renderer
   readonly loop  = new Loop()
-  private mode! :Mode
+  private mode :Mode
 
   constructor (readonly root :HTMLElement) {
     this.renderer = new Renderer({
-      // kind of a hack: when the window size changes, we emit an update with our div size;
+      // kind of a hack: when the window size changes, we emit an update with our div size
       // browsers don't emit resize events for arbitrary divs (there's apparently a proposal, yay)
       size: windowSize(window).map(size => dim2.set(size, root.clientWidth, root.clientHeight)),
       scaleFactor: window.devicePixelRatio,
