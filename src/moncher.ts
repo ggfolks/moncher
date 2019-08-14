@@ -112,7 +112,9 @@ class MonsterData
 export class RanchModel
 {
   /** The public view of monster state. */
-  public monsters :RMap<number, MonsterVisualState>
+  public get monsters () :RMap<number, MonsterVisualState> {
+    return this._monsters
+  }
 
   /** The configuration data for a monster, guaranteed to be populated prior to
    *  'monsters' being updated. */
@@ -122,7 +124,7 @@ export class RanchModel
     /** The model we're on. */
     public readonly model :GridTileSceneModel
   ) {
-    this.monsters = this._monsters = MutableMap.local()
+    this._monsters = MutableMap.local()
   }
 
   /**
