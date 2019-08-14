@@ -236,6 +236,8 @@ let tiles = [ roadN, roadS, roadE, roadW,
               grassRoadNW, grassRoadNE, grassRoadSE, grassRoadSW,
               grassRoadNES,
               grassRoadNEWS ]
+//console.log("Compiler gruntle: " + additional)
+//let model :GridTileSceneModel = generateGridModel(tiles, 30, 30, gridConfig)
 let model :GridTileSceneModel = generateGridModel(tiles.concat(additional), 30, 30, gridConfig)
 let ranch :RanchModel = new RanchModel(model)
 ranch.addMonster(new MonsterConfig(new PropTileInfo("mtx", "props/mountain_1.png")), 4, 4)

@@ -3,7 +3,7 @@ import {vec2} from "tfw/core/math"
 import {Subject} from "tfw/core/react"
 import {MapChange, MutableMap, RMap} from "tfw/core/rcollect"
 import {Disposer} from "tfw/core/util"
-import {Texture, Tile} from "tfw/scene2/gl"
+import {Renderer, Texture, Tile} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {App} from "./app"
 import {GridTileSceneModel, GridTileSceneViewMode, PropTileInfo} from "./gridtiles"
@@ -30,13 +30,13 @@ export class MonsterVisualState
     readonly state :string // TODO: walking, eating, pooping, mating...
   ) {}
 
-  /**
-   * Compares two MonsterVisualState's for equality.
-   */
-  static eq (a :MonsterVisualState, b :MonsterVisualState) :boolean
-  {
-    return (a.x === b.x) && (a.y === b.y) && (a.state === b.state)
-  }
+//  /**
+//   * Compares two MonsterVisualState's for equality.
+//   */
+//  static eq (a :MonsterVisualState, b :MonsterVisualState) :boolean
+//  {
+//    return (a.x === b.x) && (a.y === b.y) && (a.state === b.state)
+//  }
 }
 
 type ScoreFn = (x :number, y :number) => number
@@ -163,7 +163,7 @@ export class RanchModel
     this._monsters.set(data.id, data.toVisualState())
   }
 
-  protected getMonsters (x :number, y :number) :Array<MonsterData>
+  public getMonsters (x :number, y :number) :Array<MonsterData>
   {
     if (x >= 0 && y >= 0 && x < this.model.sceneWidth && y < this.model.sceneHeight) {
       const array = this._monstersByLocation.get(this.locToKey(x, y))
@@ -325,6 +325,10 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
 
     this.onDispose.add(_ranch.monsters.onChange(this._monsterChange))
     _ranch.monsters.forEach((monster, id) => { this.updateMonster(id, monster) })
+
+    const theRoot = this._app.root
+    theRoot.addEventListener("mousedown", this._onMouseDown)
+    this.onDispose.add(() => theRoot.removeEventListener("mousemove", this._onMouseDown))
   }
 
   /**
@@ -351,6 +355,9 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
         surf.drawAt(monst.tile, monst.pos)
       }
     }
+
+    // finally, more stuff:
+    if (this._menu) this._menu.render(surf)
   }
 
   protected updateMonster (id :number, state :MonsterVisualState)
@@ -386,6 +393,34 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     sprite.disposer.dispose()
   }
 
+  protected mouseDown (x :number, y :number) :void
+  {
+    if (this._menu) {
+      // TODO!
+      this.onDispose.remove(this._menu.disposer)
+      this._menu.disposer.dispose()
+      this._menu = undefined
+      return
+    }
+
+    x = Math.trunc((x - this._offset[0]) / this._model.config.tileWidth)
+    y = Math.trunc((y - this._offset[1]) / this._model.config.tileHeight)
+    console.log("mouse: " + x + ", " + y)
+    if (x >= 0 && y >= 0 && x < this._model.sceneWidth && y < this._model.sceneHeight) {
+      this.tileClicked(x, y)
+    }
+  }
+
+  protected tileClicked (x :number, y :number) :void
+  {
+    // christ, I don't know, see if there's a monster there
+    console.log("tile!: " + x + ", " + y)
+    const monst = this._ranch.getMonsters(x, y)[0]
+    if (!monst) return
+    this._menu = new MonsterMenu(this._app.renderer, monst)
+    this.onDispose.add(this._menu.disposer)
+  }
+
   protected readonly _monsterChange = (change :MapChange<number, MonsterVisualState>) => {
     if (change.type === "set") {
       this.updateMonster(change.key, change.value)
@@ -394,5 +429,30 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     }
   }
 
+  protected _menu? :MonsterMenu
+
+  protected readonly _onMouseDown = (event :MouseEvent) => this.mouseDown(event.x, event.y)
+
   protected readonly _monsters :Map<number, MonsterSprite> = new Map()
+}
+
+class MonsterMenu
+{
+  public readonly disposer :Disposer = new Disposer()
+
+  constructor (
+    renderer :Renderer,
+    public data :MonsterData
+  ) {
+    // TODO
+    // jesus setting up a UI is a bunch of stuff
+  }
+
+  public render (surf :Surface)
+  {
+    //this._host.render(surf)
+    console.log("Rendering a menu!")
+  }
+
+  //protected readonly _host :Host2
 }
