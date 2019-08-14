@@ -1,10 +1,17 @@
+import {loadImage} from "tfw/core/assets"
 import {Clock} from "tfw/core/clock"
+import {Color} from "tfw/core/color"
 import {vec2} from "tfw/core/math"
-import {Subject} from "tfw/core/react"
+import {Mutable, Subject} from "tfw/core/react"
 import {MapChange, MutableMap, RMap} from "tfw/core/rcollect"
 import {Disposer} from "tfw/core/util"
 import {Renderer, Texture, Tile} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
+import {RootConfig} from "tfw/ui/element"
+import {Host2} from "tfw/ui/host2"
+import {Model, ModelData} from "tfw/ui/model"
+import {ImageResolver, StyleDefs} from "tfw/ui/style"
+import {Theme, UI} from "tfw/ui/ui"
 import {App} from "./app"
 import {GridTileSceneModel, GridTileSceneViewMode, PropTileInfo} from "./gridtiles"
 
@@ -329,6 +336,8 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     _ranch.monsters.forEach((monster, id) => { this.updateMonster(id, monster) })
 
     const theRoot = this._app.root
+
+    // TODO: change these mouse event handlers
     theRoot.addEventListener("mousedown", this._onMouseDown)
     this.onDispose.add(() => theRoot.removeEventListener("mousedown", this._onMouseDown))
   }
@@ -447,15 +456,105 @@ class MonsterMenu
     renderer :Renderer,
     public data :MonsterData
   ) {
-    // TODO
-    // jesus setting up a UI is a bunch of stuff
+    const buttonCorner = 5
+    const styles :StyleDefs = {
+      colors: {
+        transWhite: Color.fromARGB(.3, 1, 1, 1),
+      },
+      shadows: {},
+      fonts: {
+        base: {family: "Helvetica", size: 16},
+      },
+      paints: {
+        white: {type: "color", color: "#FFFFFF"},
+        black: {type: "color", color: "#000000"},
+        lightGray: {type: "color", color: "#999999"},
+        darkGray: {type: "color", color: "#666666"},
+      },
+      borders: {
+        button: {stroke: {type: "color", color: "#999999"}, cornerRadius: buttonCorner},
+        buttonFocused: {stroke: {type: "color", color: "#FFFFFF"}, cornerRadius: buttonCorner},
+      },
+      backgrounds: {
+        buttonNormal: {
+          fill: {type: "color", color: "#99CCFF"},
+          cornerRadius: buttonCorner,
+          shadow: {offsetX: 2, offsetY: 2, blur: 5, color: "#000000"}
+        },
+        buttonPressed: {fill: {type: "color", color: "#77AADD"}, cornerRadius: buttonCorner},
+        buttonDisabled: {fill: {type: "color", color: "#77AADD"}, cornerRadius: buttonCorner},
+      },
+    }
+    const theme :Theme = {
+      default: {
+        label: {
+          font: "$base",
+          fill: "$black",
+          disabled: {
+            fill: "$darkGray",
+          },
+          selection: {
+            fill: "$lightGray",
+          }
+        },
+        box: {},
+      },
+      button: {
+        box: {
+          padding: 10,
+          border: "$button",
+          background: "$buttonNormal",
+          disabled: {background: "$buttonDisabled"},
+          focused: {border: "$buttonFocused"},
+          pressed: {border: "$buttonFocused", background: "$buttonPressed"},
+        },
+      },
+    }
+    const rootConfig :RootConfig = {
+      type: "root",
+      scale: renderer.scale,
+      contents: {
+        type: "column",
+        offPolicy: "stretch",
+        gap: 10,
+        contents: [{
+          type: "button",
+          onClick: "button.clicked",
+          contents: {
+            type: "box",
+            contents: {type: "label", text: "button.text"},
+          },
+        }],
+      },
+    }
+
+    const model :ModelData = {
+      button: {
+        text: Mutable.local("Cheese"),
+        enabled: Mutable.local(false),
+        clicked: () => { console.log("I have clicked")},
+      },
+    }
+
+    const resolver :ImageResolver = {
+      resolve: loadImage,
+    }
+
+    const ui = new UI(theme, styles, resolver, new Model(model))
+    this._host = new Host2(renderer)
+    this.disposer.add(this._host)
+    this.disposer.add(this._host.bind(renderer.canvas))
+
+    const root = ui.createRoot(rootConfig)
+    root.pack(200, 400)
+    this._host.addRoot(root, vec2.fromValues(10, 10))
   }
 
   public render (surf :Surface)
   {
-    //this._host.render(surf)
-    console.log("Rendering a menu!")
+//    console.log("Rendering a menu!")
+    this._host.render(surf)
   }
 
-  //protected readonly _host :Host2
+  protected readonly _host :Host2
 }
