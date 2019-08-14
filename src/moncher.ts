@@ -335,9 +335,8 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     this.onDispose.add(_ranch.monsters.onChange(this._monsterChange))
     _ranch.monsters.forEach((monster, id) => { this.updateMonster(id, monster) })
 
-    const theRoot = this._app.root
-
     // TODO: change these mouse event handlers
+    const theRoot = this._app.root
     theRoot.addEventListener("mousedown", this._onMouseDown)
     this.onDispose.add(() => theRoot.removeEventListener("mousedown", this._onMouseDown))
   }
@@ -485,7 +484,7 @@ class MonsterMenu
           shadow: {offsetX: 2, offsetY: 2, blur: 5, color: "#000000"}
         },
         buttonPressed: {fill: {type: "color", color: "#77AADD"}, cornerRadius: buttonCorner},
-        buttonDisabled: {fill: {type: "color", color: "#77AADD"}, cornerRadius: buttonCorner},
+        buttonDisabled: {fill: {type: "color", color: "$transWhite"}, cornerRadius: buttonCorner},
       },
     }
     const theme :Theme = {
