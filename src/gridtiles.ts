@@ -38,7 +38,9 @@ export class PropTileInfo extends TileInfo
     /** The width of this prop, or omitted to just use the base image size. */
     public readonly width? :number,
     /** The height of this prop, or omitted to just use the base image size. */
-    public readonly height? :number
+    public readonly height? :number,
+    /** An override scale. */
+    public readonly scale? :number
   ) {
     super(id, base)
   }
@@ -137,6 +139,9 @@ function chopTiles (tex :Texture, w :number, h :number) :Tile[]
  * Load the tiles for a prop.
  */
 function makeProp (glc :GLC, tcfg :TextureConfig, cfg :PropTileInfo) :Subject<PropTile> {
+  if (cfg.scale !== undefined) {
+    tcfg = {...tcfg, scale: new Scale(cfg.scale)}
+  }
   return makeTexture(glc, loadImage(cfg.base), tcfg).map(tex => {
     let tiles :Array<Tile>
     if (cfg.width !== undefined && cfg.height !== undefined) {
@@ -222,9 +227,10 @@ export class GridTileSceneViewMode extends SurfaceMode {
   /**
    * Helper for subclass.
    */
-  protected getTexture (texture :string) :Subject<Texture>
+  protected getTexture (texture :string, scale? :number) :Subject<Texture>
   {
-    const tcfg = { ...Texture.DefaultConfig, scale: new Scale(this._model.config.scale) }
+    const theScale = (scale === undefined) ? this._model.config.scale : scale
+    const tcfg = { ...Texture.DefaultConfig, scale: new Scale(theScale) }
     return makeTexture(this._app.renderer.glc, loadImage(texture), tcfg)
   }
 

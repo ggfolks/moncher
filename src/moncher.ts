@@ -384,7 +384,8 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
       sprite = new MonsterSprite(state)
       this._monsters.set(id, sprite)
       this.onDispose.add(sprite.disposer)
-      const img :Subject<Texture> = this.getTexture(cfg.info.base)
+      // TODO: NOTE: we're not honoring the width/height in the PropTileInfo here
+      const img :Subject<Texture> = this.getTexture(cfg.info.base, cfg.info.scale)
       const remover = img.onValue(tex => {
         sprite!.tile = tex
         // let's just call into updateMonsterSprite to rejiggle the location
