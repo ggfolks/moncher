@@ -330,7 +330,7 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
 
     const theRoot = this._app.root
     theRoot.addEventListener("mousedown", this._onMouseDown)
-    this.onDispose.add(() => theRoot.removeEventListener("mousemove", this._onMouseDown))
+    this.onDispose.add(() => theRoot.removeEventListener("mousedown", this._onMouseDown))
   }
 
   /**
