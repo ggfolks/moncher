@@ -417,7 +417,7 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
 
     x = Math.trunc((x - this._offset[0]) / this._model.config.tileWidth)
     y = Math.trunc((y - this._offset[1]) / this._model.config.tileHeight)
-    console.log("mouse: " + x + ", " + y)
+    //console.log("mouse: " + x + ", " + y)
     if (x >= 0 && y >= 0 && x < this._model.sceneWidth && y < this._model.sceneHeight) {
       this.tileClicked(x, y)
     }
@@ -425,11 +425,12 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
 
   protected tileClicked (x :number, y :number) :void
   {
-    // christ, I don't know, see if there's a monster there
-    console.log("tile!: " + x + ", " + y)
     const monst = this._ranch.getMonsters(x, y)[0]
     if (!monst) return
-    this._menu = new MonsterMenu(this._app.renderer, monst)
+    this._menu = new MonsterMenu(
+        this._app.renderer, monst,
+        (x + .5) * this._model.config.tileWidth,
+        (y + .5) * this._model.config.tileHeight)
     this.onDispose.add(this._menu.disposer)
   }
 
@@ -454,7 +455,9 @@ class MonsterMenu
 
   constructor (
     renderer :Renderer,
-    public data :MonsterData
+    public data :MonsterData,
+    centerX :number,
+    centerY :number,
   ) {
     const buttonCorner = 5
     const styles :StyleDefs = {
@@ -546,8 +549,8 @@ class MonsterMenu
     this.disposer.add(this._host.bind(renderer.canvas))
 
     const root = ui.createRoot(rootConfig)
-    root.pack(200, 400)
-    this._host.addRoot(root, vec2.fromValues(10, 10))
+    root.pack(150, 150)
+    this._host.addRoot(root, vec2.fromValues(centerX - 75, centerY - 75))
   }
 
   public render (surf :Surface)
