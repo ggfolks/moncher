@@ -3,6 +3,8 @@ import {vec2} from "tfw/core/math"
 import {Clock} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
 import {Subject} from "tfw/core/react"
+import {MapChange} from "tfw/core/rcollect"
+import {Hand, Pointer} from "tfw/input/hand"
 import {GLC, Texture, TextureConfig, Tile, makeTexture} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {App, SurfaceMode} from "./app"
@@ -203,8 +205,8 @@ export class GridTileSceneViewMode extends SurfaceMode {
       this._viz = this.makeViz(_model, tileset)
     }))
     this.onDispose.add(_app.renderer.size.onValue(this._adjustOffset))
-    this._app.root.addEventListener("mousemove", this._onMouseMove)
-    this.onDispose.add(() => this._app.root.removeEventListener("mousemove", this._onMouseMove))
+    this.onDispose.add(this._hand = new Hand(this._app.root))
+    this.onDispose.add(this._hand.pointers.onChange(this._handChanged))
   }
 
   /** Get the logical width of the scene we're rendering. */
@@ -231,6 +233,10 @@ export class GridTileSceneViewMode extends SurfaceMode {
       surf.clearTo(0.5, 0.5, 0.5, 1)
       return
     }
+
+    // update the hand, which may trigger an offset adjustment
+    this._hand.update()
+
     surf.clearTo(1, 1, 1, 1)
     surf.saveTx()
     surf.translate(this._offset)
@@ -307,13 +313,10 @@ export class GridTileSceneViewMode extends SurfaceMode {
   /** The visualization of the scene, when we have it. */
   protected _viz? :GridTileSceneViz
 
-  protected readonly _mouse :vec2 = vec2.create()
+  protected _hand :Hand
+
+  protected readonly _handPos :vec2 = vec2.create()
   protected readonly _offset :vec2 = vec2.create()
-  protected readonly _onMouseMove = (event :MouseEvent) =>
-    {
-      vec2.set(this._mouse, event.offsetX, event.offsetY)
-      this._adjustOffset()
-    }
 
   /** Adjust our drawing offset after the mouse moves or renderer changes size. */
   protected readonly _adjustOffset = () =>
@@ -322,6 +325,17 @@ export class GridTileSceneViewMode extends SurfaceMode {
       const overlapW = Math.max(0, this.logicalWidth - surfSize[0])
       const overlapH = Math.max(0, this.logicalHeight - surfSize[1])
       vec2.set(this._offset,
-          (this._mouse[0] / surfSize[0]) * -overlapW, (this._mouse[1] / surfSize[1]) * -overlapH)
+          (this._handPos[0] / surfSize[0]) * -overlapW,
+          (this._handPos[1] / surfSize[1]) * -overlapH)
+    }
+
+  /** React to mouse/touch events. */
+  protected readonly _handChanged = (change :MapChange<number, Pointer>) =>
+    {
+      // TODO: something more sophisticated?
+      if (change.type === "set") {
+        vec2.copy(this._handPos, change.value.position)
+        this._adjustOffset()
+      }
     }
 }
