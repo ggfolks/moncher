@@ -42,7 +42,7 @@ export class PropTileInfo extends TileInfo
   }
 }
 
-export type GridTileSceneConfig = {
+export interface GridTileSceneConfig  {
   /** The width of each tile. */
   tileWidth :number
   /** The height of each tile. */
@@ -101,7 +101,7 @@ type PropTile = {
   tiles :Array<Tile>
 }
 
-export type GridTileSet = {
+export interface GridTileSet {
   sets: {[key :string] :GridTile}
   props: {[key :string] :PropTile}
 }
