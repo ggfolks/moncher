@@ -348,9 +348,10 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     vec2.set(sprite.pos, xx, yy)
   }
 
-  protected drawActors (clock :Clock, surf :Surface) :void
+  protected renderToOffset (clock :Clock, surf :Surface) :void
   {
-    super.drawActors(clock, surf)
+    super.renderToOffset(clock, surf)
+
     // draw monsters
     for (const monst of this._monsters.values()) {
       if (monst.tile) {

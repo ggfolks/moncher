@@ -227,14 +227,26 @@ export class GridTileSceneViewMode extends SurfaceMode {
   }
 
   renderTo (clock :Clock, surf :Surface) {
-    const viz = this._viz
-    if (!viz) {
+    if (!this._viz) {
       surf.clearTo(0.5, 0.5, 0.5, 1)
       return
     }
     surf.clearTo(1, 1, 1, 1)
     surf.saveTx()
     surf.translate(this._offset)
+    try {
+      this.renderToOffset(clock, surf)
+    } finally {
+      surf.restoreTx()
+    }
+  }
+
+  /**
+   * Render during surface translation.
+   */
+  protected renderToOffset (clock :Clock, surf :Surface) :void
+  {
+    const viz = this._viz! // this method doesn't get called unless viz is defined
     const xi = this._model.config.tileWidth
     const yi = this._model.config.tileHeight
     const pos = vec2.create()
@@ -252,18 +264,6 @@ export class GridTileSceneViewMode extends SurfaceMode {
     for (let prop of viz.props) {
       surf.drawAt(prop.tile, prop.pos)
     }
-    // draw any actors
-    this.drawActors(clock, surf)
-
-    surf.restoreTx()
-  }
-
-  /**
-   * Override to do additional drawing.
-   */
-  protected drawActors (clock :Clock, surf :Surface) :void
-  {
-    // nothing here, see subclasses
   }
 
   /**
