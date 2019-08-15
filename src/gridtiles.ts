@@ -316,10 +316,16 @@ export class GridTileSceneViewMode extends SurfaceMode {
     return viz
   }
 
+  protected pointerUpdated (p :Pointer) :void
+  {
+      vec2.copy(this._handPos, p.position)
+      this._adjustOffset()
+  }
+
   /** The visualization of the scene, when we have it. */
   protected _viz? :GridTileSceneViz
 
-  protected _hand :Hand
+  protected readonly _hand :Hand
 
   protected readonly _handPos :vec2 = vec2.create()
   protected readonly _offset :vec2 = vec2.create()
@@ -340,8 +346,7 @@ export class GridTileSceneViewMode extends SurfaceMode {
     {
       // TODO: something more sophisticated?
       if (change.type === "set") {
-        vec2.copy(this._handPos, change.value.position)
-        this._adjustOffset()
+        this.pointerUpdated(change.value)
       }
     }
 }

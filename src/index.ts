@@ -220,6 +220,9 @@ const grassRoadEend = new CarcTile(grass, grass, grass,
 const grassRoadWend = new CarcTile(grass, grass, grass,
                            cobble, cobble, grass,
                            grass, grass, grass, .01)
+//const dirtPatch = new CarcTile(grass, grass, grass,
+//                                grass, dirt, grass,
+//                                grass, grass, grass, .02)
 let additional = [ roadNES, grassRoadNEW, grassRoadSEW, grassRoadNWS,
                    grassRoadNend, grassRoadSend, grassRoadWend, grassRoadEend ]
 
@@ -244,6 +247,10 @@ ranch.addMonster(
   new MonsterConfig(
     new PropTileInfo("mlp", "monsters/_0018_RunnerGreen.png", undefined, undefined, 13)),
   4, 4)
+ranch.addMonster(
+  new MonsterConfig(
+    new PropTileInfo("grunt", "monsters/_0017_GruntRed.png", undefined, undefined, 13)),
+  6, 6)
 
 app.setMode(new MonsterRancherMode(app, ranch))
 

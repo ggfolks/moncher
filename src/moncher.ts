@@ -5,6 +5,7 @@ import {vec2} from "tfw/core/math"
 import {Mutable, Subject} from "tfw/core/react"
 import {MapChange, MutableMap, RMap} from "tfw/core/rcollect"
 import {Disposer} from "tfw/core/util"
+import {Pointer} from "tfw/input/hand"
 import {Renderer, Texture, Tile} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {RootConfig} from "tfw/ui/element"
@@ -36,18 +37,9 @@ export class MonsterVisualState
     readonly y :number,
     readonly state :string // TODO: walking, eating, pooping, mating...
   ) {}
-
-//  /**
-//   * Compares two MonsterVisualState's for equality.
-//   */
-//  static eq (a :MonsterVisualState, b :MonsterVisualState) :boolean
-//  {
-//    return (a.x === b.x) && (a.y === b.y) && (a.state === b.state)
-//  }
 }
 
 type ScoreFn = (x :number, y :number) => number
-
 
 /**
  * Secret internal monster data.
@@ -334,11 +326,6 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
 
     this.onDispose.add(_ranch.monsters.onChange(this._monsterChange))
     _ranch.monsters.forEach((monster, id) => { this.updateMonster(id, monster) })
-
-    // TODO: change these mouse event handlers
-    const theRoot = this._app.root
-    theRoot.addEventListener("mousedown", this._onMouseDown)
-    this.onDispose.add(() => theRoot.removeEventListener("mousedown", this._onMouseDown))
   }
 
   /**
@@ -405,21 +392,22 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     sprite.disposer.dispose()
   }
 
-  protected mouseDown (x :number, y :number) :void
+  protected pointerUpdated (p :Pointer) :void
   {
+    super.pointerUpdated(p)
+
     if (this._menu) {
-      // TODO!
-      this.onDispose.remove(this._menu.disposer)
-      this._menu.disposer.dispose()
-      this._menu = undefined
+      console.log("Menu up. Just seeing what's up.")
       return
     }
 
-    x = Math.trunc((x - this._offset[0]) / this._model.config.tileWidth)
-    y = Math.trunc((y - this._offset[1]) / this._model.config.tileHeight)
-    //console.log("mouse: " + x + ", " + y)
-    if (x >= 0 && y >= 0 && x < this._model.sceneWidth && y < this._model.sceneHeight) {
-      this.tileClicked(x, y)
+    if (p.pressed) {
+      // see where that is in tile coordinates
+      const x = Math.trunc((p.position[0] - this._offset[0]) / this._model.config.tileWidth)
+      const y = Math.trunc((p.position[1] - this._offset[1]) / this._model.config.tileHeight)
+      if (x >= 0 && y >= 0 && x < this._model.sceneWidth && y < this._model.sceneHeight) {
+        this.tileClicked(x, y)
+      }
     }
   }
 
@@ -443,8 +431,6 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
   }
 
   protected _menu? :MonsterMenu
-
-  protected readonly _onMouseDown = (event :MouseEvent) => this.mouseDown(event.x, event.y)
 
   protected readonly _monsters :Map<number, MonsterSprite> = new Map()
 }
@@ -522,6 +508,7 @@ class MonsterMenu
         gap: 10,
         contents: [{
           type: "button",
+          enabled: "button.enabled",
           onClick: "button.clicked",
           contents: {
             type: "box",
@@ -534,7 +521,7 @@ class MonsterMenu
     const model :ModelData = {
       button: {
         text: Mutable.local("Cheese"),
-        enabled: Mutable.local(false),
+        enabled: Mutable.local(true),
         clicked: () => { console.log("I have clicked")},
       },
     }
