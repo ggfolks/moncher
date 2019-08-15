@@ -8,7 +8,7 @@ import {Disposer} from "tfw/core/util"
 import {Pointer} from "tfw/input/hand"
 import {Renderer, Texture, Tile} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
-import {RootConfig} from "tfw/ui/element"
+import {ElementConfig, RootConfig} from "tfw/ui/element"
 import {Host2} from "tfw/ui/host2"
 import {Model, ModelData} from "tfw/ui/model"
 import {ImageResolver, StyleDefs} from "tfw/ui/style"
@@ -510,6 +510,72 @@ class MonsterMenu
         },
       },
     }
+
+    const model :ModelData = {
+      attack: {
+        text: Mutable.local("Attack!"),
+        enabled: Mutable.local(true),
+        clicked: () => { console.log("I have clicked attack")},
+      },
+      heal: {
+        text: Mutable.local("Heal!"),
+        enabled: Mutable.local(true),
+        clicked: () => { console.log("I have clicked heal")},
+      },
+      close: {
+        text: Mutable.local("X"),
+        clicked: () => { console.log("CLOSE!") },
+      },
+      shim: {
+        text: Mutable.local(""),
+      }
+    }
+
+    const shim :ElementConfig = {
+      type: "label",
+      text: "shim.text"
+    }
+
+    const elements = new Array<ElementConfig>()
+    if (data.lonliness > 25) { // TODO: arbitrary for now
+      // Attack button
+      elements.push({
+        type: "button",
+        enabled: "attack.enabled",
+        onClick: "attack.clicked",
+        contents: {
+          type: "box",
+          contents: {type: "label", text: "attack.text"},
+        },
+      })
+    } else {
+      elements.push(shim)
+    }
+    if (data.hunger < 25) { // TODO: arbitrary for now
+      // Heal button
+      elements.push({
+        type: "button",
+        enabled: "heal.enabled",
+        onClick: "heal.clicked",
+        contents: {
+          type: "box",
+          contents: {type: "label", text: "heal.text"},
+        },
+      })
+    } else {
+      elements.push(shim)
+    }
+
+    // add an X button to close it out
+    elements.push({
+      type: "button",
+      onClick: "close.clicked",
+      contents: {
+        type: "box",
+        contents: {type: "label", text: "close.text"},
+      },
+    })
+
     const rootConfig :RootConfig = {
       type: "root",
       scale: renderer.scale,
@@ -517,23 +583,7 @@ class MonsterMenu
         type: "column",
         offPolicy: "stretch",
         gap: 10,
-        contents: [{
-          type: "button",
-          enabled: "button.enabled",
-          onClick: "button.clicked",
-          contents: {
-            type: "box",
-            contents: {type: "label", text: "button.text"},
-          },
-        }],
-      },
-    }
-
-    const model :ModelData = {
-      button: {
-        text: Mutable.local("Cheese"),
-        enabled: Mutable.local(true),
-        clicked: () => { console.log("I have clicked")},
+        contents: elements,
       },
     }
 
