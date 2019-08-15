@@ -343,6 +343,13 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     vec2.set(sprite.pos, xx, yy)
   }
 
+  public renderTo (clock :Clock, surf :Surface) :void
+  {
+    super.renderTo(clock, surf)
+
+    if (this._menu) this._menu.render(surf)
+  }
+
   protected renderToOffset (clock :Clock, surf :Surface) :void
   {
     super.renderToOffset(clock, surf)
@@ -353,9 +360,6 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
         surf.drawAt(monst.tile, monst.pos)
       }
     }
-
-    // finally, more stuff:
-    if (this._menu) this._menu.render(surf)
   }
 
   protected updateMonster (id :number, state :MonsterVisualState)
@@ -394,12 +398,17 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
 
   protected pointerUpdated (p :Pointer) :void
   {
-    super.pointerUpdated(p)
-
     if (this._menu) {
-      console.log("Menu up. Just seeing what's up.")
-      return
+      if (p.pressed) {
+        this.onDispose.remove(this._menu.disposer)
+        this._menu.disposer.dispose()
+        this._menu = undefined
+      } else {
+        return; // suppress any other mouse handling while menu is up
+      }
     }
+
+    super.pointerUpdated(p)
 
     if (p.pressed) {
       // see where that is in tile coordinates
@@ -415,10 +424,12 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
   {
     const monst = this._ranch.getMonsters(x, y)[0]
     if (!monst) return
-    this._menu = new MonsterMenu(
-        this._app.renderer, monst,
-        (x + .5) * this._model.config.tileWidth,
-        (y + .5) * this._model.config.tileHeight)
+
+    const screenX = Math.max(0, (x + .5) * this._model.config.tileWidth + this._offset[0])
+    const screenY = Math.max(0, (y + .5) * this._model.config.tileHeight + this._offset[1])
+    console.log(`Popping menu at ${screenX} ${screenY}`)
+
+    this._menu = new MonsterMenu(this._app.renderer, monst, screenX, screenY)
     this.onDispose.add(this._menu.disposer)
   }
 
@@ -536,8 +547,10 @@ class MonsterMenu
     this.disposer.add(this._host.bind(renderer.canvas))
 
     const root = ui.createRoot(rootConfig)
-    root.pack(150, 150)
-    this._host.addRoot(root, vec2.fromValues(centerX - 75, centerY - 75))
+    root.pack(MonsterMenu.RADIAL_SIZE, MonsterMenu.RADIAL_SIZE)
+    this._host.addRoot(root, vec2.fromValues(
+        Math.max(0, centerX - (MonsterMenu.RADIAL_SIZE / 2)),
+        Math.max(0, centerY - (MonsterMenu.RADIAL_SIZE / 2))))
   }
 
   public render (surf :Surface)
@@ -545,6 +558,8 @@ class MonsterMenu
 //    console.log("Rendering a menu!")
     this._host.render(surf)
   }
+
+  protected static readonly RADIAL_SIZE = 150
 
   protected readonly _host :Host2
 }
