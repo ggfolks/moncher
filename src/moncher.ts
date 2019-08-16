@@ -11,13 +11,35 @@ import {GridTileSceneModel, GridTileSceneViewMode, PropTileInfo} from "./gridtil
 import {MonsterMenu} from "./monstermenu"
 
 /**
+ * Broadly, the kind of monster.
+ */
+export class MonsterKind
+{
+  public static readonly RUNNER :MonsterKind = new MonsterKind(true, false, false)
+  public static readonly HEALER :MonsterKind = new MonsterKind(false, true, true)
+  public static readonly TESTER :MonsterKind = new MonsterKind(true, true, true)
+
+  private constructor (
+    public readonly canRangeAttack :boolean,
+    public readonly canMeleeAttack :boolean,
+    public readonly canHeal :boolean,
+  ) {}
+}
+
+/**
  * Configuration of a monster.
  */
 export class MonsterConfig
 {
   constructor (
     /** What the monster looks like, can be a shared object between multiple monsters. */
-    readonly info :PropTileInfo
+    readonly info :PropTileInfo,
+    readonly kind :MonsterKind = MonsterKind.TESTER,
+    readonly startingHealth :number = 50,
+    readonly maximumHealth :number = 50,
+    readonly startingActionPts :number = 5,
+    readonly maxActionPts :number = 10,
+    readonly regenActionPts :number = .2,
   ) {}
 }
 
@@ -27,9 +49,16 @@ export class MonsterConfig
 export class MonsterState
 {
   constructor (
+    /** Visual X coordinate (tile coordinates, floating point). */
     readonly x :number,
+    /** Visual Y coordinate (tile coordinates, floating point). */
     readonly y :number,
-    readonly state :string // TODO: walking, eating, pooping, mating...
+    /** The monster's current amount of HP, possibly 0 if deceased during battle. */
+    readonly health :number,
+    /** The monster's current action points. */
+    readonly actionPts :number,
+    /** TODO */
+    readonly state :string, // walking, eating, pooping, mating...?
   ) {}
 }
 
@@ -38,13 +67,16 @@ type ScoreFn = (x :number, y :number) => number
 /**
  * A monster.
  */
-export class Monster
+class Monster
 {
   // Toy attributes while playing around. These will all go away.
   public hunger :number = 0
   public lonliness :number = 0
   public boredom :number = 0
   public crowding :number = 0
+
+  public health :number
+  public actionPts :number
 
   /** Recently visited locations, most recent at index 0. */
   public locationMemory :Array<vec2> = new Array<vec2>()
@@ -55,12 +87,15 @@ export class Monster
     readonly config :MonsterConfig,
     public x :number,
     public y :number
-  ) {}
+  ) {
+    this.health = config.startingHealth
+    this.actionPts = config.startingActionPts
+  }
 
   public toState () :MonsterState
   {
     // TODO: Rethink? We keep monsters in tile coords but we center it for the visual state
-    return new MonsterState(this.x + .5, this.y + .5, this.state)
+    return new MonsterState(this.x + .5, this.y + .5, this.health, this.actionPts, this.state)
   }
 
   public setLocation (x :number, y :number) :void
@@ -122,12 +157,6 @@ export class RanchModel
     this._monsters = MutableMap.local()
   }
 
-  // TODO: temp, will change
-  public getMonsterById (id :number) :Monster|undefined
-  {
-    return this._monsterData.get(id)
-  }
-
   /**
    * Add a new monster.
    */
@@ -137,8 +166,10 @@ export class RanchModel
     const data = new Monster(id, config, Math.trunc(x), Math.trunc(y))
     this.monsterConfig.set(id, config)
     this._monsterData.set(id, data)
-    // move the monster to its current location to map it by location and publish state
+    // move the monster to its current location to map it by location
     this.moveMonster(data, data.x, data.y)
+    // finally, publish the state of the monster
+    this._monsters.set(data.id, data.toState())
   }
 
   protected moveMonster (data :Monster, newX :number, newY :number)
@@ -162,8 +193,6 @@ export class RanchModel
       this._monstersByLocation.set(newKey, newVals)
     }
     newVals.push(data.id)
-
-    this._monsters.set(data.id, data.toState())
   }
 
   public getMonsterCount (x :number, y :number) :number
@@ -206,6 +235,9 @@ export class RanchModel
   {
     // first update the internal states of all monsters
     for (const monst of this._monsterData.values()) {
+      // accumulate action points
+      monst.actionPts += monst.config.regenActionPts
+
       // see what kind of tile we're on and react to that
       switch (this.getFeature(monst.x, monst.y)) {
       case "dirt":
@@ -275,6 +307,11 @@ export class RanchModel
         const bestLoc = best[Math.trunc(Math.random() * best.length)]
         this.moveMonster(monst, bestLoc[0], bestLoc[1])
       }
+    }
+
+    // publish all changes..
+    for (const monst of this._monsterData.values()) {
+      this._monsters.set(monst.id, monst.toState())
     }
   }
 
@@ -438,13 +475,14 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     const array :Array<number> = this._ranch.getMonsters(x, y)
     if (array.length === 0) return
     const id = array[array.length - 1]
-    const monst = this._ranch.getMonsterById(id)! // the monster must be there
+    const config = this._ranch.monsterConfig.get(id)! // must be present
+    const state = this._ranch.monsters.getValue(id)
 
     const screenX = Math.max(0, (x + .5) * this._model.config.tileWidth + this._offset[0])
     const screenY = Math.max(0, (y + .5) * this._model.config.tileHeight + this._offset[1])
     console.log(`Popping menu at ${screenX} ${screenY}`)
 
-    this._menu = new MonsterMenu(this._app.renderer, monst, screenX, screenY)
+    this._menu = new MonsterMenu(this._app.renderer, config, state, screenX, screenY)
     this.onDispose.add(this._menu.disposer)
   }
 

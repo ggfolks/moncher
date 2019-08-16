@@ -10,7 +10,7 @@ import {Host2} from "tfw/ui/host2"
 import {Model, ModelData} from "tfw/ui/model"
 import {ImageResolver, StyleDefs} from "tfw/ui/style"
 import {Theme, UI} from "tfw/ui/ui"
-import {Monster} from "./moncher"
+import {MonsterConfig, MonsterState} from "./moncher"
 
 export class MonsterMenu
 {
@@ -18,7 +18,8 @@ export class MonsterMenu
 
   constructor (
     renderer :Renderer,
-    public data :Monster,
+    config :MonsterConfig,
+    public state :Value<MonsterState|undefined>,
     centerX :number,
     centerY :number,
   ) {
@@ -77,20 +78,26 @@ export class MonsterMenu
       },
     }
 
-    // TODO: wire-up to monster data
-    let canAttack :Mutable<boolean> = Mutable.local<boolean>(true)
-    let canHeal :Mutable<boolean> = Mutable.local<boolean>(true)
+    let canRangeAttack :Value<boolean> = state.map(
+        state => (state !== undefined) && config.kind.canRangeAttack && (state.actionPts > 10))
+    let canHeal :Value<boolean> = state.map(
+        state => (state !== undefined) && config.kind.canHeal && (state.actionPts > 10))
     let invertBoolean = (v :boolean) => !v
+    let attackText :Value<string> = state.map(
+        state => (state === undefined) ? "undefined" : `Attack! ${state.actionPts}`)
+
+    // TEMP: Watch attackText so we can see it changing
+    this.disposer.add(attackText.onValue(v => console.log(v)))
 
     const model :ModelData = {
       attack: {
-        text: Mutable.local("Attack!"),
-        visible: canAttack,
+        text: attackText,
+        visible: canRangeAttack,
         enabled: Mutable.local(true),
         clicked: () => { console.log("I have clicked attack")},
       },
       attackShim: {
-        visible: canAttack.map(invertBoolean),
+        visible: canRangeAttack.map(invertBoolean),
       },
       heal: {
         text: Mutable.local("Heal!"),
@@ -114,12 +121,6 @@ export class MonsterMenu
       type: "label",
       text: "shim.text"
     }
-
-    //log.debug("I have noted", "data", data)
-
-    // TODO: Wire up to be reactive (and not arbitrary)
-    canAttack.update(data.lonliness > 25)
-    canHeal.update(data.hunger < 25)
 
     const elements = new Array<ElementConfig>()
     // Attack button
