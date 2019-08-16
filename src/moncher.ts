@@ -1,20 +1,14 @@
-import {loadImage} from "tfw/core/assets"
 import {Clock} from "tfw/core/clock"
-import {Color} from "tfw/core/color"
 import {vec2} from "tfw/core/math"
-import {Mutable, Subject} from "tfw/core/react"
+import {Subject} from "tfw/core/react"
 import {MapChange, MutableMap, RMap} from "tfw/core/rcollect"
 import {Disposer} from "tfw/core/util"
 import {Pointer} from "tfw/input/hand"
-import {Renderer, Texture, Tile} from "tfw/scene2/gl"
+import {Texture, Tile} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
-import {ElementConfig, RootConfig} from "tfw/ui/element"
-import {Host2} from "tfw/ui/host2"
-import {Model, ModelData} from "tfw/ui/model"
-import {ImageResolver, StyleDefs} from "tfw/ui/style"
-import {Theme, UI} from "tfw/ui/ui"
 import {App} from "./app"
 import {GridTileSceneModel, GridTileSceneViewMode, PropTileInfo} from "./gridtiles"
+import {MonsterMenu} from "./monstermenu"
 
 /**
  * Configuration of a monster.
@@ -42,9 +36,9 @@ export class MonsterVisualState
 type ScoreFn = (x :number, y :number) => number
 
 /**
- * Secret internal monster data.
+ * Internal monster data.
  */
-class MonsterData
+export class MonsterData
 {
   public hunger :number = 0
   public lonliness :number = 0
@@ -444,172 +438,4 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
   protected _menu? :MonsterMenu
 
   protected readonly _monsters :Map<number, MonsterSprite> = new Map()
-}
-
-class MonsterMenu
-{
-  public readonly disposer :Disposer = new Disposer()
-
-  constructor (
-    renderer :Renderer,
-    public data :MonsterData,
-    centerX :number,
-    centerY :number,
-  ) {
-    const buttonCorner = 5
-    const styles :StyleDefs = {
-      colors: {
-        transWhite: Color.fromARGB(.3, 1, 1, 1),
-      },
-      shadows: {},
-      fonts: {
-        base: {family: "Helvetica", size: 16},
-      },
-      paints: {
-        white: {type: "color", color: "#FFFFFF"},
-        black: {type: "color", color: "#000000"},
-        lightGray: {type: "color", color: "#999999"},
-        darkGray: {type: "color", color: "#666666"},
-      },
-      borders: {
-        button: {stroke: {type: "color", color: "#999999"}, cornerRadius: buttonCorner},
-        buttonFocused: {stroke: {type: "color", color: "#FFFFFF"}, cornerRadius: buttonCorner},
-      },
-      backgrounds: {
-        buttonNormal: {
-          fill: {type: "color", color: "#99CCFF"},
-          cornerRadius: buttonCorner,
-          shadow: {offsetX: 2, offsetY: 2, blur: 5, color: "#000000"}
-        },
-        buttonPressed: {fill: {type: "color", color: "#77AADD"}, cornerRadius: buttonCorner},
-        buttonDisabled: {fill: {type: "color", color: "$transWhite"}, cornerRadius: buttonCorner},
-      },
-    }
-    const theme :Theme = {
-      default: {
-        label: {
-          font: "$base",
-          fill: "$black",
-          disabled: {
-            fill: "$darkGray",
-          },
-          selection: {
-            fill: "$lightGray",
-          }
-        },
-        box: {},
-      },
-      button: {
-        box: {
-          padding: 10,
-          border: "$button",
-          background: "$buttonNormal",
-          disabled: {background: "$buttonDisabled"},
-          focused: {border: "$buttonFocused"},
-          pressed: {border: "$buttonFocused", background: "$buttonPressed"},
-        },
-      },
-    }
-
-    const model :ModelData = {
-      attack: {
-        text: Mutable.local("Attack!"),
-        enabled: Mutable.local(true),
-        clicked: () => { console.log("I have clicked attack")},
-      },
-      heal: {
-        text: Mutable.local("Heal!"),
-        enabled: Mutable.local(true),
-        clicked: () => { console.log("I have clicked heal")},
-      },
-      close: {
-        text: Mutable.local("X"),
-        clicked: () => { console.log("CLOSE!") },
-      },
-      shim: {
-        text: Mutable.local(""),
-      }
-    }
-
-    const shim :ElementConfig = {
-      type: "label",
-      text: "shim.text"
-    }
-
-    const elements = new Array<ElementConfig>()
-    if (data.lonliness > 25) { // TODO: arbitrary for now
-      // Attack button
-      elements.push({
-        type: "button",
-        enabled: "attack.enabled",
-        onClick: "attack.clicked",
-        contents: {
-          type: "box",
-          contents: {type: "label", text: "attack.text"},
-        },
-      })
-    } else {
-      elements.push(shim)
-    }
-    if (data.hunger < 25) { // TODO: arbitrary for now
-      // Heal button
-      elements.push({
-        type: "button",
-        enabled: "heal.enabled",
-        onClick: "heal.clicked",
-        contents: {
-          type: "box",
-          contents: {type: "label", text: "heal.text"},
-        },
-      })
-    } else {
-      elements.push(shim)
-    }
-
-    // add an X button to close it out
-    elements.push({
-      type: "button",
-      onClick: "close.clicked",
-      contents: {
-        type: "box",
-        contents: {type: "label", text: "close.text"},
-      },
-    })
-
-    const rootConfig :RootConfig = {
-      type: "root",
-      scale: renderer.scale,
-      contents: {
-        type: "column",
-        offPolicy: "stretch",
-        gap: 10,
-        contents: elements,
-      },
-    }
-
-    const resolver :ImageResolver = {
-      resolve: loadImage,
-    }
-
-    const ui = new UI(theme, styles, resolver, new Model(model))
-    this._host = new Host2(renderer)
-    this.disposer.add(this._host)
-    this.disposer.add(this._host.bind(renderer.canvas))
-
-    const root = ui.createRoot(rootConfig)
-    root.pack(MonsterMenu.RADIAL_SIZE, MonsterMenu.RADIAL_SIZE)
-    this._host.addRoot(root, vec2.fromValues(
-        Math.max(0, centerX - (MonsterMenu.RADIAL_SIZE / 2)),
-        Math.max(0, centerY - (MonsterMenu.RADIAL_SIZE / 2))))
-  }
-
-  public render (surf :Surface)
-  {
-//    console.log("Rendering a menu!")
-    this._host.render(surf)
-  }
-
-  protected static readonly RADIAL_SIZE = 150
-
-  protected readonly _host :Host2
 }
