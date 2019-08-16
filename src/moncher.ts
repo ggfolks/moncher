@@ -397,7 +397,7 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
   {
     super.renderTo(clock, surf)
 
-    if (this._menu) this._menu.render(surf)
+    if (this._menu) this._menu.render(clock, surf)
   }
 
   protected renderToOffset (clock :Clock, surf :Surface) :void

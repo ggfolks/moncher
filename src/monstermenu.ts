@@ -1,4 +1,5 @@
 import {loadImage} from "tfw/core/assets"
+import {Clock} from "tfw/core/clock"
 import {Color} from "tfw/core/color"
 import {vec2} from "tfw/core/math"
 import {Mutable, Value} from "tfw/core/react"
@@ -188,8 +189,9 @@ export class MonsterMenu
         Math.max(0, centerY - (MonsterMenu.RADIAL_SIZE / 2))))
   }
 
-  public render (surf :Surface)
+  public render (clock :Clock, surf :Surface)
   {
+    this._host.update(clock)
 //    console.log("Rendering a menu!")
     this._host.render(surf)
   }
