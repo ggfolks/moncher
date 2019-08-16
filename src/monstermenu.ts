@@ -10,7 +10,7 @@ import {Host2} from "tfw/ui/host2"
 import {Model, ModelData} from "tfw/ui/model"
 import {ImageResolver, StyleDefs} from "tfw/ui/style"
 import {Theme, UI} from "tfw/ui/ui"
-import {MonsterData} from "./moncher"
+import {Monster} from "./moncher"
 
 export class MonsterMenu
 {
@@ -18,7 +18,7 @@ export class MonsterMenu
 
   constructor (
     renderer :Renderer,
-    public data :MonsterData,
+    public data :Monster,
     centerX :number,
     centerY :number,
   ) {

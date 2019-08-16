@@ -22,9 +22,9 @@ export class MonsterConfig
 }
 
 /**
- * Runtime information about a monster's visual state.
+ * Runtime information about a monster's state.
  */
-export class MonsterVisualState
+export class MonsterState
 {
   constructor (
     readonly x :number,
@@ -36,14 +36,16 @@ export class MonsterVisualState
 type ScoreFn = (x :number, y :number) => number
 
 /**
- * Internal monster data.
+ * A monster.
  */
-export class MonsterData
+export class Monster
 {
+  // Toy attributes while playing around. These will all go away.
   public hunger :number = 0
   public lonliness :number = 0
   public boredom :number = 0
   public crowding :number = 0
+
   /** Recently visited locations, most recent at index 0. */
   public locationMemory :Array<vec2> = new Array<vec2>()
   public state :string = ""
@@ -55,10 +57,10 @@ export class MonsterData
     public y :number
   ) {}
 
-  public toVisualState () :MonsterVisualState
+  public toState () :MonsterState
   {
     // TODO: Rethink? We keep monsters in tile coords but we center it for the visual state
-    return new MonsterVisualState(this.x + .5, this.y + .5, this.state)
+    return new MonsterState(this.x + .5, this.y + .5, this.state)
   }
 
   public setLocation (x :number, y :number) :void
@@ -78,7 +80,7 @@ export class MonsterData
       // splice it out of the old location
       this.locationMemory.splice(index, 1)
 
-    } else if (this.locationMemory.length === MonsterData.MEMORY_SIZE) {
+    } else if (this.locationMemory.length === Monster.MEMORY_SIZE) {
       // if we're already at the size, make room for the new location
       this.locationMemory.pop()
     }
@@ -105,7 +107,7 @@ export class MonsterData
 export class RanchModel
 {
   /** The public view of monster state. */
-  public get monsters () :RMap<number, MonsterVisualState> {
+  public get monsters () :RMap<number, MonsterState> {
     return this._monsters
   }
 
@@ -120,26 +122,32 @@ export class RanchModel
     this._monsters = MutableMap.local()
   }
 
+  // TODO: temp, will change
+  public getMonsterById (id :number) :Monster|undefined
+  {
+    return this._monsterData.get(id)
+  }
+
   /**
    * Add a new monster.
    */
   public addMonster (config :MonsterConfig, x :number, y :number) :void
   {
     const id = this._nextMonsterId++
-    const data = new MonsterData(id, config, Math.trunc(x), Math.trunc(y))
+    const data = new Monster(id, config, Math.trunc(x), Math.trunc(y))
     this.monsterConfig.set(id, config)
     this._monsterData.set(id, data)
     // move the monster to its current location to map it by location and publish state
     this.moveMonster(data, data.x, data.y)
   }
 
-  protected moveMonster (data :MonsterData, newX :number, newY :number)
+  protected moveMonster (data :Monster, newX :number, newY :number)
   {
     // remove from the old location in the map
     const oldKey = this.locToKey(data.x, data.y)
     const oldVals = this._monstersByLocation.get(oldKey)
     if (oldVals) {
-      const dex = oldVals.indexOf(data)
+      const dex = oldVals.indexOf(data.id)
       if (dex !== -1) {
         oldVals.splice(dex, 1)
       }
@@ -150,15 +158,25 @@ export class RanchModel
     const newKey = this.locToKey(newX, newY)
     let newVals = this._monstersByLocation.get(newKey)
     if (!newVals) {
-      newVals = new Array<MonsterData>()
+      newVals = new Array<number>()
       this._monstersByLocation.set(newKey, newVals)
     }
-    newVals.push(data)
+    newVals.push(data.id)
 
-    this._monsters.set(data.id, data.toVisualState())
+    this._monsters.set(data.id, data.toState())
   }
 
-  public getMonsters (x :number, y :number) :Array<MonsterData>
+  public getMonsterCount (x :number, y :number) :number
+  {
+    return this.getMonsters(x, y).length
+//    if (x >= 0 && y >= 0 && x < this.model.sceneWidth && y < this.model.sceneHeight) {
+//      const array = this._monstersByLocation.get(this.locToKey(x, y))
+//      if (array) return array.length
+//    }
+//    return 0
+  }
+
+  public getMonsters (x :number, y :number) :Array<number>
   {
     if (x >= 0 && y >= 0 && x < this.model.sceneWidth && y < this.model.sceneHeight) {
       const array = this._monstersByLocation.get(this.locToKey(x, y))
@@ -210,14 +228,14 @@ export class RanchModel
       let social = 0
       for (let xx = -1; xx < 2; xx++) {
         for (let yy = -1; yy < 2; yy++) {
-          const neighbs = this.getMonsters(monst.x + xx, monst.y + yy)
+          const neighbs = this.getMonsterCount(monst.x + xx, monst.y + yy)
           if (xx === 0 && yy === 0) {
-            monst.crowding += neighbs.length - 1 // subtract one for ourselves
-            social += neighbs.length - 1
+            monst.crowding += neighbs - 1 // subtract one for ourselves
+            social += neighbs - 1
           } else if (xx === 0 || yy === 0) {
-            social += neighbs.length
+            social += neighbs
           } else {
-            social += neighbs.length / 2 // lesser influence at the corners
+            social += neighbs / 2 // lesser influence at the corners
           }
         }
       }
@@ -260,7 +278,7 @@ export class RanchModel
     }
   }
 
-  protected getScoreFn (monst :MonsterData) :ScoreFn|undefined
+  protected getScoreFn (monst :Monster) :ScoreFn|undefined
   {
     let fns = new Array<ScoreFn>()
     if (monst.hunger > 50) {
@@ -268,13 +286,13 @@ export class RanchModel
     }
     if (monst.lonliness > 50) {
       // TODO: this is counting monsters during moves, so it will count wrong
-      fns.push((x, y) => (this.getMonsters(x, y).length > 0) ? monst.lonliness : 0)
+      fns.push((x, y) => (this.getMonsterCount(x, y) > 0) ? monst.lonliness : 0)
     }
     if (monst.boredom > 50) {
       fns.push((x, y) => monst.isInMemory(x, y) ? 0 : monst.boredom)
     }
     if (monst.crowding > 50) {
-      fns.push((x, y) => (this.getMonsters(x, y).length > 0) ? 0 : monst.crowding)
+      fns.push((x, y) => (this.getMonsterCount(x, y) > 0) ? 0 : monst.crowding)
     }
     switch (fns.length) {
       case 0: return undefined
@@ -290,10 +308,11 @@ export class RanchModel
   }
 
   protected _nextMonsterId :number = 0
-  protected _monsterData :Map<number, MonsterData> = new Map()
+  protected _monsterData :Map<number, Monster> = new Map()
   /** A mutable view of our public monsters RMap. */
-  protected _monsters :MutableMap<number, MonsterVisualState>
-  protected _monstersByLocation :Map<number, Array<MonsterData>> = new Map()
+  protected _monsters :MutableMap<number, MonsterState>
+  /** Maps a location to monster ids. */
+  protected _monstersByLocation :Map<number, Array<number>> = new Map()
 }
 
 class MonsterSprite
@@ -307,7 +326,7 @@ class MonsterSprite
 
   constructor (
     /** The most recent state. */
-    public state :MonsterVisualState
+    public state :MonsterState
   ) {}
 }
 
@@ -325,7 +344,7 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
   /**
    * Update a monster sprite.
    */
-  protected updateMonsterSprite (sprite :MonsterSprite, state :MonsterVisualState)
+  protected updateMonsterSprite (sprite :MonsterSprite, state :MonsterState)
   {
     sprite.state = state // just copy the latest state in
     let xx = state.x * this._model.config.tileWidth
@@ -356,7 +375,7 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     }
   }
 
-  protected updateMonster (id :number, state :MonsterVisualState)
+  protected updateMonster (id :number, state :MonsterState)
   {
     let sprite = this._monsters.get(id)
     if (!sprite) {
@@ -416,8 +435,10 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
 
   protected tileClicked (x :number, y :number) :void
   {
-    const monst = this._ranch.getMonsters(x, y)[0]
-    if (!monst) return
+    const array :Array<number> = this._ranch.getMonsters(x, y)
+    if (array.length === 0) return
+    const id = array[array.length - 1]
+    const monst = this._ranch.getMonsterById(id)! // the monster must be there
 
     const screenX = Math.max(0, (x + .5) * this._model.config.tileWidth + this._offset[0])
     const screenY = Math.max(0, (y + .5) * this._model.config.tileHeight + this._offset[1])
@@ -427,7 +448,7 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     this.onDispose.add(this._menu.disposer)
   }
 
-  protected readonly _monsterChange = (change :MapChange<number, MonsterVisualState>) => {
+  protected readonly _monsterChange = (change :MapChange<number, MonsterState>) => {
     if (change.type === "set") {
       this.updateMonster(change.key, change.value)
     } else {
