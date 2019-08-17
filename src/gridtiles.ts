@@ -1,5 +1,5 @@
 import {Scale} from "tfw/core/ui"
-import {vec2} from "tfw/core/math"
+import {clamp, vec2} from "tfw/core/math"
 import {Clock} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
 import {Subject} from "tfw/core/react"
@@ -318,8 +318,10 @@ export class GridTileSceneViewMode extends SurfaceMode {
 
   protected pointerUpdated (p :Pointer) :void
   {
-      vec2.copy(this._handPos, p.position)
+    if (p.pressed) {
+      vec2.add(this._offset, this._offset, p.movement)
       this._adjustOffset()
+    }
   }
 
   /** The visualization of the scene, when we have it. */
@@ -334,17 +336,14 @@ export class GridTileSceneViewMode extends SurfaceMode {
   protected readonly _adjustOffset = () =>
     {
       const surfSize = this._app.renderer.size.current
-      const overlapW = Math.max(0, this.logicalWidth - surfSize[0])
-      const overlapH = Math.max(0, this.logicalHeight - surfSize[1])
-      vec2.set(this._offset,
-          (this._handPos[0] / surfSize[0]) * -overlapW,
-          (this._handPos[1] / surfSize[1]) * -overlapH)
+      const offset = this._offset
+      offset[0] = clamp(offset[0], Math.min(0, surfSize[0] - this.logicalWidth), 0)
+      offset[1] = clamp(offset[1], Math.min(0, surfSize[1] - this.logicalHeight), 0)
     }
 
   /** React to mouse/touch events. */
   protected readonly _handChanged = (change :MapChange<number, Pointer>) =>
     {
-      // TODO: something more sophisticated?
       if (change.type === "set") {
         this.pointerUpdated(change.value)
       }
