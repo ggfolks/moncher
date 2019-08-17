@@ -254,4 +254,4 @@ ranch.addMonster(
 
 app.setMode(new MonsterRancherMode(app, ranch))
 
-setInterval(() => { ranch.tick() }, 200)
+setInterval(() => { ranch.tick() }, 800)
