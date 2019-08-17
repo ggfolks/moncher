@@ -23,7 +23,7 @@ export class CarcTile
     /** The three base tiles along the bottom. */
     sw :string, s :string, se :string,
     /** The weight of this tile relative to others. */
-    public readonly weight :number = 1,
+    readonly weight :number = 1,
     /** Any prop placements. */
     ...props :PropPlacement[]
   ) {

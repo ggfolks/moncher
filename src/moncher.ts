@@ -15,14 +15,14 @@ import {MonsterMenu} from "./monstermenu"
  */
 export class MonsterKind
 {
-  public static readonly RUNNER :MonsterKind = new MonsterKind(true, false, false)
-  public static readonly HEALER :MonsterKind = new MonsterKind(false, true, true)
-  public static readonly TESTER :MonsterKind = new MonsterKind(true, true, true)
+  static readonly RUNNER :MonsterKind = new MonsterKind(true, false, false)
+  static readonly HEALER :MonsterKind = new MonsterKind(false, true, true)
+  static readonly TESTER :MonsterKind = new MonsterKind(true, true, true)
 
   private constructor (
-    public readonly canRangeAttack :boolean,
-    public readonly canMeleeAttack :boolean,
-    public readonly canHeal :boolean,
+    readonly canRangeAttack :boolean,
+    readonly canMeleeAttack :boolean,
+    readonly canHeal :boolean,
   ) {}
 }
 
@@ -70,17 +70,17 @@ type ScoreFn = (x :number, y :number) => number
 class Monster
 {
   // Toy attributes while playing around. These will all go away.
-  public hunger :number = 0
-  public lonliness :number = 0
-  public boredom :number = 0
-  public crowding :number = 0
+  hunger :number = 0
+  lonliness :number = 0
+  boredom :number = 0
+  crowding :number = 0
 
-  public health :number
-  public actionPts :number
+  health :number
+  actionPts :number
 
   /** Recently visited locations, most recent at index 0. */
-  public locationMemory :Array<vec2> = new Array<vec2>()
-  public state :string = ""
+  locationMemory :Array<vec2> = new Array<vec2>()
+  state :string = ""
 
   constructor (
     readonly id :number,
@@ -92,13 +92,13 @@ class Monster
     this.actionPts = config.startingActionPts
   }
 
-  public toState () :MonsterState
+  toState () :MonsterState
   {
     // TODO: Rethink? We keep monsters in tile coords but we center it for the visual state
     return new MonsterState(this.x + .5, this.y + .5, this.health, this.actionPts, this.state)
   }
 
-  public setLocation (x :number, y :number) :void
+  setLocation (x :number, y :number) :void
   {
     this.x = x
     this.y = y
@@ -107,7 +107,7 @@ class Monster
     }
   }
 
-  public rememberLocation (x :number, y :number) :boolean
+  rememberLocation (x :number, y :number) :boolean
   {
     const newLoc = vec2.fromValues(x, y)
     const index = this.getMemoryIndex(newLoc)
@@ -125,7 +125,7 @@ class Monster
     return (index === -1)
   }
 
-  public isInMemory (x :number, y :number) :boolean
+  isInMemory (x :number, y :number) :boolean
   {
     return this.getMemoryIndex(vec2.fromValues(x, y)) > -1
   }
@@ -142,17 +142,17 @@ class Monster
 export class RanchModel
 {
   /** The public view of monster state. */
-  public get monsters () :RMap<number, MonsterState> {
+  get monsters () :RMap<number, MonsterState> {
     return this._monsters
   }
 
   /** The configuration data for a monster, guaranteed to be populated prior to
    *  'monsters' being updated. */
-  public monsterConfig :Map<number, MonsterConfig> = new Map<number, MonsterConfig>()
+  monsterConfig :Map<number, MonsterConfig> = new Map<number, MonsterConfig>()
 
   constructor (
     /** The model we're on. */
-    public readonly model :GridTileSceneModel
+    readonly model :GridTileSceneModel
   ) {
     this._monsters = MutableMap.local()
   }
@@ -160,7 +160,7 @@ export class RanchModel
   /**
    * Add a new monster.
    */
-  public addMonster (config :MonsterConfig, x :number, y :number) :void
+  addMonster (config :MonsterConfig, x :number, y :number) :void
   {
     const id = this._nextMonsterId++
     const data = new Monster(id, config, Math.trunc(x), Math.trunc(y))
@@ -195,7 +195,7 @@ export class RanchModel
     newVals.push(data.id)
   }
 
-  public getMonsterCount (x :number, y :number) :number
+  getMonsterCount (x :number, y :number) :number
   {
     return this.getMonsters(x, y).length
 //    if (x >= 0 && y >= 0 && x < this.model.sceneWidth && y < this.model.sceneHeight) {
@@ -205,7 +205,7 @@ export class RanchModel
 //    return 0
   }
 
-  public getMonsters (x :number, y :number) :Array<number>
+  getMonsters (x :number, y :number) :Array<number>
   {
     if (x >= 0 && y >= 0 && x < this.model.sceneWidth && y < this.model.sceneHeight) {
       const array = this._monstersByLocation.get(this.locToKey(x, y))
@@ -231,7 +231,7 @@ export class RanchModel
   /**
    * Advance the simulation.
    */
-  public tick () :void
+  tick () :void
   {
     // first update the internal states of all monsters
     for (const monst of this._monsterData.values()) {
@@ -355,11 +355,11 @@ export class RanchModel
 class MonsterSprite
 {
   /** The tile for drawing the monster. */
-  public tile? :Tile
+  tile? :Tile
   /** Position. */
-  public pos :vec2 = vec2.create()
+  pos :vec2 = vec2.create()
   /** A disposer just for this sprite. */
-  public disposer :Disposer = new Disposer()
+  disposer :Disposer = new Disposer()
 
   constructor (
     /** The most recent state. */
@@ -393,7 +393,7 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     vec2.set(sprite.pos, xx, yy)
   }
 
-  public renderTo (clock :Clock, surf :Surface) :void
+  renderTo (clock :Clock, surf :Surface) :void
   {
     super.renderTo(clock, surf)
 

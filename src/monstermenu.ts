@@ -15,7 +15,7 @@ import {MonsterConfig, MonsterState} from "./moncher"
 
 export class MonsterMenu
 {
-  public readonly disposer :Disposer = new Disposer()
+  readonly disposer :Disposer = new Disposer()
 
   constructor (
     renderer :Renderer,
@@ -189,7 +189,7 @@ export class MonsterMenu
         Math.max(0, centerY - (MonsterMenu.RADIAL_SIZE / 2))))
   }
 
-  public render (clock :Clock, surf :Surface)
+  render (clock :Clock, surf :Surface)
   {
     this._host.update(clock)
 //    console.log("Rendering a menu!")

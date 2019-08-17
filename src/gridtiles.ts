@@ -14,9 +14,9 @@ abstract class TileInfo
 {
   constructor (
     /** An identifier for this type "dirt", "grass". */
-    public readonly id :string,
+    readonly id :string,
     /** The image tile strip containing base tiles. */
-    public readonly base :string
+    readonly base :string
   ) {}
 }
 
@@ -24,9 +24,9 @@ export class GridTileInfo extends TileInfo
 {
   constructor (id :string, base :string,
     /** Higher priority tiles only fringe atop lower priority. */
-    public readonly priority :number,
+    readonly priority :number,
     /** The image tile strip to load for fringe tiles, according to the fringe configuration. */
-    public readonly fringe? :string
+    readonly fringe? :string
   ) {
     super(id, base)
   }
@@ -36,11 +36,11 @@ export class PropTileInfo extends TileInfo
 {
   constructor (id :string, base :string,
     /** The width of this prop, or omitted to just use the base image size. */
-    public readonly width? :number,
+    readonly width? :number,
     /** The height of this prop, or omitted to just use the base image size. */
-    public readonly height? :number,
+    readonly height? :number,
     /** An override scale. */
-    public readonly scale? :number
+    readonly scale? :number
   ) {
     super(id, base)
   }
@@ -65,11 +65,11 @@ export class PropPlacement
 {
   constructor (
     /** The id of the prop to place. */
-    public readonly id :string,
+    readonly id :string,
     /** The x coordinate. */
-    public readonly x :number,
+    readonly x :number,
     /** The y coordinate. */
-    public readonly y :number
+    readonly y :number
   ) {}
 }
 
