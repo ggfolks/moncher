@@ -136,9 +136,11 @@ export function generateGridModel (
 
   TRIES:
   for (let tries = 0; tries < 100; tries++) {
-    let board = new Array<CarcTile[]>(width)
+    //let board = new Array<CarcTile[]>(width)
+    let board :CarcTile[][] = []
     for (let xx = 0; xx < width; xx++) {
-      board[xx] = new Array<CarcTile>(height)
+      //board[xx] = new Array<CarcTile>(height)
+      board[xx] = []
     }
 
     let possible = new Map<number, CarcTile[]>()

@@ -84,9 +84,11 @@ export class GridTileSceneModel
     readonly sceneWidth :number,
     readonly sceneHeight :number
   ) {
-    this.tiles = new Array<string[]>(sceneWidth)
+    //this.tiles = new Array<string[]>(sceneWidth)
+    this.tiles = []
     for (let xx = 0; xx < sceneWidth; xx++) {
-      this.tiles[xx] = new Array<string>(sceneHeight)
+      //this.tiles[xx] = new Array<string>(sceneHeight)
+      this.tiles[xx] = []
     }
   }
 }
