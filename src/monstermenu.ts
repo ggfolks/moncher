@@ -84,15 +84,10 @@ export class MonsterMenu
     let canHeal :Value<boolean> = state.map(
         state => (state !== undefined) && config.kind.canHeal && (state.actionPts > 10))
     let invertBoolean = (v :boolean) => !v
-    let attackText :Value<string> = state.map(
-        state => (state === undefined) ? "undefined" : `Attack! ${state.actionPts}`)
-
-    // TEMP: Watch attackText so we can see it changing
-    this.disposer.add(attackText.onValue(v => console.log(v)))
 
     const model :ModelData = {
       attack: {
-        text: attackText,
+        text: Value.constant("Attack"),
         visible: canRangeAttack,
         enabled: Mutable.local(true),
         clicked: () => { console.log("I have clicked attack")},
