@@ -17,14 +17,14 @@ export const NORTHERN = NORTH | NORTHWEST | NORTHEAST
 export const EASTERN = EAST | SOUTHEAST | NORTHEAST
 
 /** An array representing the x/y offsets and which fringe bits are represented. */
-const INFLUENCES :Array<Array<number>> = [
+const INFLUENCES :number[][] = [
   [ NORTHWEST, WESTERN, SOUTHWEST ],
   [ NORTHERN, 0, SOUTHERN ],
   [ NORTHEAST, EASTERN, SOUTHEAST ]
  ]
 
 /** For each fringe tile, put the bits required for it in the corresponding array index. */
-export type FringeConfig = Array<number>
+export type FringeConfig = number[]
 
 export type FringeAdder = (x :number, y :number, fringes :Tile) => void
 
@@ -89,7 +89,7 @@ export function applyFringe (
       }
 
       // now let's sort according to their priority
-      const fringeRecs :Array<FringeRec> = Array.from(fringeMap.values())
+      const fringeRecs :FringeRec[] = Array.from(fringeMap.values())
           .sort((rec1, rec2) => rec1.info.priority - rec2.info.priority)
       for (const rec of fringeRecs) {
         // if we have a fringe tile for it straightaway, use it

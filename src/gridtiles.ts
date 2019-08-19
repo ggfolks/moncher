@@ -76,15 +76,15 @@ export class PropPlacement
 export class GridTileSceneModel
 {
   /** The raw tile data. */
-  readonly tiles :Array<Array<string>>
-  readonly props :Array<PropPlacement> = []
+  readonly tiles :string[][]
+  readonly props :PropPlacement[] = []
 
   constructor (
     readonly config :GridTileSceneConfig,
     readonly sceneWidth :number,
     readonly sceneHeight :number
   ) {
-    this.tiles = new Array<Array<string>>(sceneWidth)
+    this.tiles = new Array<string[]>(sceneWidth)
     for (let xx = 0; xx < sceneWidth; xx++) {
       this.tiles[xx] = new Array<string>(sceneHeight)
     }
@@ -95,14 +95,14 @@ type GridTile = {
   /** The id of this type of tile. */
   id :string
   /** The tiles from which to pick randomly for the base tile. */
-  tiles :Array<Tile>
+  tiles :Tile[]
   /** Fringe tiles, arranged according to the FringeConfig. */
-  fringe? :Array<Tile>
+  fringe? :Tile[]
 }
 
 type PropTile = {
   id :string
-  tiles :Array<Tile>
+  tiles :Tile[]
 }
 
 export interface GridTileSet {
@@ -117,8 +117,8 @@ type PropViz = {
 
 type GridTileSceneViz = {
   /** At each x/y position, a stack of Tiles to render. */
-  tiles :Array<Array<Array<Tile>>>
-  props :Array<PropViz>
+  tiles :Tile[][][]
+  props :PropViz[]
 }
 
 /**
@@ -126,7 +126,7 @@ type GridTileSceneViz = {
  */
 function chopTiles (tex :Texture, w :number, h :number) :Tile[]
 {
-  const retval = new Array<Tile>()
+  const retval :Tile[] = []
   for (let xx = 0; xx < tex.size[0]; xx += w) {
     for (let yy = 0; yy < tex.size[1]; yy += h) {
       retval.push(tex.tile(xx, yy, w, h))
@@ -143,7 +143,7 @@ function makeProp (glc :GLC, tcfg :TextureConfig, cfg :PropTileInfo) :Subject<Pr
     tcfg = {...tcfg, scale: new Scale(cfg.scale)}
   }
   return makeTexture(glc, loadImage(cfg.base), tcfg).map(tex => {
-    let tiles :Array<Tile>
+    let tiles :Tile[]
     if (cfg.width !== undefined && cfg.height !== undefined) {
       tiles = chopTiles(tex, cfg.width, cfg.height)
     } else {
@@ -154,7 +154,7 @@ function makeProp (glc :GLC, tcfg :TextureConfig, cfg :PropTileInfo) :Subject<Pr
 }
 
 function makeGridTiles (glc :GLC, tcfg :TextureConfig, image :string, cfg :GridTileSceneConfig)
-    :Subject<Array<Tile>> {
+    :Subject<Tile[]> {
   return makeTexture(glc, loadImage(image), tcfg)
       .map(tex => chopTiles(tex, cfg.tileWidth, cfg.tileHeight))
 }
@@ -162,7 +162,7 @@ function makeGridTiles (glc :GLC, tcfg :TextureConfig, image :string, cfg :GridT
 function makeGridTile (
   glc :GLC, tcfg :TextureConfig, tileInfo :GridTileInfo, cfg :GridTileSceneConfig
 ) :Subject<GridTile> {
-  let tiles :Array<Subject<Array<Tile>>> = []
+  let tiles :Subject<Tile[]>[] = []
   tiles.push(makeGridTiles(glc, tcfg, tileInfo.base, cfg))
   if (tileInfo.fringe) {
     tiles.push(makeGridTiles(glc, tcfg, tileInfo.fringe, cfg))
@@ -179,11 +179,11 @@ function makeGridTile (
 function makeGridTileSet (glc :GLC, cfg :GridTileSceneConfig) :Subject<GridTileSet>
 {
   const tcfg = { ...Texture.DefaultConfig, scale: new Scale(cfg.scale) }
-  const sets :Array<Subject<GridTile>> = []
+  const sets :Subject<GridTile>[] = []
   for (const tileset of cfg.tiles) {
     sets.push(makeGridTile(glc, tcfg, tileset, cfg))
   }
-  const propSets :Array<Subject<PropTile>> = []
+  const propSets :Subject<PropTile>[] = []
   if (cfg.props) {
     for (const prop of cfg.props) {
       propSets.push(makeProp(glc, tcfg, prop))
@@ -284,14 +284,15 @@ export class GridTileSceneViewMode extends SurfaceMode {
    */
   protected makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileSceneViz
   {
-    const viz = {
-      tiles: new Array<Array<Array<Tile>>>(),
-      props: new Array<PropViz>() }
+    const viz :GridTileSceneViz = {
+      tiles: [],
+      props: [],
+    }
     for (let xx = 0; xx < model.tiles.length; xx++) {
-      const col = new Array<Array<Tile>>()
+      const col :Tile[][] = []
       viz.tiles.push(col)
       for (let yy = 0; yy < model.tiles[xx].length; yy++) {
-        const stack = new Array<Tile>()
+        const stack :Tile[] = []
         col.push(stack)
         // pick a base tile for this spot
         const base :string = model.tiles[xx][yy]

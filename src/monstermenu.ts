@@ -123,7 +123,7 @@ export class MonsterMenu
       text: "shim.text"
     }
 
-    const elements = new Array<ElementConfig>()
+    const elements :ElementConfig[] = []
     // Attack button
     elements.push({
       type: "button",

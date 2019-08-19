@@ -67,11 +67,11 @@ export class CarcTile
   }
 
   /** The base tiles of this CarcTile. */
-  protected _base :Array<string>
-  protected _props :Array<PropPlacement>
+  protected _base :string[]
+  protected _props :PropPlacement[]
 }
 
-function totalWeight (tiles :Array<CarcTile>) :number
+function totalWeight (tiles :CarcTile[]) :number
 {
   return tiles.reduce((w, tile) => w + tile.weight, 0)
 }
@@ -79,7 +79,7 @@ function totalWeight (tiles :Array<CarcTile>) :number
 /**
  * Pick a random CarcTile.
  */
-function pickCarcTile (tiles :Array<CarcTile>) :CarcTile
+function pickCarcTile (tiles :CarcTile[]) :CarcTile
 {
   let value = Math.random() * totalWeight(tiles)
   for (let tile of tiles) {
@@ -97,7 +97,7 @@ function pickCarcTile (tiles :Array<CarcTile>) :CarcTile
  * Find the key of the map that has the shortest array value.
  * Break ties according to the least total weight of available tiles.
  */
-function findLeastPossible (map :Map<number, Array<CarcTile>>) :number
+function findLeastPossible (map :Map<number, CarcTile[]>) :number
 {
   let bestSize = Number.MAX_SAFE_INTEGER
   let bestWeight = Number.MAX_SAFE_INTEGER
@@ -125,7 +125,7 @@ function findLeastPossible (map :Map<number, Array<CarcTile>>) :number
  * @param height the height in logical carctile units
  */
 export function generateGridModel (
-  tiles :Array<CarcTile>, width :number, height :number, cfg :GridTileSceneConfig)
+  tiles :CarcTile[], width :number, height :number, cfg :GridTileSceneConfig)
   :GridTileSceneModel
 {
   let encode = (x :number, y :number) => x + (y * width)
@@ -136,12 +136,12 @@ export function generateGridModel (
 
   TRIES:
   for (let tries = 0; tries < 100; tries++) {
-    let board = new Array<Array<CarcTile>>(width)
+    let board = new Array<CarcTile[]>(width)
     for (let xx = 0; xx < width; xx++) {
       board[xx] = new Array<CarcTile>(height)
     }
 
-    let possible = new Map<number, Array<CarcTile>>()
+    let possible = new Map<number, CarcTile[]>()
     // kick things off by making every tile possible in the very center
     possible.set(encode(Math.trunc(width / 2), Math.trunc(height / 2)), tiles.concat())
 
@@ -160,7 +160,7 @@ export function generateGridModel (
         board[keyX][keyY] = pickedTile
 
         // see how this new pick affects the possibilities of surrounding tiles
-        let adjustedPossible = new Map<number, Array<CarcTile>>()
+        let adjustedPossible = new Map<number, CarcTile[]>()
         for (let dir of directions) {
           let xx = keyX, yy = keyY
           switch (dir) {

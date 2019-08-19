@@ -79,7 +79,7 @@ class Monster
   actionPts :number
 
   /** Recently visited locations, most recent at index 0. */
-  locationMemory :Array<vec2> = new Array<vec2>()
+  locationMemory :vec2[] = []
   state :string = ""
 
   constructor (
@@ -189,7 +189,7 @@ export class RanchModel
     const newKey = this.locToKey(newX, newY)
     let newVals = this._monstersByLocation.get(newKey)
     if (!newVals) {
-      newVals = new Array<number>()
+      newVals = []
       this._monstersByLocation.set(newKey, newVals)
     }
     newVals.push(data.id)
@@ -205,7 +205,7 @@ export class RanchModel
 //    return 0
   }
 
-  getMonsters (x :number, y :number) :Array<number>
+  getMonsters (x :number, y :number) :number[]
   {
     if (x >= 0 && y >= 0 && x < this.model.sceneWidth && y < this.model.sceneHeight) {
       const array = this._monstersByLocation.get(this.locToKey(x, y))
@@ -283,7 +283,7 @@ export class RanchModel
     for (const monst of this._monsterData.values()) {
       const scoreFn :ScoreFn|undefined = this.getScoreFn(monst)
       if (scoreFn === undefined) continue
-      let best :Array<vec2> = []
+      let best :vec2[] = []
       let bestScore = Number.MIN_SAFE_INTEGER
       for (let xx = -1; xx < 2; xx++) {
         for (let yy = -1; yy < 2; yy++) {
@@ -317,7 +317,7 @@ export class RanchModel
 
   protected getScoreFn (monst :Monster) :ScoreFn|undefined
   {
-    let fns = new Array<ScoreFn>()
+    let fns :ScoreFn[] = []
     if (monst.hunger > 50) {
       fns.push((x, y) => ("grass" === this.getFeature(x, y)) ? monst.hunger : 0)
     }
@@ -349,7 +349,7 @@ export class RanchModel
   /** A mutable view of our public monsters RMap. */
   protected _monsters :MutableMap<number, MonsterState>
   /** Maps a location to monster ids. */
-  protected _monstersByLocation :Map<number, Array<number>> = new Map()
+  protected _monstersByLocation :Map<number, number[]> = new Map()
 }
 
 class MonsterSprite
@@ -472,7 +472,7 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
 
   protected tileClicked (x :number, y :number) :void
   {
-    const array :Array<number> = this._ranch.getMonsters(x, y)
+    const array :number[] = this._ranch.getMonsters(x, y)
     if (array.length === 0) return
     const id = array[array.length - 1]
     const config = this._ranch.monsterConfig.get(id)! // must be present
