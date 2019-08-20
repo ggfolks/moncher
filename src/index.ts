@@ -9,7 +9,7 @@ import {
 import {FringeConfig} from "./fringer"
 import * as Fringer from "./fringer"
 import {CarcTile, generateGridModel} from "./carctiles"
-import {RanchModel, MonsterRancherMode, MonsterConfig} from "./moncher"
+import {RanchModel, MonsterRancherMode, MonsterConfig, MonsterModel} from "./moncher"
 import {RanchMode} from "./moncher3d"
 
 const root = document.getElementById("root")
@@ -246,11 +246,19 @@ let model :GridTileSceneModel = generateGridModel(tiles.concat(additional), 30, 
 let ranch :RanchModel = new RanchModel(model)
 ranch.addMonster(
   new MonsterConfig(
-    new PropTileInfo("mlp", "monsters/_0018_RunnerGreen.png", undefined, undefined, 13)),
+    new PropTileInfo("mlp", "monsters/_0018_RunnerGreen.png", undefined, undefined, 13),
+    new MonsterModel(
+      "monsters/LobberGreen.glb",
+      "monsters/LobberGreen.glb#Walk",
+      "monsters/LobberGreen.glb#Attack")),
   4, 4)
 ranch.addMonster(
   new MonsterConfig(
-    new PropTileInfo("grunt", "monsters/_0017_GruntRed.png", undefined, undefined, 13)),
+    new PropTileInfo("grunt", "monsters/_0017_GruntRed.png", undefined, undefined, 13),
+    new MonsterModel(
+      "monsters/LobberRed.glb",
+      "monsters/LobberRed.glb#Walk",
+      "monsters/LobberRed.glb#Attack")),
   6, 6)
 
 console.log("Gruntle: " + (RanchMode !== undefined) + "," + (MonsterRancherMode !== undefined))

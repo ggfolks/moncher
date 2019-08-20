@@ -27,6 +27,20 @@ export class MonsterKind
 }
 
 /**
+ * Configuration for the 3D aspects of a monster. This will probably move.
+ */
+export class MonsterModel
+{
+  constructor (
+    /** The path to the monster's model file. */
+    readonly model :string,
+    /** The path to the monster's walk animation. */
+    readonly walk? :string,
+    readonly attack? :string,
+  ) {}
+}
+
+/**
  * Configuration of a monster.
  */
 export class MonsterConfig
@@ -34,6 +48,7 @@ export class MonsterConfig
   constructor (
     /** What the monster looks like, can be a shared object between multiple monsters. */
     readonly info :PropTileInfo,
+    readonly model? :MonsterModel,
     readonly kind :MonsterKind = MonsterKind.TESTER,
     readonly startingHealth :number = 50,
     readonly maximumHealth :number = 50,
