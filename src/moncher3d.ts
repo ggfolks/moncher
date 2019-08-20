@@ -88,7 +88,7 @@ export class RanchMode extends Mode
     // add lights and camera
     domain.add({
       components: {
-        trans: {initial: new Float32Array([0, 3, 0, 0, 0, 0, 1, 1, 1, 1])},
+        trans: {initial: new Float32Array([0, 3, 10, 0, 0, 0, 1, 1, 1, 1])},
         obj: {type: "perspectiveCamera"},
       },
     })
@@ -148,6 +148,7 @@ export class RanchMode extends Mode
     this._hand.update()
     this._host.update(clock)
     this._animsys.update(clock)
+    this._scenesys.update()
     this._scenesys.render(this._webGlRenderer)
   }
 
