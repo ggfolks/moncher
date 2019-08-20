@@ -1,9 +1,9 @@
 import {
   AnimationMixer,
-  Color,
-  Math as ThreeMath,
+//  Color,
+//  Math as ThreeMath,
   Object3D,
-  Quaternion,
+//  Quaternion,
   Vector3,
   WebGLRenderer,
 } from "three"
@@ -54,7 +54,7 @@ class LerpRec
   ) {}
 }
 
-Vector3.prototype.toString = function() { return `(${this.x}, ${this.y}, ${this.z})` }
+//Vector3.prototype.toString = function() { return `(${this.x}, ${this.y}, ${this.z})` }
 
 class LerpSystem extends System
 {
@@ -162,43 +162,52 @@ export class RanchMode extends Mode
       },
     })
 
-    // add plane terrain (from spain; rainy)
-    const terrainId = domain.add({
+//    // add plane terrain (from spain; rainy)
+//    const terrainId = domain.add({
+//      components: {
+//        trans: {},
+//        obj: {
+//          type: "mesh",
+//          geometry: {type: "planeBuffer"},
+//          material: {type: "toon", color: 0x60c060},
+//        },
+//        body: {shapes: [{type: "plane"}]},
+//      },
+//    })
+//    trans.updateQuaternion(terrainId, new Quaternion().setFromAxisAngle(
+//        new Vector3(1, 0, 0), -Math.PI/2))
+//    trans.updateScale(terrainId, new Vector3(100, 100, 100))
+//
+    // add the ranch terrain
+    const ranchTerrainId = domain.add({
       components: {
         trans: {},
-        obj: {
-          type: "mesh",
-          geometry: {type: "planeBuffer"},
-          material: {type: "toon", color: 0x60c060},
-        },
-        body: {shapes: [{type: "plane"}]},
+        obj: {type: "gltf", url: "ranch/Ranch.glb"},
       },
     })
-    trans.updateQuaternion(terrainId, new Quaternion().setFromAxisAngle(
-        new Vector3(1, 0, 0), -Math.PI/2))
-    trans.updateScale(terrainId, new Vector3(100, 100, 100))
+    trans.updateScale(ranchTerrainId, new Vector3(.2, .2, .2))
 
-    // temp: add a sphere
-    const origin = new Vector3(0, 3, -10)
-    const position = new Vector3()
-    const boxId = domain.add({
-      components: {
-        trans: {},
-        obj: {
-          type: "mesh",
-          geometry: {type: "sphereBuffer"},
-          material: {type: "toon", color: new Color().setHSL(Math.random(), 1.0, 0.6)},
-        },
-        body: {shapes: [{type: "sphere"}], mass: 1},
-      },
-    })
-    position.set(
-      origin.x + ThreeMath.randFloat(-2, 2),
-      origin.y + ThreeMath.randFloat(-2, 2),
-      origin.z + ThreeMath.randFloat(-2, 2),
-    )
-    trans.updatePosition(boxId, position)
-
+//    // temp: add a sphere
+//    const origin = new Vector3(0, 3, -10)
+//    const position = new Vector3()
+//    const boxId = domain.add({
+//      components: {
+//        trans: {},
+//        obj: {
+//          type: "mesh",
+//          geometry: {type: "sphereBuffer"},
+//          material: {type: "toon", color: new Color().setHSL(Math.random(), 1.0, 0.6)},
+//        },
+//        body: {shapes: [{type: "sphere"}], mass: 1},
+//      },
+//    })
+//    position.set(
+//      origin.x + ThreeMath.randFloat(-2, 2),
+//      origin.y + ThreeMath.randFloat(-2, 2),
+//      origin.z + ThreeMath.randFloat(-2, 2),
+//    )
+//    trans.updatePosition(boxId, position)
+//
   }
 
   render (clock :Clock) :void {
@@ -226,7 +235,8 @@ export class RanchMode extends Mode
       }
       const entityId = this._domain.add({
         components: {
-          trans: {initial: new Float32Array([state.x, 0, -state.y, 0, 0, 0, 1, 1, 1, 1])},
+          trans: {initial: new Float32Array([state.x, this.getY(state.x, -state.y), -state.y,
+              0, 0, 0, 1, 1, 1, 1])},
           obj: {type: "gltf", url: cfg.model.model},
           mixer: {},
           lerp: {},
@@ -244,7 +254,7 @@ export class RanchMode extends Mode
    */
   protected updateMonsterActor (actorInfo :ActorInfo, state :MonsterState) :void {
     // see if they already have a lerpRec to this pos
-    const pos = new Vector3(state.x, 0, -state.y)
+    const pos = new Vector3(state.x, this.getY(state.x, -state.y), -state.y)
     const oldRec = this._lerp.read(actorInfo.entityId)
     if (oldRec && oldRec.dest.equals(pos)) return
 
@@ -262,6 +272,11 @@ export class RanchMode extends Mode
     if (!actorInfo) return
     this._monsters.delete(id)
     this._domain.delete(actorInfo.entityId)
+  }
+
+  protected getY (x :number, z :number) :number
+  {
+    return 2.5
   }
 
   // The properties below are all definitely initialized via the constructor
