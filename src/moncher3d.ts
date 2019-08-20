@@ -62,6 +62,7 @@ class LerpSystem extends System
     domain :Domain,
     readonly trans :TransformComponent,
     readonly lerp :Component<LerpRec|undefined>,
+    readonly getY :(x :number, z :number) => number,
   ) {
     super(domain, Matcher.hasAllC(trans.id, lerp.id))
   }
@@ -80,6 +81,8 @@ class LerpSystem extends System
           this.lerp.update(id, undefined)
         } else {
           pos.lerpVectors(lerpRec.dest, lerpRec.src, timeLeft / lerpRec.duration)
+          // but override the Y value according to terrain?
+          pos.y = this.getY(pos.x, pos.z)
           this.trans.updatePosition(id, pos)
         }
       }
@@ -135,7 +138,7 @@ export class RanchMode extends Mode
     const lerp = this._lerp = new SparseValueComponent<LerpRec|undefined>("lerp", undefined)
 
     const domain = this._domain = new Domain({}, {trans, obj, mixer, body, lerp})
-    /*const lerpsys =*/ this._lerpsys = new LerpSystem(domain, trans, lerp)
+    /*const lerpsys =*/ this._lerpsys = new LerpSystem(domain, trans, lerp, this.getY)
     const scenesys = this._scenesys = new SceneSystem(
         domain, trans, obj, undefined, hand.pointers)
     scenesys.scene.add(host.group)
