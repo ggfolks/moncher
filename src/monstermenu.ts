@@ -172,12 +172,12 @@ export class MonsterMenu
       resolve: loadImage,
     }
 
-    const ui = new UI(theme, styles, resolver, new Model(model))
+    const ui = new UI(theme, styles, resolver)
     this._host = new Host2(renderer)
     this.disposer.add(this._host)
     this.disposer.add(this._host.bind(renderer.canvas))
 
-    const root = ui.createRoot(rootConfig)
+    const root = ui.createRoot(rootConfig, new Model(model))
     root.pack(MonsterMenu.RADIAL_SIZE, MonsterMenu.RADIAL_SIZE)
     this._host.addRoot(root, vec2.fromValues(
         Math.max(0, centerX - (MonsterMenu.RADIAL_SIZE / 2)),
