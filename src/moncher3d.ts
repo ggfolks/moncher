@@ -12,8 +12,16 @@ import {Body} from "cannon"
 
 import {Clock} from "tfw/core/clock"
 import {MapChange} from "tfw/core/rcollect"
+//import {log} from "tfw/core/util"
 import {Hand} from "tfw/input/hand"
-import {DenseValueComponent, Domain} from "tfw/entity/entity"
+import {
+  Component,
+  DenseValueComponent,
+  Domain,
+  Matcher,
+  SparseValueComponent,
+  System
+} from "tfw/entity/entity"
 import {TransformComponent} from "tfw/space/entity"
 import {AnimationSystem, SceneSystem} from "tfw/scene3/entity"
 import {Host3} from "tfw/ui/host3"
@@ -30,6 +38,53 @@ class ActorInfo
     readonly entityId :number,
     readonly config :MonsterConfig,
   ) {}
+}
+
+class LerpRec
+{
+  constructor (
+    /** The source location. */
+    readonly src :Vector3,
+    /** The destination location. */
+    readonly dest :Vector3,
+    /** How long shall we take? (TODO: compute based on speed / distance?) */
+    readonly duration :number,
+    /** Ending timestamp (start time + duration) (filled-in by LerpSystem) */
+    public stamp? :number
+  ) {}
+}
+
+Vector3.prototype.toString = function() { return `(${this.x}, ${this.y}, ${this.z})` }
+
+class LerpSystem extends System
+{
+  constructor (
+    domain :Domain,
+    readonly trans :TransformComponent,
+    readonly lerp :Component<LerpRec|undefined>,
+  ) {
+    super(domain, Matcher.hasAllC(trans.id, lerp.id))
+  }
+
+  update (clock :Clock) {
+    const pos :Vector3 = new Vector3()
+    this.onEntities(id => {
+      let lerpRec = this.lerp.read(id)
+      if (lerpRec) {
+        if (!lerpRec.stamp) {
+          lerpRec.stamp = clock.time + lerpRec.duration
+        }
+        let timeLeft = lerpRec.stamp - clock.time
+        if (timeLeft <= 0) {
+          this.trans.updatePosition(id, lerpRec.dest)
+          this.lerp.update(id, undefined)
+        } else {
+          pos.lerpVectors(lerpRec.dest, lerpRec.src, timeLeft / lerpRec.duration)
+          this.trans.updatePosition(id, pos)
+        }
+      }
+    })
+  }
 }
 
 export class RanchMode extends Mode
@@ -77,8 +132,10 @@ export class RanchMode extends Mode
     const mixer = new DenseValueComponent<AnimationMixer>("mixer",
         new AnimationMixer(new Object3D()))
     const body = new DenseValueComponent<Body>("body", new Body())
+    const lerp = this._lerp = new SparseValueComponent<LerpRec|undefined>("lerp", undefined)
 
-    const domain = this._domain = new Domain({}, {trans, obj, mixer, body})
+    const domain = this._domain = new Domain({}, {trans, obj, mixer, body, lerp})
+    /*const lerpsys =*/ this._lerpsys = new LerpSystem(domain, trans, lerp)
     const scenesys = this._scenesys = new SceneSystem(
         domain, trans, obj, undefined, hand.pointers)
     scenesys.scene.add(host.group)
@@ -147,6 +204,7 @@ export class RanchMode extends Mode
   render (clock :Clock) :void {
     this._hand.update()
     this._host.update(clock)
+    this._lerpsys.update(clock)
     this._animsys.update(clock)
     this._scenesys.update()
     this._scenesys.render(this._webGlRenderer)
@@ -171,6 +229,7 @@ export class RanchMode extends Mode
           trans: {initial: new Float32Array([state.x, 0, -state.y, 0, 0, 0, 1, 1, 1, 1])},
           obj: {type: "gltf", url: cfg.model.model},
           mixer: {},
+          lerp: {},
         },
       })
       actorInfo = new ActorInfo(id, entityId, cfg)
@@ -184,9 +243,15 @@ export class RanchMode extends Mode
    * Effect updates received from the RanchModel.
    */
   protected updateMonsterActor (actorInfo :ActorInfo, state :MonsterState) :void {
-    let pos = new Vector3(state.x, 0, -state.y)
-    this._trans.updatePosition(actorInfo.entityId, pos)
-    // TODO more here brah
+    // see if they already have a lerpRec to this pos
+    const pos = new Vector3(state.x, 0, -state.y)
+    const oldRec = this._lerp.read(actorInfo.entityId)
+    if (oldRec && oldRec.dest.equals(pos)) return
+
+    const oldPos = this._trans.readPosition(actorInfo.entityId, new Vector3())
+    const rec = new LerpRec(oldPos, pos, RanchMode.MONSTER_MOVE_DURATION)
+    this._lerp.update(actorInfo.entityId, rec)
+//    log.debug("updating monster to : " + pos)
   }
 
   /**
@@ -204,6 +269,8 @@ export class RanchMode extends Mode
   protected _webGlRenderer! :WebGLRenderer
   protected _hand! :Hand
   protected _trans! :TransformComponent
+  protected _lerp! :Component<LerpRec|undefined>
+  protected _lerpsys! :LerpSystem
   protected _scenesys! :SceneSystem
   protected _animsys! :AnimationSystem
   protected _domain! :Domain
@@ -217,4 +284,6 @@ export class RanchMode extends Mode
       this.deleteMonster(change.key)
     }
   }
+
+  private static MONSTER_MOVE_DURATION = 1200
 }
