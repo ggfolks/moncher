@@ -94,17 +94,16 @@ export class RanchMode extends Mode
         obj: {
           type: "mesh",
           geometry: {type: "planeBuffer"},
-          material: {type: "toon", color: "#60c060"},
+          material: {type: "toon", color: 0x60c060},
         },
         body: {shapes: [{type: "plane"}]},
       },
     })
     trans.updateQuaternion(terrainId, new Quaternion().setFromAxisAngle(
-      new Vector3(1, 0, 0),
-      -Math.PI/2.
-    ))
+        new Vector3(1, 0, 0), -Math.PI/2))
+    trans.updateScale(terrainId, new Vector3(100, 100, 100))
 
-    // add a box? Please show up box
+    // temp: add a sphere
     const origin = new Vector3(0, 3, -10)
     const position = new Vector3()
     const boxId = domain.add({
