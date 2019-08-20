@@ -1,5 +1,7 @@
 import {
   AnimationMixer,
+  Color,
+  Math as ThreeMath,
   Object3D,
   Quaternion,
   Vector3,
@@ -101,6 +103,28 @@ export class RanchMode extends Mode
       new Vector3(1, 0, 0),
       -Math.PI/2.
     ))
+
+    // add a box? Please show up box
+    const origin = new Vector3(0, 3, -10)
+    const position = new Vector3()
+    const boxId = domain.add({
+      components: {
+        trans: {},
+        obj: {
+          type: "mesh",
+          geometry: {type: "sphereBuffer"},
+          material: {type: "toon", color: new Color().setHSL(Math.random(), 1.0, 0.6)},
+        },
+        body: {shapes: [{type: "sphere"}], mass: 1},
+      },
+    })
+    position.set(
+      origin.x + ThreeMath.randFloat(-2, 2),
+      origin.y + ThreeMath.randFloat(-2, 2),
+      origin.z + ThreeMath.randFloat(-2, 2),
+    )
+    trans.updatePosition(boxId, position)
+
   }
 
   render (clock :Clock) :void {
