@@ -10,6 +10,7 @@ import {FringeConfig} from "./fringer"
 import * as Fringer from "./fringer"
 import {CarcTile, generateGridModel} from "./carctiles"
 import {RanchModel, MonsterRancherMode, MonsterConfig} from "./moncher"
+import {RanchMode} from "./moncher3d"
 
 const root = document.getElementById("root")
 if (!root) throw new Error(`No root?`)
@@ -252,6 +253,8 @@ ranch.addMonster(
     new PropTileInfo("grunt", "monsters/_0017_GruntRed.png", undefined, undefined, 13)),
   6, 6)
 
-app.setMode(new MonsterRancherMode(app, ranch))
+console.log("Gruntle: " + (RanchMode !== undefined) + "," + (MonsterRancherMode !== undefined))
+
+app.setMode(new RanchMode(app, ranch))
 
 setInterval(() => { ranch.tick() }, 800)
