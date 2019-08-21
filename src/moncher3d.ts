@@ -13,7 +13,7 @@ import {Body} from "cannon"
 
 import {Clock} from "tfw/core/clock"
 import {MapChange} from "tfw/core/rcollect"
-import {log} from "tfw/core/util"
+//import {log} from "tfw/core/util"
 import {Hand} from "tfw/input/hand"
 import {
   Component,
@@ -191,8 +191,7 @@ export class RanchMode extends Mode
       },
     })
     trans.updateScale(ranchTerrainId, new Vector3(.2, .2, .2))
-    this._terrain = obj.read(ranchTerrainId)
-    log.debug(" I have added terrain ", "id", this._terrainId, "terrain", this._terrain)
+//    this._terrain = obj.read(ranchTerrainId)
 
 //    // temp: add a sphere
 //    const origin = new Vector3(0, 3, -10)
@@ -283,19 +282,16 @@ export class RanchMode extends Mode
 
   protected getY (x :number, z :number) :number
   {
-    if (!this._terrain) {
-      this._terrain = this._obj.read(this._terrainId)
-      if (!this._terrain) {
-        return 2.5
+    let terrain = this._obj.read(this._terrainId)
+    if (terrain) {
+      const HAWK_HEIGHT = 10
+      let caster = new Raycaster(new Vector3(x, HAWK_HEIGHT, z), new Vector3(0, -1, 0))
+      let results = caster.intersectObject(terrain, true)
+      for (let result of results) {
+        return HAWK_HEIGHT - result.distance
       }
     }
-    const HAWK_HEIGHT = 10
-    let caster = new Raycaster(new Vector3(x, HAWK_HEIGHT, z), new Vector3(0, -1, 0))
-    let results = caster.intersectObject(this._terrain, true)
-    for (let result of results) {
-      return HAWK_HEIGHT - result.distance
-    }
-    return 2.5
+    return 2.5 // bogus fallback height
   }
 
   // The properties below are all definitely initialized via the constructor
@@ -311,8 +307,6 @@ export class RanchMode extends Mode
   protected _domain! :Domain
 
   protected _terrainId! :ID
-
-  protected _terrain? :Object3D
 
   protected readonly _monsters :Map<number, ActorInfo> = new Map()
 
