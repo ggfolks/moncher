@@ -19,14 +19,29 @@ import {
   Component,
   DenseValueComponent,
   Domain,
+  GraphSystem,
   ID,
   Matcher,
   SparseValueComponent,
   System
 } from "tfw/entity/entity"
 import {TransformComponent} from "tfw/space/entity"
-import {AnimationSystem, SceneSystem} from "tfw/scene3/entity"
+import {AnimationSystem, HoverMap, SceneSystem} from "tfw/scene3/entity"
 import {Host3} from "tfw/ui/host3"
+
+import {registerLogicNodes} from "tfw/graph/logic"
+import {registerMathNodes} from "tfw/graph/math"
+import {registerUtilNodes} from "tfw/graph/util"
+import {registerEntityNodes} from "tfw/entity/node"
+import {registerSpaceNodes} from "tfw/space/node"
+import {registerScene3Nodes} from "tfw/scene3/node"
+import {registerPhysics3Nodes} from "tfw/physics3/node"
+import {registerInputNodes} from "tfw/input/node"
+import {registerUINodes} from "tfw/ui/node"
+import {Graph} from "tfw/graph/graph"
+import {NodeContext, NodeTypeRegistry} from "tfw/graph/node"
+
+
 
 import {App, Mode} from "./app"
 import {MonsterConfig, MonsterState, RanchModel} from "./moncher"
@@ -130,17 +145,37 @@ export class RanchMode extends Mode
     const hand = this._hand = new Hand(webGlRenderer.domElement)
     this.onDispose.add(hand)
 
+    // TODO: what is the minimum we need?
+    const nodeCtx :NodeContext = {
+      types: new NodeTypeRegistry(
+        registerLogicNodes,
+        registerMathNodes,
+        registerUtilNodes,
+        registerEntityNodes,
+        registerSpaceNodes,
+        registerScene3Nodes,
+        registerPhysics3Nodes,
+        registerInputNodes,
+        registerUINodes,
+      ),
+      hand,
+      host,
+    }
+
     const trans = this._trans = new TransformComponent("trans")
     const obj = this._obj = new DenseValueComponent<Object3D>("obj", new Object3D())
     const mixer = new DenseValueComponent<AnimationMixer>("mixer",
         new AnimationMixer(new Object3D()))
     const body = new DenseValueComponent<Body>("body", new Body())
+    const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
     const lerp = this._lerp = new SparseValueComponent<LerpRec|undefined>("lerp", undefined)
+    const graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
 
-    const domain = this._domain = new Domain({}, {trans, obj, mixer, body, lerp})
+    const domain = this._domain = new Domain({}, {trans, obj, mixer, body, lerp, hovers, graph})
     /*const lerpsys =*/ this._lerpsys = new LerpSystem(domain, trans, lerp, this.getY.bind(this))
     const scenesys = this._scenesys = new SceneSystem(
-        domain, trans, obj, undefined, hand.pointers)
+        domain, trans, obj, hovers, hand.pointers)
+    /*const graphsys =*/ this._graphsys = new GraphSystem(nodeCtx, domain, graph)
     scenesys.scene.add(host.group)
 
     /*const animsys =*/ this._animsys = new AnimationSystem(domain, obj, mixer)
@@ -150,6 +185,17 @@ export class RanchMode extends Mode
       components: {
         trans: {initial: new Float32Array([0, 30, 12, 0, 0, 0, 1, 1, 1, 1])},
         obj: {type: "perspectiveCamera"},
+        hovers: {},
+        graph: {
+          hover: {type: "hover", component: "hovers"},
+          viewMovement: {type: "Vector3.split", input: ["hover", "viewMovement"]},
+          pitchDelta: {type: "multiply", inputs: [["hover", "pressed"], ["viewMovement", "y"], -1]},
+          yawDelta: {type: "multiply", inputs: [["hover", "pressed"], ["viewMovement", "x"], 1]},
+          pitch: {type: "accumulate", min: -Math.PI/2, max: Math.PI/2, input: "pitchDelta"},
+          yaw: {type: "accumulate", input: "yawDelta"},
+          rotation: {type: "Euler", order: "ZYX", x: "pitch", y: "yaw"},
+          updateRotation: {type: "updateRotation", component: "trans", input: "rotation"},
+        },
       },
     })
     trans.updateQuaternion(cameraId, new Quaternion().setFromAxisAngle(
@@ -171,7 +217,7 @@ export class RanchMode extends Mode
     const ranchTerrainId = this._terrainId = domain.add({
       components: {
         trans: {},
-        obj: {type: "gltf", url: "ranch/Ranch.glb"},
+        obj: {type: "gltf", url: "ranch/Ranch.glb"}, // Contains a "NavMesh" object. TODO
       },
     })
     trans.updateScale(ranchTerrainId, new Vector3(.5, .5, .5))
@@ -262,6 +308,7 @@ export class RanchMode extends Mode
   protected _trans! :TransformComponent
   protected _obj! :Component<Object3D>
   protected _lerp! :Component<LerpRec|undefined>
+  protected _graphsys! :GraphSystem
   protected _lerpsys! :LerpSystem
   protected _scenesys! :SceneSystem
   protected _animsys! :AnimationSystem
