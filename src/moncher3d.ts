@@ -4,6 +4,7 @@ import {
 //  Math as ThreeMath,
   Object3D,
 //  Quaternion,
+  Raycaster,
   Vector3,
   WebGLRenderer,
 } from "three"
@@ -12,12 +13,13 @@ import {Body} from "cannon"
 
 import {Clock} from "tfw/core/clock"
 import {MapChange} from "tfw/core/rcollect"
-//import {log} from "tfw/core/util"
+import {log} from "tfw/core/util"
 import {Hand} from "tfw/input/hand"
 import {
   Component,
   DenseValueComponent,
   Domain,
+  ID,
   Matcher,
   SparseValueComponent,
   System
@@ -131,7 +133,7 @@ export class RanchMode extends Mode
     this.onDispose.add(hand)
 
     const trans = this._trans = new TransformComponent("trans")
-    const obj = new DenseValueComponent<Object3D>("obj", new Object3D())
+    const obj = this._obj = new DenseValueComponent<Object3D>("obj", new Object3D())
     const mixer = new DenseValueComponent<AnimationMixer>("mixer",
         new AnimationMixer(new Object3D()))
     const body = new DenseValueComponent<Body>("body", new Body())
@@ -182,13 +184,15 @@ export class RanchMode extends Mode
 //    trans.updateScale(terrainId, new Vector3(100, 100, 100))
 //
     // add the ranch terrain
-    const ranchTerrainId = domain.add({
+    const ranchTerrainId = this._terrainId = domain.add({
       components: {
         trans: {},
         obj: {type: "gltf", url: "ranch/Ranch.glb"},
       },
     })
     trans.updateScale(ranchTerrainId, new Vector3(.2, .2, .2))
+    this._terrain = obj.read(ranchTerrainId)
+    log.debug(" I have added terrain ", "id", this._terrainId, "terrain", this._terrain)
 
 //    // temp: add a sphere
 //    const origin = new Vector3(0, 3, -10)
@@ -279,6 +283,21 @@ export class RanchMode extends Mode
 
   protected getY (x :number, z :number) :number
   {
+    if (!this._terrain) {
+      log.debug("I have things",
+        "obj", this._obj, "terrain", this._terrainId)
+      this._terrain = this._obj.read(this._terrainId)
+      if (!this._terrain) {
+        log.debug("Not ready yet")
+        return 2.5
+      }
+    }
+//    let caster = new Raycaster(new Vector3(x, 10, z), new Vector3(0, -1, 0))
+//    let results = caster.intersectObject(this._terrain)
+//    for (let result of results) {
+//      log.debug("Result distance: " + result[0])
+//    }
+    log.debug("gruntle compiler " + (Raycaster !== undefined))
     return 2.5
   }
 
@@ -287,11 +306,29 @@ export class RanchMode extends Mode
   protected _webGlRenderer! :WebGLRenderer
   protected _hand! :Hand
   protected _trans! :TransformComponent
+  protected _obj! :Component<Object3D>
   protected _lerp! :Component<LerpRec|undefined>
   protected _lerpsys! :LerpSystem
   protected _scenesys! :SceneSystem
   protected _animsys! :AnimationSystem
   protected _domain! :Domain
+
+//  protected set _terrainId (id :ID)
+//  {
+//    log.debug("Someone set _terrainId : " + id)
+//    this.secret = id
+//  }
+//
+//  protected get _terrainId () :ID
+//  {
+//    return this.secret!
+//  }
+//
+//  protected secret? :ID
+
+  protected _terrainId! :ID
+
+  protected _terrain? :Object3D
 
   protected readonly _monsters :Map<number, ActorInfo> = new Map()
 
