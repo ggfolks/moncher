@@ -3,7 +3,7 @@ import {
 //  Color,
 //  Math as ThreeMath,
   Object3D,
-//  Quaternion,
+  Quaternion,
   Raycaster,
   Vector3,
   WebGLRenderer,
@@ -146,12 +146,14 @@ export class RanchMode extends Mode
     /*const animsys =*/ this._animsys = new AnimationSystem(domain, obj, mixer)
 
     // add lights and camera
-    domain.add({
+    const cameraId = domain.add({
       components: {
-        trans: {initial: new Float32Array([0, 3, 10, 0, 0, 0, 1, 1, 1, 1])},
+        trans: {initial: new Float32Array([0, 30, 12, 0, 0, 0, 1, 1, 1, 1])},
         obj: {type: "perspectiveCamera"},
       },
     })
+    trans.updateQuaternion(cameraId, new Quaternion().setFromAxisAngle(
+        new Vector3(1, 0, 0), -Math.PI/3))
     domain.add({
       components: {
         trans: {},
