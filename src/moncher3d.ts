@@ -41,10 +41,9 @@ import {registerUINodes} from "tfw/ui/node"
 import {Graph} from "tfw/graph/graph"
 import {NodeContext, NodeTypeRegistry} from "tfw/graph/node"
 
-
-
 import {App, Mode} from "./app"
 import {MonsterConfig, MonsterState, RanchModel} from "./moncher"
+import {Hud} from "./hud"
 
 class ActorInfo
 {
@@ -116,6 +115,8 @@ export class RanchMode extends Mode
 
     this.onDispose.add(_ranch.monsters.onChange(this._monsterChange))
     _ranch.monsters.forEach((monster, id) => { this.updateMonster(id, monster) })
+
+    new Hud(this._host, app.renderer)
   }
 
   protected configureScene (app :App) :void {
@@ -191,9 +192,9 @@ export class RanchMode extends Mode
           hover: {type: "hover", component: "hovers"},
           viewMovement: {type: "Vector3.split", input: ["hover", "viewMovement"]},
           xDelta: {type: "multiply",
-            inputs: [["hover", "pressed"], ["viewMovement", "x"], -CAMERA_MOVEMENT_FACTOR]},
+              inputs: [["hover", "pressed"], ["viewMovement", "x"], -CAMERA_MOVEMENT_FACTOR]},
           yDelta: {type: "multiply",
-            inputs: [["hover", "pressed"], ["viewMovement", "y"], CAMERA_MOVEMENT_FACTOR]},
+              inputs: [["hover", "pressed"], ["viewMovement", "y"], CAMERA_MOVEMENT_FACTOR]},
           leftRight: {type: "accumulate", input: "xDelta"},
           upDown: {type: "accumulate", input: "yDelta"},
           panning: {type: "Vector3",

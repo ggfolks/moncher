@@ -1,6 +1,5 @@
 import {loadImage} from "tfw/core/assets"
 import {Clock} from "tfw/core/clock"
-import {Color} from "tfw/core/color"
 import {vec2} from "tfw/core/math"
 import {Mutable, Value} from "tfw/core/react"
 import {/*log,*/ Disposer} from "tfw/core/util"
@@ -9,9 +8,10 @@ import {Surface} from "tfw/scene2/surface"
 import {ElementConfig, RootConfig} from "tfw/ui/element"
 import {Host2} from "tfw/ui/host2"
 import {Model, ModelData} from "tfw/ui/model"
-import {ImageResolver, StyleDefs} from "tfw/ui/style"
-import {Theme, UI} from "tfw/ui/ui"
+import {ImageResolver} from "tfw/ui/style"
+import {UI} from "tfw/ui/ui"
 import {MonsterConfig, MonsterState} from "./moncher"
+import {moncherStyles, moncherTheme} from "./uistyles"
 
 export class MonsterMenu
 {
@@ -24,61 +24,6 @@ export class MonsterMenu
     centerX :number,
     centerY :number,
   ) {
-    const buttonCorner = 5
-    const styles :StyleDefs = {
-      colors: {
-        transWhite: Color.fromARGB(.3, 1, 1, 1),
-      },
-      shadows: {},
-      fonts: {
-        base: {family: "Helvetica", size: 16},
-      },
-      paints: {
-        white: {type: "color", color: "#FFFFFF"},
-        black: {type: "color", color: "#000000"},
-        lightGray: {type: "color", color: "#999999"},
-        darkGray: {type: "color", color: "#666666"},
-      },
-      borders: {
-        button: {stroke: {type: "color", color: "#999999"}, cornerRadius: buttonCorner},
-        buttonFocused: {stroke: {type: "color", color: "#FFFFFF"}, cornerRadius: buttonCorner},
-      },
-      backgrounds: {
-        buttonNormal: {
-          fill: {type: "color", color: "#99CCFF"},
-          cornerRadius: buttonCorner,
-          shadow: {offsetX: 2, offsetY: 2, blur: 5, color: "#000000"}
-        },
-        buttonPressed: {fill: {type: "color", color: "#77AADD"}, cornerRadius: buttonCorner},
-        buttonDisabled: {fill: {type: "color", color: "$transWhite"}, cornerRadius: buttonCorner},
-      },
-    }
-    const theme :Theme = {
-      default: {
-        label: {
-          font: "$base",
-          fill: "$black",
-          disabled: {
-            fill: "$darkGray",
-          },
-          selection: {
-            fill: "$lightGray",
-          }
-        },
-        box: {},
-      },
-      button: {
-        box: {
-          padding: 10,
-          border: "$button",
-          background: "$buttonNormal",
-          disabled: {background: "$buttonDisabled"},
-          focused: {border: "$buttonFocused"},
-          pressed: {border: "$buttonFocused", background: "$buttonPressed"},
-        },
-      },
-    }
-
     let canRangeAttack :Value<boolean> = state.map(
         state => (state !== undefined) && config.kind.canRangeAttack && (state.actionPts > 10))
     let canHeal :Value<boolean> = state.map(
@@ -172,7 +117,7 @@ export class MonsterMenu
       resolve: loadImage,
     }
 
-    const ui = new UI(theme, styles, resolver)
+    const ui = new UI(moncherTheme, moncherStyles, resolver)
     this._host = new Host2(renderer)
     this.disposer.add(this._host)
     this.disposer.add(this._host.bind(renderer.canvas))

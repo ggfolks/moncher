@@ -264,5 +264,6 @@ ranch.addMonster(
 console.log("Gruntle: " + (RanchMode !== undefined) + "," + (MonsterRancherMode !== undefined))
 
 app.setMode(new RanchMode(app, ranch))
+//app.setMode(new MonsterRancherMode(app, ranch))
 
 setInterval(() => { ranch.tick() }, 800)
