@@ -283,22 +283,18 @@ export class RanchMode extends Mode
 
   protected getY (x :number, z :number) :number
   {
-//    if (!this._terrain) {
+    if (!this._terrain) {
       this._terrain = this._obj.read(this._terrainId)
       if (!this._terrain) {
-//        log.debug("Not ready yet")
         return 2.5
       }
-//    }
-//    log.debug("I have things",
-//      "obj", this._obj, "terrain", this._terrainId)
+    }
     const HAWK_HEIGHT = 10
     let caster = new Raycaster(new Vector3(x, HAWK_HEIGHT, z), new Vector3(0, -1, 0))
     let results = caster.intersectObject(this._terrain, true)
     for (let result of results) {
       return HAWK_HEIGHT - result.distance
     }
-    //log.debug("gruntle compiler " + (Raycaster !== undefined))
     return 2.5
   }
 
