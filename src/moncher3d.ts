@@ -181,20 +181,24 @@ export class RanchMode extends Mode
     /*const animsys =*/ this._animsys = new AnimationSystem(domain, obj, mixer)
 
     // add lights and camera
+    const CAMERA_MOVEMENT_FACTOR = 80 // Hacky multiplication factor so we get noticeable movement
     const cameraId = domain.add({
       components: {
-        trans: {initial: new Float32Array([0, 30, 12, 0, 0, 0, 1, 1, 1, 1])},
+        trans: {initial: new Float32Array([0, RanchMode.CAMERA_HEIGHT, 12, 0, 0, 0, 1, 1, 1, 1])},
         obj: {type: "perspectiveCamera"},
         hovers: {},
         graph: {
           hover: {type: "hover", component: "hovers"},
           viewMovement: {type: "Vector3.split", input: ["hover", "viewMovement"]},
-          pitchDelta: {type: "multiply", inputs: [["hover", "pressed"], ["viewMovement", "y"], -1]},
-          yawDelta: {type: "multiply", inputs: [["hover", "pressed"], ["viewMovement", "x"], 1]},
-          pitch: {type: "accumulate", min: -Math.PI/2, max: Math.PI/2, input: "pitchDelta"},
-          yaw: {type: "accumulate", input: "yawDelta"},
-          rotation: {type: "Euler", order: "ZYX", x: "pitch", y: "yaw"},
-          updateRotation: {type: "updateRotation", component: "trans", input: "rotation"},
+          xDelta: {type: "multiply",
+            inputs: [["hover", "pressed"], ["viewMovement", "x"], -CAMERA_MOVEMENT_FACTOR]},
+          yDelta: {type: "multiply",
+            inputs: [["hover", "pressed"], ["viewMovement", "y"], CAMERA_MOVEMENT_FACTOR]},
+          leftRight: {type: "accumulate", input: "xDelta"},
+          upDown: {type: "accumulate", input: "yDelta"},
+          panning: {type: "Vector3",
+              x: "leftRight", y: RanchMode.CAMERA_HEIGHT, z: "upDown"},
+          updatePosition: {type: "updatePosition", component: "trans", input: "panning"}
         },
       },
     })
@@ -327,4 +331,5 @@ export class RanchMode extends Mode
   }
 
   private static MONSTER_MOVE_DURATION = 1200
+  private static CAMERA_HEIGHT = 30
 }
