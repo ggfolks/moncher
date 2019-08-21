@@ -140,7 +140,7 @@ export class RanchMode extends Mode
     const lerp = this._lerp = new SparseValueComponent<LerpRec|undefined>("lerp", undefined)
 
     const domain = this._domain = new Domain({}, {trans, obj, mixer, body, lerp})
-    /*const lerpsys =*/ this._lerpsys = new LerpSystem(domain, trans, lerp, this.getY)
+    /*const lerpsys =*/ this._lerpsys = new LerpSystem(domain, trans, lerp, this.getY.bind(this))
     const scenesys = this._scenesys = new SceneSystem(
         domain, trans, obj, undefined, hand.pointers)
     scenesys.scene.add(host.group)
@@ -283,21 +283,22 @@ export class RanchMode extends Mode
 
   protected getY (x :number, z :number) :number
   {
-    if (!this._terrain) {
-      log.debug("I have things",
-        "obj", this._obj, "terrain", this._terrainId)
+//    if (!this._terrain) {
       this._terrain = this._obj.read(this._terrainId)
       if (!this._terrain) {
-        log.debug("Not ready yet")
+//        log.debug("Not ready yet")
         return 2.5
       }
-    }
-//    let caster = new Raycaster(new Vector3(x, 10, z), new Vector3(0, -1, 0))
-//    let results = caster.intersectObject(this._terrain)
-//    for (let result of results) {
-//      log.debug("Result distance: " + result[0])
 //    }
-    log.debug("gruntle compiler " + (Raycaster !== undefined))
+//    log.debug("I have things",
+//      "obj", this._obj, "terrain", this._terrainId)
+    const HAWK_HEIGHT = 10
+    let caster = new Raycaster(new Vector3(x, HAWK_HEIGHT, z), new Vector3(0, -1, 0))
+    let results = caster.intersectObject(this._terrain, true)
+    for (let result of results) {
+      return HAWK_HEIGHT - result.distance
+    }
+    //log.debug("gruntle compiler " + (Raycaster !== undefined))
     return 2.5
   }
 
@@ -312,19 +313,6 @@ export class RanchMode extends Mode
   protected _scenesys! :SceneSystem
   protected _animsys! :AnimationSystem
   protected _domain! :Domain
-
-//  protected set _terrainId (id :ID)
-//  {
-//    log.debug("Someone set _terrainId : " + id)
-//    this.secret = id
-//  }
-//
-//  protected get _terrainId () :ID
-//  {
-//    return this.secret!
-//  }
-//
-//  protected secret? :ID
 
   protected _terrainId! :ID
 
