@@ -56,8 +56,6 @@ class LerpRec
   ) {}
 }
 
-//Vector3.prototype.toString = function() { return `(${this.x}, ${this.y}, ${this.z})` }
-
 class LerpSystem extends System
 {
   constructor (
@@ -167,22 +165,6 @@ export class RanchMode extends Mode
       },
     })
 
-//    // add plane terrain (from spain; rainy)
-//    const terrainId = domain.add({
-//      components: {
-//        trans: {},
-//        obj: {
-//          type: "mesh",
-//          geometry: {type: "planeBuffer"},
-//          material: {type: "toon", color: 0x60c060},
-//        },
-//        body: {shapes: [{type: "plane"}]},
-//      },
-//    })
-//    trans.updateQuaternion(terrainId, new Quaternion().setFromAxisAngle(
-//        new Vector3(1, 0, 0), -Math.PI/2))
-//    trans.updateScale(terrainId, new Vector3(100, 100, 100))
-//
     // add the ranch terrain
     const ranchTerrainId = this._terrainId = domain.add({
       components: {
@@ -190,30 +172,7 @@ export class RanchMode extends Mode
         obj: {type: "gltf", url: "ranch/Ranch.glb"},
       },
     })
-    trans.updateScale(ranchTerrainId, new Vector3(.2, .2, .2))
-//    this._terrain = obj.read(ranchTerrainId)
-
-//    // temp: add a sphere
-//    const origin = new Vector3(0, 3, -10)
-//    const position = new Vector3()
-//    const boxId = domain.add({
-//      components: {
-//        trans: {},
-//        obj: {
-//          type: "mesh",
-//          geometry: {type: "sphereBuffer"},
-//          material: {type: "toon", color: new Color().setHSL(Math.random(), 1.0, 0.6)},
-//        },
-//        body: {shapes: [{type: "sphere"}], mass: 1},
-//      },
-//    })
-//    position.set(
-//      origin.x + ThreeMath.randFloat(-2, 2),
-//      origin.y + ThreeMath.randFloat(-2, 2),
-//      origin.z + ThreeMath.randFloat(-2, 2),
-//    )
-//    trans.updatePosition(boxId, position)
-//
+    trans.updateScale(ranchTerrainId, new Vector3(.5, .5, .5))
   }
 
   render (clock :Clock) :void {
