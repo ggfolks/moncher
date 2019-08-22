@@ -50,10 +50,10 @@ export class Hud
             },
           }, {
             type: "box",
+            visible: "status.visible",
             contents: {
               type: "label",
               text: "status.text",
-              visible: "status.visible",
             },
             style: {
               padding: 10,
@@ -69,7 +69,7 @@ export class Hud
     const ui = new UI(moncherTheme, moncherStyles, resolver)
 
     const root = ui.createRoot(rootConfig, new Model(model))
-    root.pack(1000, 1000) // crud?
+    this.disposer.add(renderer.size.onValue(sz => { root.pack(sz[0], sz[1]) }))
     host.addRoot(root, vec2zero)
   }
 }
