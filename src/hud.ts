@@ -1,7 +1,7 @@
 import {loadImage} from "tfw/core/assets"
 import {vec2zero} from "tfw/core/math"
-import {Mutable} from "tfw/core/react"
-import {/*log,*/ Disposer} from "tfw/core/util"
+import {Mutable, Value} from "tfw/core/react"
+import {/*log,*/ Disposable, Disposer} from "tfw/core/util"
 import {Renderer} from "tfw/scene2/gl"
 import {Host, RootConfig} from "tfw/ui/element"
 import {Model, ModelData} from "tfw/ui/model"
@@ -10,9 +10,8 @@ import {UI} from "tfw/ui/ui"
 import {moncherStyles, moncherTheme} from "./uistyles"
 
 export class Hud
+  implements Disposable
 {
-  readonly disposer :Disposer = new Disposer()
-
   readonly statusLabel :Mutable<string> = Mutable.local("") //Choose a location to drop your egg")
 
   readonly actionButton :Mutable<string> = Mutable.local("🥚") // egg
@@ -31,6 +30,9 @@ export class Hud
         text: this.actionButton,
         clicked: () => { console.log("TODO") },
       },
+      blank: {
+        text: Value.constant(""),
+      }
     }
 
     const rootConfig :RootConfig = {
@@ -42,14 +44,26 @@ export class Hud
           type: "column",
           constraints: {stretchX: true, stretchY: true},
           contents: [{
+            type: "label",
+            text: "blank.text",
+            constraints: {stretch: true},
+          }, {
             type: "button",
+            constraints: {stretch: false},
             onClick: "button.clicked",
             contents: {
               type: "box",
-              contents: {type: "label", text: "button.text"},
+              contents: {
+                type: "label",
+                text: "button.text",
+                style: {
+                  font: {size: 64},
+                },
+              },
             },
           }, {
             type: "box",
+            constraints: {stretch: false},
             visible: "status.visible",
             contents: {
               type: "label",
@@ -69,7 +83,14 @@ export class Hud
     const ui = new UI(moncherTheme, moncherStyles, resolver)
 
     const root = ui.createRoot(rootConfig, new Model(model))
-    this.disposer.add(renderer.size.onValue(sz => { root.pack(sz[0], sz[1]) }))
+    this._disposer.add(renderer.size.onValue(sz => { root.pack(sz[0], sz[1]) }))
     host.addRoot(root, vec2zero)
   }
+
+  // from Disposable
+  public dispose () :void {
+    this._disposer.dispose()
+  }
+
+  protected readonly _disposer :Disposer = new Disposer()
 }

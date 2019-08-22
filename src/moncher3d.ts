@@ -116,7 +116,7 @@ export class RanchMode extends Mode
     this.onDispose.add(_ranch.monsters.onChange(this._monsterChange))
     _ranch.monsters.forEach((monster, id) => { this.updateMonster(id, monster) })
 
-    new Hud(this._host, app.renderer)
+    this.onDispose.add(this._hud = new Hud(this._host, app.renderer))
   }
 
   protected configureScene (app :App) :void {
@@ -305,6 +305,9 @@ export class RanchMode extends Mode
     }
     return 2.5 // bogus fallback height
   }
+
+  /** Our heads-up-display: global UI. */
+  protected _hud :Hud
 
   // The properties below are all definitely initialized via the constructor
   protected _host! :Host3
