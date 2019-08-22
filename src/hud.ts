@@ -13,7 +13,7 @@ export class Hud
 {
   readonly disposer :Disposer = new Disposer()
 
-  readonly statusLabel :Mutable<string> = Mutable.local("")
+  readonly statusLabel :Mutable<string> = Mutable.local("") //Choose a location to drop your egg")
 
   readonly actionButton :Mutable<string> = Mutable.local("🥚") // egg
 
@@ -49,9 +49,16 @@ export class Hud
               contents: {type: "label", text: "button.text"},
             },
           }, {
-            type: "label",
-            text: "status.text",
-            visible: "status.visible",
+            type: "box",
+            contents: {
+              type: "label",
+              text: "status.text",
+              visible: "status.visible",
+            },
+            style: {
+              padding: 10,
+              background: {fill: {type: "color", color: "$transWhite"}},
+            },
           }],
         }],
       },
