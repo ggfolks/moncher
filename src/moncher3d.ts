@@ -43,7 +43,7 @@ import {registerPhysics3Nodes} from "tfw/physics3/node"
 import {registerInputNodes} from "tfw/input/node"
 import {registerUINodes} from "tfw/ui/node"
 import {Graph, GraphConfig} from "tfw/graph/graph"
-import {NodeConfig, NodeContext, NodeTypeRegistry} from "tfw/graph/node"
+import {NodeConfig, NodeContext, NodeInput, NodeTypeRegistry} from "tfw/graph/node"
 
 import {App, Mode} from "./app"
 import {
@@ -340,6 +340,12 @@ export class RanchMode extends Mode
     }
 
     const graphCfg :GraphConfig = {}
+    const animation = (url :string, play :NodeInput<boolean>) => (<NodeConfig>{
+      type: "AnimationAction",
+      component: "mixer",
+      url: url,
+      play: play,
+    })
 
     // add animation logic for animations we support
     if (cfg.model.hatch) {
@@ -352,25 +358,11 @@ export class RanchMode extends Mode
         x: "action",
         y: MonsterAction.Hatching,
       }
-      graphCfg.hatch = <NodeConfig>{
-        type: "AnimationAction",
-        component: "mixer",
-        url: cfg.model.hatch,
-        play: "isHatching",
-      }
+      graphCfg.hatch = animation(cfg.model.hatch, "isHatching")
+      graphCfg.notHatching = <NodeConfig>{type: "not", input: "isHatching"}
 
       if (cfg.model.idle && cfg.kind === MonsterKind.EGG) {
-        // eggs are idle while not hatching
-        graphCfg.isIdle = <NodeConfig>{
-          type: "not",
-          input: "isHatching",
-        }
-        graphCfg.idle = <NodeConfig>{
-          type: "AnimationAction",
-          component: "mixer",
-          url: cfg.model.idle,
-          play: "isIdle",
-        }
+        graphCfg.idle = animation(cfg.model.idle, "notHatching")
       }
     }
 
@@ -388,11 +380,18 @@ export class RanchMode extends Mode
         type: "not",
         input: "noLerp",
       }
-      graphCfg.walk = <NodeConfig>{
-        type: "AnimationAction",
-        component: "mixer",
-        url: cfg.model.walk,
-        play: "yesLerp",
+      graphCfg.walk = animation(cfg.model.walk, "yesLerp")
+
+      if (cfg.model.idle && cfg.kind !== MonsterKind.EGG) {
+        let idleInput = "noLerp"
+        if (cfg.model.hatch) {
+          graphCfg.isIdle = <NodeConfig>{
+            type: "and",
+            inputs: [ "noLerp", "notHatching" ],
+          }
+          idleInput = "isIdle"
+        }
+        graphCfg.idle = animation(cfg.model.idle, idleInput)
       }
     }
 
@@ -474,6 +473,7 @@ export class RanchMode extends Mode
       // Freeze these?
       const monsterModel :MonsterModel = {
         model:  "monsters/LobberBlue.glb",
+        idle:   "monsters/LobberBlue.glb#Idle",
         hatch:  "monsters/LobberBlue.glb#Hatch",
         walk:   "monsters/LobberBlue.glb#Walk",
         attack: "monsters/LobberBlue.glb#Attack",

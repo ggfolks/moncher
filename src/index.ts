@@ -249,8 +249,9 @@ ranch.addMonster(
     new PropTileInfo("mlp", "monsters/_0018_RunnerGreen.png", undefined, undefined, 13),
     <MonsterModel>{
       model: "monsters/LobberGreen.glb",
+      idle: "monsters/LobberGreen.glb#Idle",
       walk: "monsters/LobberGreen.glb#Walk",
-      attack: "monsters/LobberGreen.glb#Attack"
+      attack: "monsters/LobberGreen.glb#Attack",
     }),
   4, 4)
 ranch.addMonster(
@@ -258,8 +259,9 @@ ranch.addMonster(
     new PropTileInfo("grunt", "monsters/_0017_GruntRed.png", undefined, undefined, 13),
     <MonsterModel>{
       model: "monsters/LobberRed.glb",
+      idle: "monsters/LobberRed.glb#Idle",
       walk: "monsters/LobberRed.glb#Walk",
-      attack: "monsters/LobberRed.glb#Attack"
+      attack: "monsters/LobberRed.glb#Attack",
     }),
   6, 6)
 
