@@ -244,13 +244,18 @@ export class RanchMode extends Mode
         },
       },
     })
-//    // HERE
-//
-//    const wheelHandler = (event :PointerEvent) => {
-//
-//    }
-//    root.addEventListener("wheel", wheelHandler)
-//    this.onDispose.add(() => root.removeEventListener("wheel", wheelHandler))
+
+    // TEMP: set up mouse wheel to do a little camera Y adjustment
+    const MIN_CAMERA = RanchMode.CAMERA_HEIGHT / 5
+    const MAX_CAMERA = RanchMode.CAMERA_HEIGHT * 5
+    const WHEEL_FACTOR = .05
+    const wheelHandler = (event :WheelEvent) => {
+      cameraHeight.update(Math.max(MIN_CAMERA, Math.min(MAX_CAMERA,
+            cameraHeight.current + (event.deltaY * WHEEL_FACTOR))))
+      // Possibly TODO: keep same point centered!
+    }
+    root.addEventListener("wheel", wheelHandler)
+    this.onDispose.add(() => root.removeEventListener("wheel", wheelHandler))
 
 //    setInterval(() => {
 //      log.debug("Camera position", "pos", trans.readPosition(cameraId, new Vector3()))
