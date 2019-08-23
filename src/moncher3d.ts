@@ -98,11 +98,17 @@ class LerpSystem extends System
       if (lerpRec) {
         if (!lerpRec.stamp) {
           lerpRec.stamp = clock.time + lerpRec.duration
+          const axis = new Vector3(0, 1, 0)
+          const v1 = lerpRec.src.clone().projectOnPlane(axis)
+          const v2 = lerpRec.dest.clone().projectOnPlane(axis)
+          const angle = v1.angleTo(v2) * (v1.cross(v2).dot(axis) < 0 ? -1 : 1)
+          this.trans.updateQuaternion(id, new Quaternion().setFromAxisAngle(axis, angle))
         }
         const timeLeft = lerpRec.stamp - clock.time
         if (timeLeft <= 0) {
           this.trans.updatePosition(id, lerpRec.dest)
           this.lerp.update(id, undefined)
+          this.trans.updateQuaternion(id, new Quaternion())
         } else {
           pos.lerpVectors(lerpRec.dest, lerpRec.src, timeLeft / lerpRec.duration)
           // but override the Y value according to terrain?
@@ -407,7 +413,7 @@ export class RanchMode extends Mode
 
   protected setUiState (uiState :UiState) :void
   {
-    log.debug("Updating UI state: " + uiState)
+//    log.debug("Updating UI state: " + uiState)
     // probably some of this logic could move into the hud?
     this._uiState = uiState
     switch (uiState) {
