@@ -98,12 +98,13 @@ class LerpSystem extends System
       const lerpRec = this.lerp.read(id)
       if (lerpRec) {
         if (!lerpRec.stamp) {
+          // calculate the end time for the walk
           lerpRec.stamp = clock.time + lerpRec.duration
-          const axis = new Vector3(0, 1, 0)
-          const v1 = lerpRec.src.clone().projectOnPlane(axis)
-          const v2 = lerpRec.dest.clone().projectOnPlane(axis)
-          const angle = v1.angleTo(v2) * (v1.cross(v2).dot(axis) < 0 ? -1 : 1)
-          this.trans.updateQuaternion(id, new Quaternion().setFromAxisAngle(axis, angle))
+          // calculate the direction
+          const subbed = new Vector3().subVectors(lerpRec.dest, lerpRec.src)
+          subbed.y = 0
+          this.trans.updateQuaternion(id,
+              new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), subbed.normalize()))
         }
         const timeLeft = lerpRec.stamp - clock.time
         if (timeLeft <= 0) {
