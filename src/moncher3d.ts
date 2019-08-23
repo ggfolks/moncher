@@ -327,6 +327,28 @@ export class RanchMode extends Mode
       }
     }
 
+    if (cfg.model.walk) {
+      graphCfg.readLerp = <NodeConfig>{
+        type: "readComponent",
+        component: "lerp",
+      }
+      graphCfg.noLerp = <NodeConfig>{
+        type: "equals",
+        x: "readLerp",
+        y: undefined,
+      }
+      graphCfg.yesLerp = <NodeConfig>{
+        type: "not",
+        input: "noLerp",
+      }
+      graphCfg.walk = <NodeConfig>{
+        type: "AnimationAction",
+        component: "mixer",
+        url: cfg.model.walk,
+        play: "yesLerp",
+      }
+    }
+
     const entityId = this._domain.add({
       components: {
         trans: {initial: new Float32Array([state.x, this.getY(state.x, -state.y), -state.y,
