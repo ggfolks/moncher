@@ -307,7 +307,8 @@ export class RanchMode extends Mode
       this._trans.updatePosition(actorInfo.entityId, pos)
       return
     }
-    const rec = new LerpRec(oldPos, pos, RanchMode.MONSTER_MOVE_DURATION)
+    const duration = (oldPos.distanceTo(pos) * 1000) / RanchMode.MONSTER_MOVE_DISTANCE_PER_SECOND
+    const rec = new LerpRec(oldPos, pos, duration)
     this._lerp.update(actorInfo.entityId, rec)
   }
 
@@ -499,7 +500,7 @@ export class RanchMode extends Mode
     }
   }
 
-  private static MONSTER_MOVE_DURATION = 1200
+  private static MONSTER_MOVE_DISTANCE_PER_SECOND = 0.8
   private static CAMERA_HEIGHT = 7 // starting y coordinate of camera
   private static CAMERA_SETBACK = 14 // starting z coordinate of camera
 }
