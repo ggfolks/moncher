@@ -15,6 +15,7 @@ import {MonsterMenu} from "./monstermenu"
  */
 export class MonsterKind
 {
+  static readonly EGG :MonsterKind = new MonsterKind(false, false, false)
   static readonly RUNNER :MonsterKind = new MonsterKind(true, false, false)
   static readonly HEALER :MonsterKind = new MonsterKind(false, true, true)
   static readonly TESTER :MonsterKind = new MonsterKind(true, true, true)
@@ -29,22 +30,30 @@ export class MonsterKind
 /**
  * Configuration for the 3D aspects of a monster. This will probably move.
  */
-export class MonsterModel
-{
-  constructor (
-    /** The path to the monster's model file. */
-    readonly model :string,
-    //protected eggOverride? :string,
-    /** The path to the monster's walk animation. */
-    readonly walk? :string,
-    readonly attack? :string,
-  ) {}
-
-  get egg () :string
-  {
-    return /*this.eggOverride ||*/ "monsters/Egg.glb"
-  }
+export interface MonsterModel {
+  model :string
+  /** Eggs use the hatch animation at the end of their lives, other monsters at the beginning. */
+  hatch? :string
+  walk? :string
+  attack? :string
 }
+
+//export class MonsterModel
+//{
+//  constructor (
+//    /** The path to the monster's model file. */
+//    readonly model :string,
+//    //protected eggOverride? :string,
+//    /** The path to the monster's walk animation. */
+//    readonly walk? :string,
+//    readonly attack? :string,
+//  ) {}
+//
+//  get egg () :string
+//  {
+//    return /*this.eggOverride ||*/ "monsters/Egg.glb"
+//  }
+//}
 
 /**
  * Configuration of a monster.
@@ -56,12 +65,18 @@ export class MonsterConfig
     readonly info? :PropTileInfo,
     readonly model? :MonsterModel,
     readonly kind :MonsterKind = MonsterKind.TESTER,
+    readonly spawn? :MonsterConfig,
     readonly startingHealth :number = 50,
     readonly maximumHealth :number = 50,
     readonly startingActionPts :number = 5,
     readonly maxActionPts :number = 10,
     readonly regenActionPts :number = .2,
   ) {}
+}
+
+export enum MonsterAction {
+  None,
+  Hatching,
 }
 
 /**
@@ -79,7 +94,7 @@ export class MonsterState
     /** The monster's current action points. */
     readonly actionPts :number,
     /** TODO */
-    readonly state :string, // walking, eating, pooping, mating...?
+    readonly action :MonsterAction,
   ) {}
 }
 
@@ -96,28 +111,41 @@ class Monster
   boredom :number = 0
   crowding :number = 0
 
-  hatched :boolean = false
   health :number
   actionPts :number
 
   /** Recently visited locations, most recent at index 0. */
   locationMemory :vec2[] = []
-  state :string = ""
 
   constructor (
     readonly id :number,
     readonly config :MonsterConfig,
     public x :number,
-    public y :number
+    public y :number,
+    public action :MonsterAction,
   ) {
     this.health = config.startingHealth
     this.actionPts = config.startingActionPts
   }
 
+  isEggOrHatching () :boolean
+  {
+    return (this.config.kind === MonsterKind.EGG) || (this.action === MonsterAction.Hatching)
+  }
+
+  maybeSetAction (cost :number, action :MonsterAction) :boolean
+  {
+    if (this.actionPts < cost) return false
+
+    this.actionPts -= cost
+    this.action = action
+    return true
+  }
+
   toState () :MonsterState
   {
     // TODO: Rethink? We keep monsters in tile coords but we center it for the visual state
-    return new MonsterState(this.x + .5, this.y + .5, this.health, this.actionPts, this.state)
+    return new MonsterState(this.x + .5, this.y + .5, this.health, this.actionPts, this.action)
   }
 
   setLocation (x :number, y :number) :void
@@ -182,10 +210,12 @@ export class RanchModel
   /**
    * Add a new monster.
    */
-  addMonster (config :MonsterConfig, x :number, y :number) :void
+  addMonster (config :MonsterConfig, x :number, y :number, action = MonsterAction.None) :void
   {
+    this.validateConfig(config)
+
     const id = this._nextMonsterId++
-    const data = new Monster(id, config, Math.trunc(x), Math.trunc(y))
+    const data = new Monster(id, config, Math.trunc(x), Math.trunc(y), action)
     this.monsterConfig.set(id, config)
     this._monsterData.set(id, data)
     // move the monster to its current location to map it by location
@@ -194,9 +224,40 @@ export class RanchModel
     this._monsters.set(data.id, data.toState())
   }
 
+  protected validateConfig (config :MonsterConfig)
+  {
+    switch (config.kind) {
+      case MonsterKind.EGG:
+        if (!config.spawn) {
+          throw new Error("Eggs must specify a spawn config.")
+        }
+        // validate the spawn too
+        this.validateConfig(config.spawn)
+        break
+    }
+  }
+
+  protected removeMonster (data :Monster)
+  {
+    this.unmapLocation(data)
+    this._monsterData.delete(data.id)
+    this._monsters.delete(data.id)
+    // unmap the config last in the reverse of how we started
+    this.monsterConfig.delete(data.id)
+  }
+
   protected moveMonster (data :Monster, newX :number, newY :number)
   {
-    // remove from the old location in the map
+    this.unmapLocation(data)
+    data.setLocation(newX, newY)
+    this.mapLocation(data)
+  }
+
+  /**
+   * Unmap the monster by location.
+   */
+  protected unmapLocation (data :Monster)
+  {
     const oldKey = this.locToKey(data.x, data.y)
     const oldVals = this._monstersByLocation.get(oldKey)
     if (oldVals) {
@@ -205,10 +266,11 @@ export class RanchModel
         oldVals.splice(dex, 1)
       }
     }
+  }
 
-    // actually update the location
-    data.setLocation(newX, newY)
-    const newKey = this.locToKey(newX, newY)
+  protected mapLocation (data :Monster)
+  {
+    const newKey = this.locToKey(data.x, data.x)
     let newVals = this._monstersByLocation.get(newKey)
     if (!newVals) {
       newVals = []
@@ -256,17 +318,43 @@ export class RanchModel
   tick () :void
   {
     // first update the internal states of all monsters
+    STATE_LOOP:
     for (const monst of this._monsterData.values()) {
       // accumulate action points
       monst.actionPts += monst.config.regenActionPts
-      if (!monst.hatched) {
-        const HATCH_COST = 20
-        console.log("Accum action: " + monst.actionPts)
-        if (monst.actionPts >= HATCH_COST) {
-          monst.hatched = true
-          monst.actionPts -= HATCH_COST
-        }
-        continue
+
+      switch (monst.config.kind) {
+        case MonsterKind.EGG:
+          switch (monst.action) {
+            default:
+              if (monst.maybeSetAction(20, MonsterAction.Hatching)) {
+                log.debug("Hatching egg!")
+                // spawn the baby (spawn is asserted as present because we check when egg added)
+                this.addMonster(monst.config.spawn!, monst.x, monst.y, MonsterAction.Hatching)
+              }
+              break
+
+            case MonsterAction.Hatching:
+              // once time has passed here, we delete the monster
+              if (monst.actionPts >= 5) {
+                this.removeMonster(monst)
+              }
+              break
+          }
+          continue STATE_LOOP
+
+        default: // MonsterKind
+          switch (monst.action) {
+            default: break
+
+            case MonsterAction.Hatching:
+              if (!monst.maybeSetAction(5, MonsterAction.None)) {
+                continue STATE_LOOP
+              }
+              log.debug("new monster finished born")
+              break
+          }
+          break
       }
 
       // see what kind of tile we're on and react to that
@@ -312,7 +400,10 @@ export class RanchModel
 
     // then figure out if a monster wants to update state/loc
     for (const monst of this._monsterData.values()) {
-      if (!monst.hatched) continue
+      if (monst.isEggOrHatching()) {
+        continue
+      }
+
       const scoreFn :ScoreFn|undefined = this.getScoreFn(monst)
       if (scoreFn === undefined) continue
       let best :vec2[] = []

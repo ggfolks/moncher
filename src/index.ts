@@ -247,18 +247,20 @@ let ranch :RanchModel = new RanchModel(model)
 ranch.addMonster(
   new MonsterConfig(
     new PropTileInfo("mlp", "monsters/_0018_RunnerGreen.png", undefined, undefined, 13),
-    new MonsterModel(
-      "monsters/LobberGreen.glb",
-      "monsters/LobberGreen.glb#Walk",
-      "monsters/LobberGreen.glb#Attack")),
+    <MonsterModel>{
+      model: "monsters/LobberGreen.glb",
+      walk: "monsters/LobberGreen.glb#Walk",
+      attack: "monsters/LobberGreen.glb#Attack"
+    }),
   4, 4)
 ranch.addMonster(
   new MonsterConfig(
     new PropTileInfo("grunt", "monsters/_0017_GruntRed.png", undefined, undefined, 13),
-    new MonsterModel(
-      "monsters/LobberRed.glb",
-      "monsters/LobberRed.glb#Walk",
-      "monsters/LobberRed.glb#Attack")),
+    <MonsterModel>{
+      model: "monsters/LobberRed.glb",
+      walk: "monsters/LobberRed.glb#Walk",
+      attack: "monsters/LobberRed.glb#Attack"
+    }),
   6, 6)
 
 console.log("Gruntle: " + (RanchMode !== undefined) + "," + (MonsterRancherMode !== undefined))

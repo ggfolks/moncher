@@ -45,7 +45,7 @@ import {Graph} from "tfw/graph/graph"
 import {NodeContext, NodeTypeRegistry} from "tfw/graph/node"
 
 import {App, Mode} from "./app"
-import {MonsterConfig, MonsterModel, MonsterState, RanchModel} from "./moncher"
+import {MonsterConfig, MonsterKind, MonsterModel, MonsterState, RanchModel} from "./moncher"
 import {Hud} from "./hud"
 
 class ActorInfo
@@ -358,13 +358,23 @@ export class RanchMode extends Mode
         (pos[1] / window.innerHeight) * -2 + 1)
     caster.setFromCamera(ndc, this._obj.read(this._cameraId) as Camera)
     for (const result of caster.intersectObject(terrain, true)) {
-      const config :MonsterConfig = new MonsterConfig(undefined,
-        new MonsterModel(
-          "monsters/LobberBlue.glb",
-          "monsters/LobberBlue.glb#Walk",
-          "monsters/LobberBlue.glb#Attack"))
+      // Freeze these?
+      const monsterModel :MonsterModel = {
+        model: "monsters/LobberBlue.glb",
+        hatch: "monsters/LobberBlue.glb#Hatch",
+        walk: "monsters/LobberBlue.glb#Walk",
+        attack: "monsters/LobberBlue.glb#Attack",
+      }
+      const eggModel :MonsterModel = {
+        model: "monsters/Egg.glb",
+        hatch: "monsters/Egg.glb#Hatch",
+      }
 
-      this._ranch.addMonster(config, Math.round(result.point.x), Math.round(-result.point.z))
+      const config :MonsterConfig = new MonsterConfig(undefined, monsterModel)
+      const eggConfig :MonsterConfig = new MonsterConfig(undefined,
+        eggModel, MonsterKind.EGG, config)
+
+      this._ranch.addMonster(eggConfig, Math.round(result.point.x), Math.round(-result.point.z))
       this.setUiState(UiState.Default)
       return // stop after first result
     }
