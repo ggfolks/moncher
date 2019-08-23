@@ -129,8 +129,8 @@ type GridTileSceneViz = {
 function chopTiles (tex :Texture, w :number, h :number) :Tile[]
 {
   const retval :Tile[] = []
-  for (let xx = 0; xx < tex.size[0]; xx += w) {
-    for (let yy = 0; yy < tex.size[1]; yy += h) {
+  for (let xx = 0; xx + w <= tex.size[0]; xx += w) {
+    for (let yy = 0; yy + h <= tex.size[1]; yy += h) {
       retval.push(tex.tile(xx, yy, w, h))
     }
   }

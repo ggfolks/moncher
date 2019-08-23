@@ -1,10 +1,12 @@
 import {
   AnimationMixer,
+  Camera,
 //  Color,
 //  Math as ThreeMath,
   Object3D,
   Quaternion,
   Raycaster,
+  Vector2,
   Vector3,
   WebGLRenderer,
 } from "three"
@@ -12,9 +14,10 @@ import {
 import {Body} from "cannon"
 
 import {Clock} from "tfw/core/clock"
+import {vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
-//import {log} from "tfw/core/util"
-import {Hand} from "tfw/input/hand"
+import {log} from "tfw/core/util"
+import {Hand, Pointer} from "tfw/input/hand"
 import {
   Component,
   DenseValueComponent,
@@ -42,7 +45,8 @@ import {Graph} from "tfw/graph/graph"
 import {NodeContext, NodeTypeRegistry} from "tfw/graph/node"
 
 import {App, Mode} from "./app"
-import {MonsterConfig, MonsterState, RanchModel} from "./moncher"
+import {PropTileInfo} from "./gridtiles"
+import {MonsterConfig, MonsterModel, MonsterState, RanchModel} from "./moncher"
 import {Hud} from "./hud"
 
 class ActorInfo
@@ -84,12 +88,12 @@ class LerpSystem extends System
   update (clock :Clock) {
     const pos :Vector3 = new Vector3()
     this.onEntities(id => {
-      let lerpRec = this.lerp.read(id)
+      const lerpRec = this.lerp.read(id)
       if (lerpRec) {
         if (!lerpRec.stamp) {
           lerpRec.stamp = clock.time + lerpRec.duration
         }
-        let timeLeft = lerpRec.stamp - clock.time
+        const timeLeft = lerpRec.stamp - clock.time
         if (timeLeft <= 0) {
           this.trans.updatePosition(id, lerpRec.dest)
           this.lerp.update(id, undefined)
@@ -104,6 +108,12 @@ class LerpSystem extends System
   }
 }
 
+enum UiState
+{
+  Default,
+  PlacingEgg,
+}
+
 export class RanchMode extends Mode
 {
   constructor (
@@ -113,10 +123,11 @@ export class RanchMode extends Mode
     super()
     this.configureScene(app)
 
-    this.onDispose.add(_ranch.monsters.onChange(this._monsterChange))
+    this.onDispose.add(_ranch.monsters.onChange(this._monsterChanged))
     _ranch.monsters.forEach((monster, id) => { this.updateMonster(id, monster) })
 
     this.onDispose.add(this._hud = new Hud(this._host, app.renderer))
+    this.setUiState(UiState.Default)
   }
 
   protected configureScene (app :App) :void {
@@ -145,6 +156,7 @@ export class RanchMode extends Mode
 
     const hand = this._hand = new Hand(webGlRenderer.domElement)
     this.onDispose.add(hand)
+    this.onDispose.add(hand.pointers.onChange(this._handChanged))
 
     // TODO: what is the minimum we need?
     const nodeCtx :NodeContext = {
@@ -183,9 +195,10 @@ export class RanchMode extends Mode
 
     // add lights and camera
     const CAMERA_MOVEMENT_FACTOR = 80 // Hacky multiplication factor so we get noticeable movement
-    const cameraId = domain.add({
+    const cameraId = this._cameraId = domain.add({
       components: {
-        trans: {initial: new Float32Array([0, RanchMode.CAMERA_HEIGHT, 12, 0, 0, 0, 1, 1, 1, 1])},
+        trans: {initial: new Float32Array(
+            [0, RanchMode.CAMERA_HEIGHT, RanchMode.CAMERA_SETBACK, 0, 0, 0, 1, 1, 1, 1])},
         obj: {type: "perspectiveCamera"},
         hovers: {},
         graph: {
@@ -197,14 +210,19 @@ export class RanchMode extends Mode
               inputs: [["hover", "pressed"], ["viewMovement", "y"], CAMERA_MOVEMENT_FACTOR]},
           leftRight: {type: "accumulate", input: "xDelta"},
           upDown: {type: "accumulate", input: "yDelta"},
+          upDownSetback: {type: "add", inputs: ["upDown", RanchMode.CAMERA_SETBACK]},
           panning: {type: "Vector3",
-              x: "leftRight", y: RanchMode.CAMERA_HEIGHT, z: "upDown"},
+              x: "leftRight", y: RanchMode.CAMERA_HEIGHT, z: "upDownSetback"},
           updatePosition: {type: "updatePosition", component: "trans", input: "panning"}
         },
       },
     })
+//    setInterval(() => {
+//      log.debug("Camera position", "pos", trans.readPosition(cameraId, new Vector3()))
+//    }, 1200)
+    //console.log("GRuntle: " + cameraId + "/" + Quaternion)
     trans.updateQuaternion(cameraId, new Quaternion().setFromAxisAngle(
-        new Vector3(1, 0, 0), -Math.PI/3))
+        new Vector3(1, 0, 0), -Math.PI/5))
     domain.add({
       components: {
         trans: {},
@@ -294,20 +312,71 @@ export class RanchMode extends Mode
 
   protected getY (x :number, z :number) :number
   {
-    let terrain = this._obj.read(this._terrainId)
+    const terrain = this._obj.read(this._terrainId)
     if (terrain) {
       const HAWK_HEIGHT = 10
-      let caster = new Raycaster(new Vector3(x, HAWK_HEIGHT, z), new Vector3(0, -1, 0))
-      let results = caster.intersectObject(terrain, true)
-      for (let result of results) {
+      const caster = new Raycaster(new Vector3(x, HAWK_HEIGHT, z), new Vector3(0, -1, 0))
+      const results = caster.intersectObject(terrain, true)
+      for (const result of results) {
         return HAWK_HEIGHT - result.distance
       }
     }
     return 2.5 // bogus fallback height
   }
 
+  protected setUiState (uiState :UiState) :void
+  {
+    log.debug("Updating UI state: " + uiState)
+    // probably some of this logic could move into the hud?
+    this._uiState = uiState
+    switch (uiState) {
+    case UiState.Default:
+      this._hud.actionButton.update("🥚") // egg
+      this._hud.action.update(() => this.setUiState(UiState.PlacingEgg))
+      this._hud.statusLabel.update("")
+      break
+
+    case UiState.PlacingEgg:
+      this._hud.actionButton.update("Cancel")
+      this._hud.action.update(() => this.setUiState(UiState.Default))
+      this._hud.statusLabel.update("Place the egg")
+      // TODO: stop normal scene panning? Or maybe you can pan and it always puts the egg
+      // on your last touch and then there's a "hatch" button to confirm the placement.
+      // For now, we unforgivingly hatch it on their first touch.
+      break
+    }
+  }
+
+  /**
+   * Place an egg. */
+  protected placeEgg (pos :vec2) :void
+  {
+    log.debug("Got egg placing request", "pos", pos)
+    const terrain = this._obj.read(this._terrainId)!
+    const caster = new Raycaster()
+    const ndc = new Vector2(
+        (pos[0] / window.innerWidth) * 2 - 1,
+        (pos[1] / window.innerHeight) * -2 + 1)
+    log.debug("Our NDC is", "ndc", ndc)
+    caster.setFromCamera(ndc, this._obj.read(this._cameraId) as Camera)
+    for (const result of caster.intersectObject(terrain, true)) {
+      const config :MonsterConfig = new MonsterConfig(
+        new PropTileInfo("hatchling", "monsters/_0022_LobberBlue.png"),
+        new MonsterModel(
+          "monsters/LobberBlue.glb",
+          "monsters/LobberBlue.glb#Walk",
+          "monsters/LobberBlue.glb#Attack"))
+
+      this._ranch.addMonster(config, result.point.x, -result.point.z)
+      this.setUiState(UiState.Default)
+      return // stop after first result
+    }
+  }
+
   /** Our heads-up-display: global UI. */
   protected _hud :Hud
+
+  protected _uiState :UiState = UiState.Default
 
   // The properties below are all definitely initialized via the constructor
   protected _host! :Host3
@@ -322,11 +391,12 @@ export class RanchMode extends Mode
   protected _animsys! :AnimationSystem
   protected _domain! :Domain
 
+  protected _cameraId! :ID
   protected _terrainId! :ID
 
   protected readonly _monsters :Map<number, ActorInfo> = new Map()
 
-  protected readonly _monsterChange = (change :MapChange<number, MonsterState>) => {
+  protected readonly _monsterChanged = (change :MapChange<number, MonsterState>) => {
     if (change.type === "set") {
       this.updateMonster(change.key, change.value)
     } else {
@@ -334,6 +404,13 @@ export class RanchMode extends Mode
     }
   }
 
+  protected readonly _handChanged = (change :MapChange<number, Pointer>) => {
+    if (this._uiState === UiState.PlacingEgg && change.type === "set" && change.value.pressed) {
+      this.placeEgg(change.value.position)
+    }
+  }
+
   private static MONSTER_MOVE_DURATION = 1200
-  private static CAMERA_HEIGHT = 30
+  private static CAMERA_HEIGHT = 20 // starting y coordinate of camera
+  private static CAMERA_SETBACK = 25 // starting z coordinate of camera
 }
