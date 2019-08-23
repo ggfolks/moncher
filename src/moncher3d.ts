@@ -26,7 +26,7 @@ import {
   ID,
   Matcher,
   SparseValueComponent,
-  System
+  System,
 } from "tfw/entity/entity"
 import {TransformComponent} from "tfw/space/entity"
 import {AnimationSystem, HoverMap, SceneSystem} from "tfw/scene3/entity"
@@ -41,11 +41,18 @@ import {registerScene3Nodes} from "tfw/scene3/node"
 import {registerPhysics3Nodes} from "tfw/physics3/node"
 import {registerInputNodes} from "tfw/input/node"
 import {registerUINodes} from "tfw/ui/node"
-import {Graph} from "tfw/graph/graph"
-import {NodeContext, NodeTypeRegistry} from "tfw/graph/node"
+import {Graph, GraphConfig} from "tfw/graph/graph"
+import {NodeConfig, NodeContext, NodeTypeRegistry} from "tfw/graph/node"
 
 import {App, Mode} from "./app"
-import {MonsterConfig, MonsterKind, MonsterModel, MonsterState, RanchModel} from "./moncher"
+import {
+  MonsterAction,
+  MonsterConfig,
+  MonsterKind,
+  MonsterModel,
+  MonsterState,
+  RanchModel,
+} from "./moncher"
 import {Hud} from "./hud"
 
 class ActorInfo
@@ -179,11 +186,16 @@ export class RanchMode extends Mode
     const mixer = new DenseValueComponent<AnimationMixer>("mixer",
         new AnimationMixer(new Object3D()))
     const body = new DenseValueComponent<Body>("body", new Body())
+    // TODO: action could potentially be replaced by the whole MonsterState, but perhaps
+    // we even have a bigger record and subsume the lerp record.
+    const action = this._action =
+        new DenseValueComponent<MonsterAction>("action", MonsterAction.None)
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
     const lerp = this._lerp = new SparseValueComponent<LerpRec|undefined>("lerp", undefined)
     const graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
 
-    const domain = this._domain = new Domain({}, {trans, obj, mixer, body, lerp, hovers, graph})
+    const domain = this._domain = new Domain({},
+        {trans, obj, mixer, body, action, lerp, hovers, graph})
     /*const lerpsys =*/ this._lerpsys = new LerpSystem(domain, trans, lerp, this.getY.bind(this))
     const scenesys = this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
@@ -261,26 +273,8 @@ export class RanchMode extends Mode
     // see if we've given this monster an entity ID yet
     let actorInfo = this._monsters.get(id)
     if (!actorInfo) {
-      const cfg = this._ranch.monsterConfig.get(id)
-      if (!cfg) {
-        throw new Error("Monster doesn't have a config in the RanchModel")
-      }
-      if (!cfg.model) {
-        throw new Error("Monster doesn't have 3d model configuration")
-      }
-      const entityId = this._domain.add({
-        components: {
-          trans: {initial: new Float32Array([state.x, this.getY(state.x, -state.y), -state.y,
-              0, 0, 0, 1, 1, 1, 1])},
-          obj: {type: "gltf", url: cfg.model.model},
-          mixer: {},
-          lerp: {},
-        },
-      })
-      actorInfo = new ActorInfo(id, entityId, cfg)
-      this._monsters.set(id, actorInfo)
+      actorInfo = this.addMonster(id, state)
     }
-
     this.updateMonsterActor(actorInfo, state)
   }
 
@@ -297,6 +291,56 @@ export class RanchMode extends Mode
     const rec = new LerpRec(oldPos, pos, RanchMode.MONSTER_MOVE_DURATION)
     this._lerp.update(actorInfo.entityId, rec)
 //    log.debug("updating monster to : " + pos)
+
+    // store their action in the entity system too
+    this._action.update(actorInfo.entityId, state.action)
+  }
+
+  protected addMonster (id :number, state :MonsterState) :ActorInfo
+  {
+    const cfg = this._ranch.monsterConfig.get(id)
+    if (!cfg) {
+      throw new Error("Monster doesn't have a config in the RanchModel")
+    }
+    if (!cfg.model) {
+      throw new Error("Monster doesn't have 3d model configuration")
+    }
+
+    const graphCfg :GraphConfig = {}
+
+    // add animation logic for animations we support
+    if (cfg.model.hatch) {
+      graphCfg.action = <NodeConfig>{
+        type: "readComponent",
+        component: "action",
+      }
+      graphCfg.isHatching = <NodeConfig>{
+        type: "equals",
+        x: "action",
+        y: MonsterAction.Hatching,
+      }
+      graphCfg.hatch = <NodeConfig>{
+        type: "AnimationAction",
+        component: "mixer",
+        url: cfg.model.hatch,
+        play: "isHatching",
+      }
+    }
+
+    const entityId = this._domain.add({
+      components: {
+        trans: {initial: new Float32Array([state.x, this.getY(state.x, -state.y), -state.y,
+            0, 0, 0, 1, 1, 1, 1])},
+        obj: {type: "gltf", url: cfg.model.model},
+        action: {initial: state.action},
+        mixer: {},
+        lerp: {},
+        graph: graphCfg,
+      },
+    })
+    const actorInfo = new ActorInfo(id, entityId, cfg)
+    this._monsters.set(id, actorInfo)
+    return actorInfo
   }
 
   /**
@@ -391,6 +435,7 @@ export class RanchMode extends Mode
   protected _hand! :Hand
   protected _trans! :TransformComponent
   protected _obj! :Component<Object3D>
+  protected _action! :Component<MonsterAction>
   protected _lerp! :Component<LerpRec|undefined>
   protected _graphsys! :GraphSystem
   protected _lerpsys! :LerpSystem
@@ -418,6 +463,6 @@ export class RanchMode extends Mode
   }
 
   private static MONSTER_MOVE_DURATION = 1200
-  private static CAMERA_HEIGHT = 20 // starting y coordinate of camera
-  private static CAMERA_SETBACK = 25 // starting z coordinate of camera
+  private static CAMERA_HEIGHT = 7 // starting y coordinate of camera
+  private static CAMERA_SETBACK = 14 // starting z coordinate of camera
 }

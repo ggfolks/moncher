@@ -327,8 +327,7 @@ export class RanchModel
         case MonsterKind.EGG:
           switch (monst.action) {
             default:
-              if (monst.maybeSetAction(20, MonsterAction.Hatching)) {
-                log.debug("Hatching egg!")
+              if (monst.maybeSetAction(15, MonsterAction.Hatching)) {
                 // spawn the baby (spawn is asserted as present because we check when egg added)
                 this.addMonster(monst.config.spawn!, monst.x, monst.y, MonsterAction.Hatching)
               }
@@ -336,7 +335,7 @@ export class RanchModel
 
             case MonsterAction.Hatching:
               // once time has passed here, we delete the monster
-              if (monst.actionPts >= 5) {
+              if (monst.actionPts >= 3) {
                 this.removeMonster(monst)
               }
               break
