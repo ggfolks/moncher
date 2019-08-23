@@ -1,5 +1,4 @@
 import {loadImage} from "tfw/core/assets"
-import {vec2zero} from "tfw/core/math"
 import {Mutable, Value} from "tfw/core/react"
 import {log, Disposable, Disposer} from "tfw/core/util"
 import {Renderer} from "tfw/scene2/gl"
@@ -43,6 +42,8 @@ export class Hud
     const rootConfig :RootConfig = {
       type: "root",
       scale: renderer.scale,
+      autoSize: true,
+      hintSize: renderer.size,
       contents: {
         type: "abslayout",
         contents: [{
@@ -89,8 +90,8 @@ export class Hud
     const ui = new UI(moncherTheme, moncherStyles, resolver)
 
     const root = ui.createRoot(rootConfig, new Model(model))
-    this._disposer.add(renderer.size.onValue(sz => { root.pack(sz[0], sz[1]) }))
-    host.addRoot(root, vec2zero)
+    root.bindOrigin(renderer.size, "center", "bottom", "center", "bottom")
+    host.addRoot(root)
   }
 
   // from Disposable

@@ -123,10 +123,11 @@ export class MonsterMenu
     this.disposer.add(this._host.bind(renderer.canvas))
 
     const root = ui.createRoot(rootConfig, new Model(model))
-    root.pack(MonsterMenu.RADIAL_SIZE, MonsterMenu.RADIAL_SIZE)
-    this._host.addRoot(root, vec2.fromValues(
-        Math.max(0, centerX - (MonsterMenu.RADIAL_SIZE / 2)),
-        Math.max(0, centerY - (MonsterMenu.RADIAL_SIZE / 2))))
+    root.setSize(MonsterMenu.RADIAL_SIZE, MonsterMenu.RADIAL_SIZE)
+    vec2.set(root.origin,
+             Math.max(0, centerX - (MonsterMenu.RADIAL_SIZE / 2)),
+             Math.max(0, centerY - (MonsterMenu.RADIAL_SIZE / 2)))
+    this._host.addRoot(root)
   }
 
   render (clock :Clock, surf :Surface)
