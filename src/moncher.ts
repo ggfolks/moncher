@@ -2,7 +2,7 @@ import {Clock} from "tfw/core/clock"
 import {vec2} from "tfw/core/math"
 import {Subject} from "tfw/core/react"
 import {MapChange, MutableMap, RMap} from "tfw/core/rcollect"
-import {Disposer} from "tfw/core/util"
+import {log, Disposer} from "tfw/core/util"
 import {Pointer} from "tfw/input/hand"
 import {Texture, Tile} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
@@ -47,7 +47,7 @@ export class MonsterConfig
 {
   constructor (
     /** What the monster looks like, can be a shared object between multiple monsters. */
-    readonly info :PropTileInfo,
+    readonly info? :PropTileInfo,
     readonly model? :MonsterModel,
     readonly kind :MonsterKind = MonsterKind.TESTER,
     readonly startingHealth :number = 50,
@@ -436,6 +436,13 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
       if (!cfg) {
         throw new Error("Monster doesn't have a config in the model")
       }
+      if (!cfg.info) {
+        if (this._doPropSpriteWarning) {
+          log.warn("Not creating sprites for monsters with missing PropTileInfo")
+          this._doPropSpriteWarning = false
+        }
+        return
+      }
 
       sprite = new MonsterSprite(state)
       this._monsters.set(id, sprite)
@@ -510,6 +517,8 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
   }
 
   protected _menu? :MonsterMenu
+
+  protected _doPropSpriteWarning :boolean = true
 
   protected readonly _monsters :Map<number, MonsterSprite> = new Map()
 }

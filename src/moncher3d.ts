@@ -45,7 +45,6 @@ import {Graph} from "tfw/graph/graph"
 import {NodeContext, NodeTypeRegistry} from "tfw/graph/node"
 
 import {App, Mode} from "./app"
-import {PropTileInfo} from "./gridtiles"
 import {MonsterConfig, MonsterModel, MonsterState, RanchModel} from "./moncher"
 import {Hud} from "./hud"
 
@@ -357,17 +356,15 @@ export class RanchMode extends Mode
     const ndc = new Vector2(
         (pos[0] / window.innerWidth) * 2 - 1,
         (pos[1] / window.innerHeight) * -2 + 1)
-    log.debug("Our NDC is", "ndc", ndc)
     caster.setFromCamera(ndc, this._obj.read(this._cameraId) as Camera)
     for (const result of caster.intersectObject(terrain, true)) {
-      const config :MonsterConfig = new MonsterConfig(
-        new PropTileInfo("hatchling", "monsters/_0022_LobberBlue.png"),
+      const config :MonsterConfig = new MonsterConfig(undefined,
         new MonsterModel(
           "monsters/LobberBlue.glb",
           "monsters/LobberBlue.glb#Walk",
           "monsters/LobberBlue.glb#Attack"))
 
-      this._ranch.addMonster(config, result.point.x, -result.point.z)
+      this._ranch.addMonster(config, Math.round(result.point.x), Math.round(-result.point.z))
       this.setUiState(UiState.Default)
       return // stop after first result
     }
