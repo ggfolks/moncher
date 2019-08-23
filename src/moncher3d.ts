@@ -16,6 +16,7 @@ import {Body} from "cannon"
 import {Clock} from "tfw/core/clock"
 import {vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
+import {Mutable} from "tfw/core/react"
 import {log} from "tfw/core/util"
 import {Hand, Pointer} from "tfw/input/hand"
 import {
@@ -219,6 +220,7 @@ export class RanchMode extends Mode
 
     // add lights and camera
     const CAMERA_MOVEMENT_FACTOR = 80 // Hacky multiplication factor so we get noticeable movement
+    const cameraHeight = Mutable.local(RanchMode.CAMERA_HEIGHT)
     const cameraId = this._cameraId = domain.add({
       components: {
         trans: {initial: new Float32Array(
@@ -236,11 +238,19 @@ export class RanchMode extends Mode
           upDown: {type: "accumulate", input: "yDelta"},
           upDownSetback: {type: "add", inputs: ["upDown", RanchMode.CAMERA_SETBACK]},
           panning: {type: "Vector3",
-              x: "leftRight", y: RanchMode.CAMERA_HEIGHT, z: "upDownSetback"},
+              x: "leftRight", y: cameraHeight, z: "upDownSetback"},
           updatePosition: {type: "updatePosition", component: "trans", input: "panning"}
         },
       },
     })
+//    // HERE
+//
+//    const wheelHandler = (event :PointerEvent) => {
+//
+//    }
+//    root.addEventListener("wheel", wheelHandler)
+//    this.onDispose.add(() => root.removeEventListener("wheel", wheelHandler))
+
 //    setInterval(() => {
 //      log.debug("Camera position", "pos", trans.readPosition(cameraId, new Vector3()))
 //    }, 1200)
