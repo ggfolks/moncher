@@ -358,6 +358,20 @@ export class RanchMode extends Mode
         url: cfg.model.hatch,
         play: "isHatching",
       }
+
+      if (cfg.model.idle && cfg.kind === MonsterKind.EGG) {
+        // eggs are idle while not hatching
+        graphCfg.isIdle = <NodeConfig>{
+          type: "not",
+          input: "isHatching",
+        }
+        graphCfg.idle = <NodeConfig>{
+          type: "AnimationAction",
+          component: "mixer",
+          url: cfg.model.idle,
+          play: "isIdle",
+        }
+      }
     }
 
     if (cfg.model.walk) {
@@ -459,13 +473,14 @@ export class RanchMode extends Mode
     for (const result of caster.intersectObject(terrain, true)) {
       // Freeze these?
       const monsterModel :MonsterModel = {
-        model: "monsters/LobberBlue.glb",
-        hatch: "monsters/LobberBlue.glb#Hatch",
-        walk: "monsters/LobberBlue.glb#Walk",
+        model:  "monsters/LobberBlue.glb",
+        hatch:  "monsters/LobberBlue.glb#Hatch",
+        walk:   "monsters/LobberBlue.glb#Walk",
         attack: "monsters/LobberBlue.glb#Attack",
       }
       const eggModel :MonsterModel = {
         model: "monsters/Egg.glb",
+        idle:  "monsters/Egg.glb#Idle",
         hatch: "monsters/Egg.glb#Hatch",
       }
 

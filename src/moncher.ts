@@ -32,28 +32,13 @@ export class MonsterKind
  */
 export interface MonsterModel {
   model :string
+  /** Idle animation. */
+  idle? :string
   /** Eggs use the hatch animation at the end of their lives, other monsters at the beginning. */
   hatch? :string
   walk? :string
   attack? :string
 }
-
-//export class MonsterModel
-//{
-//  constructor (
-//    /** The path to the monster's model file. */
-//    readonly model :string,
-//    //protected eggOverride? :string,
-//    /** The path to the monster's walk animation. */
-//    readonly walk? :string,
-//    readonly attack? :string,
-//  ) {}
-//
-//  get egg () :string
-//  {
-//    return /*this.eggOverride ||*/ "monsters/Egg.glb"
-//  }
-//}
 
 /**
  * Configuration of a monster.
