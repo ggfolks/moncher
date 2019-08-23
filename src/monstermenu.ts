@@ -1,6 +1,6 @@
 import {loadImage} from "tfw/core/assets"
 import {Clock} from "tfw/core/clock"
-import {vec2} from "tfw/core/math"
+import {dim2, vec2} from "tfw/core/math"
 import {Mutable, Value} from "tfw/core/react"
 import {/*log,*/ Disposer} from "tfw/core/util"
 import {Renderer} from "tfw/scene2/gl"
@@ -123,7 +123,7 @@ export class MonsterMenu
     this.disposer.add(this._host.bind(renderer.canvas))
 
     const root = ui.createRoot(rootConfig, new Model(model))
-    root.setSize(MonsterMenu.RADIAL_SIZE, MonsterMenu.RADIAL_SIZE)
+    root.setSize(dim2.fromValues(MonsterMenu.RADIAL_SIZE, MonsterMenu.RADIAL_SIZE))
     vec2.set(root.origin,
              Math.max(0, centerX - (MonsterMenu.RADIAL_SIZE / 2)),
              Math.max(0, centerY - (MonsterMenu.RADIAL_SIZE / 2)))
