@@ -72,7 +72,7 @@ class LerpRec
     /** The source location. */
     readonly src :Vector3,
     /** The destination location. */
-    readonly dest :Vector3,
+    public dest :Vector3,
     /** How long shall we take? (TODO: compute based on speed / distance?) */
     readonly duration :number,
     /** Ending timestamp (start time + duration) (filled-in by LerpSystem) */
@@ -118,6 +118,13 @@ enum UiState
 {
   Default,
   PlacingEgg,
+}
+
+const vec3NearlyEqual = (a :Vector3, b :Vector3) => {
+  const epsilon = .0001
+  return (Math.abs(a.x - b.x) < epsilon) &&
+    (Math.abs(a.y - b.y) < epsilon) &&
+    (Math.abs(a.z - b.z) < epsilon)
 }
 
 export class RanchMode extends Mode
@@ -282,18 +289,26 @@ export class RanchMode extends Mode
    * Effect updates received from the RanchModel.
    */
   protected updateMonsterActor (actorInfo :ActorInfo, state :MonsterState) :void {
-    // see if they already have a lerpRec to this pos
+    // store their action in the entity system...
+    this._action.update(actorInfo.entityId, state.action)
+
+    // then check their location against their LerpRec...
     const pos = new Vector3(state.x, this.getY(state.x, -state.y), -state.y)
     const oldRec = this._lerp.read(actorInfo.entityId)
-    if (oldRec && oldRec.dest.equals(pos)) return
+    if (oldRec && vec3NearlyEqual(oldRec.dest, pos)) {
+      // just update the position in the old record
+      oldRec.dest = pos
+      return
+    }
 
     const oldPos = this._trans.readPosition(actorInfo.entityId, new Vector3())
+    if (!oldRec && vec3NearlyEqual(pos, oldPos)) {
+      // just update the translation and return
+      this._trans.updatePosition(actorInfo.entityId, pos)
+      return
+    }
     const rec = new LerpRec(oldPos, pos, RanchMode.MONSTER_MOVE_DURATION)
     this._lerp.update(actorInfo.entityId, rec)
-//    log.debug("updating monster to : " + pos)
-
-    // store their action in the entity system too
-    this._action.update(actorInfo.entityId, state.action)
   }
 
   protected addMonster (id :number, state :MonsterState) :ActorInfo
