@@ -320,7 +320,7 @@ export class RanchModel
 
             case MonsterAction.Hatching:
               // once time has passed here, we delete the monster
-              if (monst.actionPts >= 3) {
+              if (monst.actionPts >= 1) {
                 this.removeMonster(monst)
               }
               break
