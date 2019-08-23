@@ -34,10 +34,16 @@ export class MonsterModel
   constructor (
     /** The path to the monster's model file. */
     readonly model :string,
+    //protected eggOverride? :string,
     /** The path to the monster's walk animation. */
     readonly walk? :string,
     readonly attack? :string,
   ) {}
+
+  get egg () :string
+  {
+    return /*this.eggOverride ||*/ "monsters/Egg.glb"
+  }
 }
 
 /**
@@ -90,6 +96,7 @@ class Monster
   boredom :number = 0
   crowding :number = 0
 
+  hatched :boolean = false
   health :number
   actionPts :number
 
@@ -252,6 +259,15 @@ export class RanchModel
     for (const monst of this._monsterData.values()) {
       // accumulate action points
       monst.actionPts += monst.config.regenActionPts
+      if (!monst.hatched) {
+        const HATCH_COST = 20
+        console.log("Accum action: " + monst.actionPts)
+        if (monst.actionPts >= HATCH_COST) {
+          monst.hatched = true
+          monst.actionPts -= HATCH_COST
+        }
+        continue
+      }
 
       // see what kind of tile we're on and react to that
       switch (this.getFeature(monst.x, monst.y)) {
@@ -296,6 +312,7 @@ export class RanchModel
 
     // then figure out if a monster wants to update state/loc
     for (const monst of this._monsterData.values()) {
+      if (!monst.hatched) continue
       const scoreFn :ScoreFn|undefined = this.getScoreFn(monst)
       if (scoreFn === undefined) continue
       let best :vec2[] = []
