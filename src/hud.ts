@@ -1,5 +1,5 @@
 import {loadImage} from "tfw/core/assets"
-import {Mutable, Value} from "tfw/core/react"
+import {Mutable} from "tfw/core/react"
 import {log, Disposable, Disposer} from "tfw/core/util"
 import {Renderer} from "tfw/scene2/gl"
 import {Host, RootConfig} from "tfw/ui/element"
@@ -34,9 +34,6 @@ export class Hud
         visible: this.action.map(v => (v !== undefined)),
         clicked: () => this.actionClicked(),
       },
-      blank: {
-        text: Value.constant(""),
-      }
     }
 
     const rootConfig :RootConfig = {
@@ -48,14 +45,9 @@ export class Hud
         type: "abslayout",
         contents: [{
           type: "column",
-          constraints: {stretchX: true, stretchY: true},
+          constraints: {stretchX: true, stretchY: false},
           contents: [{
-            type: "label",
-            text: "blank.text",
-            constraints: {stretch: true},
-          }, {
             type: "button",
-            constraints: {stretch: false},
             visible: "button.visible",
             onClick: "button.clicked",
             contents: {
@@ -70,7 +62,6 @@ export class Hud
             },
           }, {
             type: "box",
-            constraints: {stretch: false},
             visible: "status.visible",
             contents: {
               type: "label",
