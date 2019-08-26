@@ -17,7 +17,7 @@ import {Clock} from "tfw/core/clock"
 import {vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
 import {Mutable} from "tfw/core/react"
-//import {log} from "tfw/core/util"
+import {log} from "tfw/core/util"
 import {Hand, Pointer} from "tfw/input/hand"
 import {
   Component,
@@ -280,7 +280,8 @@ export class RanchMode extends Mode
     const ranchTerrainId = this._terrainId = domain.add({
       components: {
         trans: {},
-        obj: {type: "gltf", url: "ranch/Ranch.glb"}, // Contains a "NavMesh" object. TODO
+        // Contains a "NavMesh" object. TODO
+        obj: {type: "gltf", url: "ranch/Ranch.glb", postLoad: this.ranchLoaded.bind(this)},
       },
     })
     trans.updateScale(ranchTerrainId, new Vector3(.5, .5, .5))
@@ -293,6 +294,34 @@ export class RanchMode extends Mode
     this._animsys.update(clock)
     this._scenesys.update()
     this._scenesys.render(this._webGlRenderer)
+  }
+
+  protected ranchLoaded (scene :Object3D) :Object3D|undefined {
+    const navMesh = this.spliceNavMesh(scene)
+    if (navMesh) {
+      log.info("I have the navmesh", "navmesh", navMesh.name)
+      // let's wait a spell and then replace this
+      //return navMesh
+    }
+    return undefined
+  }
+
+  /**
+   * Look for a descendant called "NavMesh", remove and return it. */
+  protected spliceNavMesh (obj :Object3D) :Object3D|undefined {
+    let navmesh :Object3D|undefined = undefined
+    for (let ii = 0; ii < obj.children.length; ii++) {
+      const child = obj.children[ii]
+      if (child.name === "NavMesh") {
+        obj.children.splice(ii, 1)
+        return child
+      }
+      navmesh = this.spliceNavMesh(child)
+      if (navmesh !== undefined) {
+        return navmesh
+      }
+    }
+    return undefined
   }
 
   /**
