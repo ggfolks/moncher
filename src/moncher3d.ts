@@ -17,7 +17,7 @@ import {Clock} from "tfw/core/clock"
 import {vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
 import {Mutable} from "tfw/core/react"
-import {log} from "tfw/core/util"
+//import {log} from "tfw/core/util"
 import {Hand, Pointer} from "tfw/input/hand"
 import {
   Component,
@@ -201,16 +201,15 @@ export class RanchMode extends Mode
     const mixer = new DenseValueComponent<AnimationMixer>("mixer",
         new AnimationMixer(new Object3D()))
     const body = new DenseValueComponent<Body>("body", new Body())
-    // TODO: action could potentially be replaced by the whole MonsterState, but perhaps
-    // we even have a bigger record and subsume the lerp record.
-    const action = this._action =
-        new DenseValueComponent<MonsterAction>("action", MonsterAction.None)
+    const state = this._state =
+        new DenseValueComponent<MonsterState>("state",
+          new MonsterState(0, 0, 0, 0, MonsterAction.None))
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
     const lerp = this._lerp = new SparseValueComponent<LerpRec|undefined>("lerp", undefined)
     const graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
 
     const domain = this._domain = new Domain({},
-        {trans, obj, mixer, body, action, lerp, hovers, graph})
+        {trans, obj, mixer, body, state, lerp, hovers, graph})
     /*const lerpsys =*/ this._lerpsys = new LerpSystem(domain, trans, lerp, this.getY.bind(this))
     const scenesys = this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
@@ -273,6 +272,7 @@ export class RanchMode extends Mode
       components: {
         trans: {initial: new Float32Array([1, 1, 1, 0, 0, 0, 1, 1, 1, 1])},
         obj: {type: "directionalLight"},
+        // TODO: rotate light, for day-night cycle? Can do with graph?
       },
     })
 
@@ -311,8 +311,8 @@ export class RanchMode extends Mode
    * Effect updates received from the RanchModel.
    */
   protected updateMonsterActor (actorInfo :ActorInfo, state :MonsterState) :void {
-    // store their action in the entity system...
-    this._action.update(actorInfo.entityId, state.action)
+    // store their state in the entity system...
+    this._state.update(actorInfo.entityId, state)
 
     // then check their location against their LerpRec...
     const pos = new Vector3(state.x, this.getY(state.x, -state.y), -state.y)
@@ -354,9 +354,14 @@ export class RanchMode extends Mode
 
     // add animation logic for animations we support
     if (cfg.model.hatch) {
-      graphCfg.action = <NodeConfig>{
+      graphCfg.state = <NodeConfig>{
         type: "readComponent",
-        component: "action",
+        component: "state",
+      }
+      graphCfg.action = <NodeConfig>{
+        type: "property",
+        input: "state",
+        name: "action",
       }
       graphCfg.isHatching = <NodeConfig>{
         type: "equals",
@@ -369,6 +374,11 @@ export class RanchMode extends Mode
       if (cfg.model.idle && cfg.kind === MonsterKind.EGG) {
         graphCfg.idle = animation(cfg.model.idle, "notHatching")
       }
+//      graphCfg.log = <NodeConfig>{
+//        type: "log",
+//        message: "Action is: ",
+//        input: "action",
+//      }
     }
 
     if (cfg.model.walk) {
@@ -397,6 +407,25 @@ export class RanchMode extends Mode
           idleInput = "isIdle"
         }
         graphCfg.idle = animation(cfg.model.idle, idleInput)
+
+//        if (cfg.model.model.indexOf("LobberBlue") != -1) {
+//          log.info("Spawning lobber!")
+//          graphCfg.monsterLog = <NodeConfig>{
+//            type: "log",
+//            message: "isIdle",
+//            input: idleInput,
+//          }
+//          graphCfg.logNoLerp = <NodeConfig>{
+//            type: "log",
+//            message: "isNoLerp",
+//            input: "noLerp",
+//          }
+//          graphCfg.logHatching = <NodeConfig>{
+//            type: "log",
+//            message: "isHatching",
+//            input: "isHatching",
+//          }
+//        }
       }
     }
 
@@ -405,7 +434,7 @@ export class RanchMode extends Mode
         trans: {initial: new Float32Array([state.x, this.getY(state.x, -state.y), -state.y,
             0, 0, 0, 1, 1, 1, 1])},
         obj: {type: "gltf", url: cfg.model.model},
-        action: {initial: state.action},
+        state: {initial: state},
         mixer: {},
         lerp: {},
         graph: graphCfg,
@@ -467,7 +496,7 @@ export class RanchMode extends Mode
    * Place an egg. */
   protected placeEgg (pos :vec2) :void
   {
-    log.debug("Got egg placing request", "pos", pos)
+    //log.debug("Got egg placing request", "pos", pos)
     const terrain = this._obj.read(this._terrainId)!
     const caster = new Raycaster()
     const ndc = new Vector2(
@@ -510,7 +539,7 @@ export class RanchMode extends Mode
   protected _hand! :Hand
   protected _trans! :TransformComponent
   protected _obj! :Component<Object3D>
-  protected _action! :Component<MonsterAction>
+  protected _state! :Component<MonsterState>
   protected _lerp! :Component<LerpRec|undefined>
   protected _graphsys! :GraphSystem
   protected _lerpsys! :LerpSystem

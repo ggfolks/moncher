@@ -332,10 +332,9 @@ export class RanchModel
             default: break
 
             case MonsterAction.Hatching:
-              if (!monst.maybeSetAction(5, MonsterAction.None)) {
+              if (!monst.maybeSetAction(7, MonsterAction.None)) {
                 continue STATE_LOOP
               }
-              log.debug("new monster finished born")
               break
           }
           break
