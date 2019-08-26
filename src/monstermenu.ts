@@ -10,7 +10,7 @@ import {Host2} from "tfw/ui/host2"
 import {Model, ModelData} from "tfw/ui/model"
 import {ImageResolver} from "tfw/ui/style"
 import {UI} from "tfw/ui/ui"
-import {MonsterConfig, MonsterState} from "./moncher"
+import {ActorConfig, ActorState} from "./moncher"
 import {moncherStyles, moncherTheme} from "./uistyles"
 
 export class MonsterMenu
@@ -19,8 +19,8 @@ export class MonsterMenu
 
   constructor (
     renderer :Renderer,
-    config :MonsterConfig,
-    public state :Value<MonsterState|undefined>,
+    config :ActorConfig,
+    public state :Value<ActorState|undefined>,
     centerX :number,
     centerY :number,
   ) {

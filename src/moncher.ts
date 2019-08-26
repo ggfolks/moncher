@@ -11,14 +11,14 @@ import {GridTileSceneModel, GridTileSceneViewMode, PropTileInfo} from "./gridtil
 import {MonsterMenu} from "./monstermenu"
 
 /**
- * Broadly, the kind of monster.
+ * The kind of actor.
  */
-export class MonsterKind
+export class ActorKind
 {
-  static readonly EGG :MonsterKind = new MonsterKind(false, false, false)
-  static readonly RUNNER :MonsterKind = new MonsterKind(true, false, false)
-  static readonly HEALER :MonsterKind = new MonsterKind(false, true, true)
-  static readonly TESTER :MonsterKind = new MonsterKind(true, true, true)
+  static readonly EGG :ActorKind = new ActorKind(false, false, false)
+  static readonly RUNNER :ActorKind = new ActorKind(true, false, false)
+  static readonly HEALER :ActorKind = new ActorKind(false, true, true)
+  static readonly TESTER :ActorKind = new ActorKind(true, true, true)
 
   private constructor (
     readonly canRangeAttack :boolean,
@@ -28,29 +28,29 @@ export class MonsterKind
 }
 
 /**
- * Configuration for the 3D aspects of a monster. This will probably move.
+ * Configuration for the 3D aspects of an actor. This will probably move.
  */
-export interface MonsterModel {
+export interface ActorModel {
   model :string
   /** Idle animation. */
   idle? :string
-  /** Eggs use the hatch animation at the end of their lives, other monsters at the beginning. */
+  /** Eggs use the hatch animation at the end of their lives, other actors at the beginning. */
   hatch? :string
   walk? :string
   attack? :string
 }
 
 /**
- * Configuration of a monster.
+ * Configuration of an actor.
  */
-export class MonsterConfig
+export class ActorConfig
 {
   constructor (
-    /** What the monster looks like, can be a shared object between multiple monsters. */
-    readonly info? :PropTileInfo,
-    readonly model? :MonsterModel,
-    readonly kind :MonsterKind = MonsterKind.TESTER,
-    readonly spawn? :MonsterConfig,
+    /** What the actor looks like in 2D. */
+    readonly info? :PropTileInfo, // temp
+    readonly model? :ActorModel,
+    readonly kind :ActorKind = ActorKind.TESTER,
+    readonly spawn? :ActorConfig,
     readonly startingHealth :number = 50,
     readonly maximumHealth :number = 50,
     readonly startingActionPts :number = 5,
@@ -59,36 +59,36 @@ export class MonsterConfig
   ) {}
 }
 
-export enum MonsterAction {
+export enum ActorAction {
   None,
   Hatching,
 }
 
 /**
- * Runtime information about a monster's state.
+ * Runtime information about an actor's state.
  */
-export class MonsterState
+export class ActorState
 {
   constructor (
     /** Visual X coordinate (tile coordinates, floating point). */
     readonly x :number,
     /** Visual Y coordinate (tile coordinates, floating point). */
     readonly y :number,
-    /** The monster's current amount of HP, possibly 0 if deceased during battle. */
+    /** The actor's current amount of HP, possibly 0 if deceased during battle. */
     readonly health :number,
-    /** The monster's current action points. */
+    /** The actor's current action points. */
     readonly actionPts :number,
     /** TODO */
-    readonly action :MonsterAction,
+    readonly action :ActorAction,
   ) {}
 }
 
 type ScoreFn = (x :number, y :number) => number
 
 /**
- * A monster.
+ * An actor.
  */
-class Monster
+class Actor
 {
   // Toy attributes while playing around. These will all go away.
   hunger :number = 0
@@ -104,10 +104,10 @@ class Monster
 
   constructor (
     readonly id :number,
-    readonly config :MonsterConfig,
+    readonly config :ActorConfig,
     public x :number,
     public y :number,
-    public action :MonsterAction,
+    public action :ActorAction,
   ) {
     this.health = config.startingHealth
     this.actionPts = config.startingActionPts
@@ -115,10 +115,10 @@ class Monster
 
   isEggOrHatching () :boolean
   {
-    return (this.config.kind === MonsterKind.EGG) || (this.action === MonsterAction.Hatching)
+    return (this.config.kind === ActorKind.EGG) || (this.action === ActorAction.Hatching)
   }
 
-  maybeSetAction (cost :number, action :MonsterAction) :boolean
+  maybeSetAction (cost :number, action :ActorAction) :boolean
   {
     if (this.actionPts < cost) return false
 
@@ -127,10 +127,10 @@ class Monster
     return true
   }
 
-  toState () :MonsterState
+  toState () :ActorState
   {
     // TODO: Rethink? We keep monsters in tile coords but we center it for the visual state
-    return new MonsterState(this.x + .5, this.y + .5, this.health, this.actionPts, this.action)
+    return new ActorState(this.x + .5, this.y + .5, this.health, this.actionPts, this.action)
   }
 
   setLocation (x :number, y :number) :void
@@ -150,7 +150,7 @@ class Monster
       // splice it out of the old location
       this.locationMemory.splice(index, 1)
 
-    } else if (this.locationMemory.length === Monster.MEMORY_SIZE) {
+    } else if (this.locationMemory.length === Actor.MEMORY_SIZE) {
       // if we're already at the size, make room for the new location
       this.locationMemory.pop()
     }
@@ -177,42 +177,42 @@ class Monster
 export class RanchModel
 {
   /** The public view of monster state. */
-  get monsters () :RMap<number, MonsterState> {
-    return this._monsters
+  get actors () :RMap<number, ActorState> {
+    return this._actors
   }
 
-  /** The configuration data for a monster, guaranteed to be populated prior to
-   *  'monsters' being updated. */
-  monsterConfig :Map<number, MonsterConfig> = new Map<number, MonsterConfig>()
+  /** The configuration data for an actor, guaranteed to be populated prior to
+   *  'actors' being updated. */
+  actorConfig :Map<number, ActorConfig> = new Map<number, ActorConfig>()
 
   constructor (
     /** The model we're on. */
     readonly model :GridTileSceneModel
   ) {
-    this._monsters = MutableMap.local()
+    this._actors = MutableMap.local()
   }
 
   /**
    * Add a new monster.
    */
-  addMonster (config :MonsterConfig, x :number, y :number, action = MonsterAction.None) :void
+  addMonster (config :ActorConfig, x :number, y :number, action = ActorAction.None) :void
   {
     this.validateConfig(config)
 
-    const id = this._nextMonsterId++
-    const data = new Monster(id, config, Math.trunc(x), Math.trunc(y), action)
-    this.monsterConfig.set(id, config)
-    this._monsterData.set(id, data)
+    const id = this._nextActorId++
+    const data = new Actor(id, config, Math.trunc(x), Math.trunc(y), action)
+    this.actorConfig.set(id, config)
+    this._actorData.set(id, data)
     // move the monster to its current location to map it by location
     this.moveMonster(data, data.x, data.y)
     // finally, publish the state of the monster
-    this._monsters.set(data.id, data.toState())
+    this._actors.set(data.id, data.toState())
   }
 
-  protected validateConfig (config :MonsterConfig)
+  protected validateConfig (config :ActorConfig)
   {
     switch (config.kind) {
-      case MonsterKind.EGG:
+      case ActorKind.EGG:
         if (!config.spawn) {
           throw new Error("Eggs must specify a spawn config.")
         }
@@ -222,16 +222,16 @@ export class RanchModel
     }
   }
 
-  protected removeMonster (data :Monster)
+  protected removeMonster (data :Actor)
   {
     this.unmapLocation(data)
-    this._monsterData.delete(data.id)
-    this._monsters.delete(data.id)
+    this._actorData.delete(data.id)
+    this._actors.delete(data.id)
     // unmap the config last in the reverse of how we started
-    this.monsterConfig.delete(data.id)
+    this.actorConfig.delete(data.id)
   }
 
-  protected moveMonster (data :Monster, newX :number, newY :number)
+  protected moveMonster (data :Actor, newX :number, newY :number)
   {
     this.unmapLocation(data)
     data.setLocation(newX, newY)
@@ -239,12 +239,12 @@ export class RanchModel
   }
 
   /**
-   * Unmap the monster by location.
+   * Unmap the actor by location.
    */
-  protected unmapLocation (data :Monster)
+  protected unmapLocation (data :Actor)
   {
     const oldKey = this.locToKey(data.x, data.y)
-    const oldVals = this._monstersByLocation.get(oldKey)
+    const oldVals = this._actorsByLocation.get(oldKey)
     if (oldVals) {
       const dex = oldVals.indexOf(data.id)
       if (dex !== -1) {
@@ -253,13 +253,13 @@ export class RanchModel
     }
   }
 
-  protected mapLocation (data :Monster)
+  protected mapLocation (data :Actor)
   {
     const newKey = this.locToKey(data.x, data.x)
-    let newVals = this._monstersByLocation.get(newKey)
+    let newVals = this._actorsByLocation.get(newKey)
     if (!newVals) {
       newVals = []
-      this._monstersByLocation.set(newKey, newVals)
+      this._actorsByLocation.set(newKey, newVals)
     }
     newVals.push(data.id)
   }
@@ -268,7 +268,7 @@ export class RanchModel
   {
     return this.getMonsters(x, y).length
 //    if (x >= 0 && y >= 0 && x < this.model.sceneWidth && y < this.model.sceneHeight) {
-//      const array = this._monstersByLocation.get(this.locToKey(x, y))
+//      const array = this._actorsByLocation.get(this.locToKey(x, y))
 //      if (array) return array.length
 //    }
 //    return 0
@@ -277,7 +277,7 @@ export class RanchModel
   getMonsters (x :number, y :number) :number[]
   {
     if (x >= 0 && y >= 0 && x < this.model.sceneWidth && y < this.model.sceneHeight) {
-      const array = this._monstersByLocation.get(this.locToKey(x, y))
+      const array = this._actorsByLocation.get(this.locToKey(x, y))
       if (array) return array
     }
     return []
@@ -304,21 +304,21 @@ export class RanchModel
   {
     // first update the internal states of all monsters
     STATE_LOOP:
-    for (const monst of this._monsterData.values()) {
+    for (const monst of this._actorData.values()) {
       // accumulate action points
       monst.actionPts += monst.config.regenActionPts
 
       switch (monst.config.kind) {
-        case MonsterKind.EGG:
+        case ActorKind.EGG:
           switch (monst.action) {
             default:
-              if (monst.maybeSetAction(15, MonsterAction.Hatching)) {
+              if (monst.maybeSetAction(15, ActorAction.Hatching)) {
                 // spawn the baby (spawn is asserted as present because we check when egg added)
-                this.addMonster(monst.config.spawn!, monst.x, monst.y, MonsterAction.Hatching)
+                this.addMonster(monst.config.spawn!, monst.x, monst.y, ActorAction.Hatching)
               }
               break
 
-            case MonsterAction.Hatching:
+            case ActorAction.Hatching:
               // once time has passed here, we delete the monster
               if (monst.actionPts >= 1) {
                 this.removeMonster(monst)
@@ -327,12 +327,12 @@ export class RanchModel
           }
           continue STATE_LOOP
 
-        default: // MonsterKind
+        default: // ActorKind
           switch (monst.action) {
             default: break
 
-            case MonsterAction.Hatching:
-              if (!monst.maybeSetAction(7, MonsterAction.None)) {
+            case ActorAction.Hatching:
+              if (!monst.maybeSetAction(7, ActorAction.None)) {
                 continue STATE_LOOP
               }
               break
@@ -382,7 +382,7 @@ export class RanchModel
     }
 
     // then figure out if a monster wants to update state/loc
-    for (const monst of this._monsterData.values()) {
+    for (const monst of this._actorData.values()) {
       if (monst.isEggOrHatching()) {
         continue
       }
@@ -416,12 +416,12 @@ export class RanchModel
     }
 
     // publish all changes..
-    for (const monst of this._monsterData.values()) {
-      this._monsters.set(monst.id, monst.toState())
+    for (const monst of this._actorData.values()) {
+      this._actors.set(monst.id, monst.toState())
     }
   }
 
-  protected getScoreFn (monst :Monster) :ScoreFn|undefined
+  protected getScoreFn (monst :Actor) :ScoreFn|undefined
   {
     let fns :ScoreFn[] = []
     if (monst.hunger > 50) {
@@ -450,17 +450,17 @@ export class RanchModel
     }
   }
 
-  protected _nextMonsterId :number = 0
-  protected _monsterData :Map<number, Monster> = new Map()
-  /** A mutable view of our public monsters RMap. */
-  protected _monsters :MutableMap<number, MonsterState>
-  /** Maps a location to monster ids. */
-  protected _monstersByLocation :Map<number, number[]> = new Map()
+  protected _nextActorId :number = 0
+  protected _actorData :Map<number, Actor> = new Map()
+  /** A mutable view of our public actors RMap. */
+  protected _actors :MutableMap<number, ActorState>
+  /** Maps a location to actors ids. */
+  protected _actorsByLocation :Map<number, number[]> = new Map()
 }
 
-class MonsterSprite
+class ActorSprite
 {
-  /** The tile for drawing the monster. */
+  /** The tile for drawing the actor. */
   tile? :Tile
   /** Position. */
   pos :vec2 = vec2.create()
@@ -469,7 +469,7 @@ class MonsterSprite
 
   constructor (
     /** The most recent state. */
-    public state :MonsterState
+    public state :ActorState
   ) {}
 }
 
@@ -480,14 +480,14 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
   ) {
     super(app, _ranch.model)
 
-    this.onDispose.add(_ranch.monsters.onChange(this._monsterChange))
-    _ranch.monsters.forEach((monster, id) => { this.updateMonster(id, monster) })
+    this.onDispose.add(_ranch.actors.onChange(this._monsterChange))
+    _ranch.actors.forEach((monster, id) => { this.updateMonster(id, monster) })
   }
 
   /**
    * Update a monster sprite.
    */
-  protected updateMonsterSprite (sprite :MonsterSprite, state :MonsterState)
+  protected updateMonsterSprite (sprite :ActorSprite, state :ActorState)
   {
     sprite.state = state // just copy the latest state in
     let xx = state.x * this._model.config.tileWidth
@@ -511,19 +511,19 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     super.renderToOffset(clock, surf)
 
     // draw monsters
-    for (const monst of this._monsters.values()) {
+    for (const monst of this._actors.values()) {
       if (monst.tile) {
         surf.drawAt(monst.tile, monst.pos)
       }
     }
   }
 
-  protected updateMonster (id :number, state :MonsterState)
+  protected updateMonster (id :number, state :ActorState)
   {
-    let sprite = this._monsters.get(id)
+    let sprite = this._actors.get(id)
     if (!sprite) {
       // async lookup tile
-      const cfg = this._ranch.monsterConfig.get(id)
+      const cfg = this._ranch.actorConfig.get(id)
       if (!cfg) {
         throw new Error("Monster doesn't have a config in the model")
       }
@@ -535,14 +535,14 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
         return
       }
 
-      sprite = new MonsterSprite(state)
-      this._monsters.set(id, sprite)
+      sprite = new ActorSprite(state)
+      this._actors.set(id, sprite)
       this.onDispose.add(sprite.disposer)
       // TODO: NOTE: we're not honoring the width/height in the PropTileInfo here
       const img :Subject<Texture> = this.getTexture(cfg.info.base, cfg.info.scale)
       const remover = img.onValue(tex => {
         sprite!.tile = tex
-        // let's just call into updateMonsterSprite to rejiggle the location
+        // let's just call into updateActorSprite to rejiggle the location
         this.updateMonsterSprite(sprite!, sprite!.state)
       })
       sprite.disposer.add(remover)
@@ -552,9 +552,9 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
 
   protected deleteMonster (id :number)
   {
-    const sprite = this._monsters.get(id)
+    const sprite = this._actors.get(id)
     if (!sprite) return
-    this._monsters.delete(id)
+    this._actors.delete(id)
     this.onDispose.remove(sprite.disposer)
     sprite.disposer.dispose()
   }
@@ -588,8 +588,8 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     const array :number[] = this._ranch.getMonsters(x, y)
     if (array.length === 0) return
     const id = array[array.length - 1]
-    const config = this._ranch.monsterConfig.get(id)! // must be present
-    const state = this._ranch.monsters.getValue(id)
+    const config = this._ranch.actorConfig.get(id)! // must be present
+    const state = this._ranch.actors.getValue(id)
 
     const screenX = Math.max(0, (x + .5) * this._model.config.tileWidth + this._offset[0])
     const screenY = Math.max(0, (y + .5) * this._model.config.tileHeight + this._offset[1])
@@ -599,7 +599,7 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
     this.onDispose.add(this._menu.disposer)
   }
 
-  protected readonly _monsterChange = (change :MapChange<number, MonsterState>) => {
+  protected readonly _monsterChange = (change :MapChange<number, ActorState>) => {
     if (change.type === "set") {
       this.updateMonster(change.key, change.value)
     } else {
@@ -611,5 +611,5 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
 
   protected _doPropSpriteWarning :boolean = true
 
-  protected readonly _monsters :Map<number, MonsterSprite> = new Map()
+  protected readonly _actors :Map<number, ActorSprite> = new Map()
 }

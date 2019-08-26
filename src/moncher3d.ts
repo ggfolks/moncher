@@ -47,11 +47,11 @@ import {NodeConfig, NodeContext, NodeInput, NodeTypeRegistry} from "tfw/graph/no
 
 import {App, Mode} from "./app"
 import {
-  MonsterAction,
-  MonsterConfig,
-  MonsterKind,
-  MonsterModel,
-  MonsterState,
+  ActorAction,
+  ActorConfig,
+  ActorKind,
+  ActorModel,
+  ActorState,
   RanchModel,
 } from "./moncher"
 import {Hud} from "./hud"
@@ -63,7 +63,7 @@ class ActorInfo
     readonly id :number,
     /** The id in the entity system. */
     readonly entityId :number,
-    readonly config :MonsterConfig,
+    readonly config :ActorConfig,
   ) {}
 }
 
@@ -144,8 +144,8 @@ export class RanchMode extends Mode
     super()
     this.configureScene(app)
 
-    this.onDispose.add(_ranch.monsters.onChange(this._monsterChanged))
-    _ranch.monsters.forEach((monster, id) => { this.updateMonster(id, monster) })
+    this.onDispose.add(_ranch.actors.onChange(this._monsterChanged))
+    _ranch.actors.forEach((monster, id) => { this.updateMonster(id, monster) })
 
     this.onDispose.add(this._hud = new Hud(this._host, app.renderer))
     this.setUiState(UiState.Default)
@@ -202,8 +202,8 @@ export class RanchMode extends Mode
         new AnimationMixer(new Object3D()))
     const body = new DenseValueComponent<Body>("body", new Body())
     const state = this._state =
-        new DenseValueComponent<MonsterState>("state",
-          new MonsterState(0, 0, 0, 0, MonsterAction.None))
+        new DenseValueComponent<ActorState>("state",
+          new ActorState(0, 0, 0, 0, ActorAction.None))
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
     const lerp = this._lerp = new SparseValueComponent<LerpRec|undefined>("lerp", undefined)
     const graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
@@ -298,9 +298,9 @@ export class RanchMode extends Mode
   /**
    * React to a monster being added to the ranch model.
    */
-  protected updateMonster (id :number, state :MonsterState) :void {
+  protected updateMonster (id :number, state :ActorState) :void {
     // see if we've given this monster an entity ID yet
-    let actorInfo = this._monsters.get(id)
+    let actorInfo = this._actors.get(id)
     if (!actorInfo) {
       actorInfo = this.addMonster(id, state)
     }
@@ -310,7 +310,7 @@ export class RanchMode extends Mode
   /**
    * Effect updates received from the RanchModel.
    */
-  protected updateMonsterActor (actorInfo :ActorInfo, state :MonsterState) :void {
+  protected updateMonsterActor (actorInfo :ActorInfo, state :ActorState) :void {
     // store their state in the entity system...
     this._state.update(actorInfo.entityId, state)
 
@@ -334,9 +334,9 @@ export class RanchMode extends Mode
     this._lerp.update(actorInfo.entityId, rec)
   }
 
-  protected addMonster (id :number, state :MonsterState) :ActorInfo
+  protected addMonster (id :number, state :ActorState) :ActorInfo
   {
-    const cfg = this._ranch.monsterConfig.get(id)
+    const cfg = this._ranch.actorConfig.get(id)
     if (!cfg) {
       throw new Error("Monster doesn't have a config in the RanchModel")
     }
@@ -366,12 +366,12 @@ export class RanchMode extends Mode
       graphCfg.isHatching = <NodeConfig>{
         type: "equals",
         x: "action",
-        y: MonsterAction.Hatching,
+        y: ActorAction.Hatching,
       }
       graphCfg.hatch = animation(cfg.model.hatch, "isHatching")
       graphCfg.notHatching = <NodeConfig>{type: "not", input: "isHatching"}
 
-      if (cfg.model.idle && cfg.kind === MonsterKind.EGG) {
+      if (cfg.model.idle && cfg.kind === ActorKind.EGG) {
         graphCfg.idle = animation(cfg.model.idle, "notHatching")
       }
 //      graphCfg.log = <NodeConfig>{
@@ -397,7 +397,7 @@ export class RanchMode extends Mode
       }
       graphCfg.walk = animation(cfg.model.walk, "yesLerp")
 
-      if (cfg.model.idle && cfg.kind !== MonsterKind.EGG) {
+      if (cfg.model.idle && cfg.kind !== ActorKind.EGG) {
         let idleInput = "noLerp"
         if (cfg.model.hatch) {
           graphCfg.isIdle = <NodeConfig>{
@@ -441,7 +441,7 @@ export class RanchMode extends Mode
       },
     })
     const actorInfo = new ActorInfo(id, entityId, cfg)
-    this._monsters.set(id, actorInfo)
+    this._actors.set(id, actorInfo)
     return actorInfo
   }
 
@@ -449,9 +449,9 @@ export class RanchMode extends Mode
    * React to a monster being removed from the ranch model.
    */
   protected deleteMonster (id :number) :void {
-    const actorInfo = this._monsters.get(id)
+    const actorInfo = this._actors.get(id)
     if (!actorInfo) return
-    this._monsters.delete(id)
+    this._actors.delete(id)
     this._domain.delete(actorInfo.entityId)
   }
 
@@ -505,22 +505,22 @@ export class RanchMode extends Mode
     caster.setFromCamera(ndc, this._obj.read(this._cameraId) as Camera)
     for (const result of caster.intersectObject(terrain, true)) {
       // Freeze these?
-      const monsterModel :MonsterModel = {
+      const monsterModel :ActorModel = {
         model:  "monsters/LobberBlue.glb",
         idle:   "monsters/LobberBlue.glb#Idle",
         hatch:  "monsters/LobberBlue.glb#Hatch",
         walk:   "monsters/LobberBlue.glb#Walk",
         attack: "monsters/LobberBlue.glb#Attack",
       }
-      const eggModel :MonsterModel = {
+      const eggModel :ActorModel = {
         model: "monsters/Egg.glb",
         idle:  "monsters/Egg.glb#Idle",
         hatch: "monsters/Egg.glb#Hatch",
       }
 
-      const config :MonsterConfig = new MonsterConfig(undefined, monsterModel)
-      const eggConfig :MonsterConfig = new MonsterConfig(undefined,
-        eggModel, MonsterKind.EGG, config)
+      const config :ActorConfig = new ActorConfig(undefined, monsterModel)
+      const eggConfig :ActorConfig = new ActorConfig(undefined,
+        eggModel, ActorKind.EGG, config)
 
       this._ranch.addMonster(eggConfig, Math.round(result.point.x), Math.round(-result.point.z))
       this.setUiState(UiState.Default)
@@ -539,7 +539,7 @@ export class RanchMode extends Mode
   protected _hand! :Hand
   protected _trans! :TransformComponent
   protected _obj! :Component<Object3D>
-  protected _state! :Component<MonsterState>
+  protected _state! :Component<ActorState>
   protected _lerp! :Component<LerpRec|undefined>
   protected _graphsys! :GraphSystem
   protected _lerpsys! :LerpSystem
@@ -550,9 +550,9 @@ export class RanchMode extends Mode
   protected _cameraId! :ID
   protected _terrainId! :ID
 
-  protected readonly _monsters :Map<number, ActorInfo> = new Map()
+  protected readonly _actors :Map<number, ActorInfo> = new Map()
 
-  protected readonly _monsterChanged = (change :MapChange<number, MonsterState>) => {
+  protected readonly _monsterChanged = (change :MapChange<number, ActorState>) => {
     if (change.type === "set") {
       this.updateMonster(change.key, change.value)
     } else {
