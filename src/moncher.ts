@@ -404,7 +404,7 @@ export class RanchModel
             bestScore = score
             best = [ vec2.fromValues(mx, my) ]
 
-          } else if (score == bestScore) {
+          } else if (score === bestScore) {
             best.push(vec2.fromValues(mx, my))
           }
         }

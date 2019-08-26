@@ -44,7 +44,7 @@ export class CarcTile
       default: throw new Error("Invalid direction " + direction)
     }
     for (let ii = 0; ii < CarcTile.SIZE; ii++, dex += inc, oDex += inc) {
-      if (this._base[dex] != other._base[oDex]) {
+      if (this._base[dex] !== other._base[oDex]) {
         return false
       }
     }
@@ -107,7 +107,7 @@ function findLeastPossible (map :Map<number, CarcTile[]>) :number
       bestSize = value.length
       bestWeight = totalWeight(value)
       best = key
-    } else if (value.length == bestSize) {
+    } else if (value.length === bestSize) {
       let weight = totalWeight(value)
       if (weight < bestWeight) {
         // (no need to update bestSize)

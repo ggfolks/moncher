@@ -437,7 +437,7 @@ export class RanchMode extends Mode
         }
         graphCfg.idle = animation(cfg.model.idle, idleInput)
 
-//        if (cfg.model.model.indexOf("LobberBlue") != -1) {
+//        if (cfg.model.model.indexOf("LobberBlue") !== -1) {
 //          log.info("Spawning lobber!")
 //          graphCfg.monsterLog = <NodeConfig>{
 //            type: "log",
