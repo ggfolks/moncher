@@ -129,11 +129,31 @@ enum UiState
   PlacingFood,
 }
 
-const vec3NearlyEqual = (a :Vector3, b :Vector3) => {
+/**
+ * Vector3.epsilonEquals ?  */
+function vec3NearlyEqual (a :Vector3, b :Vector3) :boolean {
   const epsilon = .0001
   return (Math.abs(a.x - b.x) < epsilon) &&
     (Math.abs(a.y - b.y) < epsilon) &&
     (Math.abs(a.z - b.z) < epsilon)
+}
+
+/**
+ * Look for a descendant called "NavMesh", remove and return it. */
+function spliceNamedChild (obj :Object3D, name :string) :Object3D|undefined {
+  let result :Object3D|undefined = undefined
+  for (let ii = 0; ii < obj.children.length; ii++) {
+    const child = obj.children[ii]
+    if (child.name === name) {
+      obj.children.splice(ii, 1)
+      return child
+    }
+    result = spliceNamedChild(child, name)
+    if (result !== undefined) {
+      return result
+    }
+  }
+  return undefined
 }
 
 export class RanchMode extends Mode
@@ -298,29 +318,11 @@ export class RanchMode extends Mode
   }
 
   protected ranchLoaded (scene :Object3D) :Object3D|undefined {
-    const navMesh = this.spliceNavMesh(scene)
+    const navMesh = spliceNamedChild(scene, "NavMesh")
     if (navMesh) {
       log.info("I have the navmesh", "navmesh", navMesh.name)
       // let's wait a spell and then replace this
       //return navMesh
-    }
-    return undefined
-  }
-
-  /**
-   * Look for a descendant called "NavMesh", remove and return it. */
-  protected spliceNavMesh (obj :Object3D) :Object3D|undefined {
-    let navmesh :Object3D|undefined = undefined
-    for (let ii = 0; ii < obj.children.length; ii++) {
-      const child = obj.children[ii]
-      if (child.name === "NavMesh") {
-        obj.children.splice(ii, 1)
-        return child
-      }
-      navmesh = this.spliceNavMesh(child)
-      if (navmesh !== undefined) {
-        return navmesh
-      }
     }
     return undefined
   }
