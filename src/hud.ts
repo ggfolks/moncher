@@ -1,5 +1,5 @@
 import {loadImage} from "tfw/core/assets"
-import {Mutable} from "tfw/core/react"
+import {Mutable, Value} from "tfw/core/react"
 import {log, Disposable, Disposer} from "tfw/core/util"
 import {Renderer} from "tfw/scene2/gl"
 import {Host, RootConfig} from "tfw/ui/element"
@@ -7,6 +7,20 @@ import {Model, ModelData} from "tfw/ui/model"
 import {ImageResolver} from "tfw/ui/style"
 import {UI} from "tfw/ui/ui"
 import {moncherStyles, moncherTheme} from "./uistyles"
+
+// TODO: actually, UIs are wholly recreated when something changes, it would seem
+export interface Action {
+  /** Button text. */
+  label :string
+  /** Called on button press. */
+  action :Function
+  /** Is the button disabled? */
+  disabled? :boolean
+//  /** The priority of the button relative to others. */
+//  priority? :number
+}
+
+type ActionOpt = Action|undefined
 
 export class Hud
   implements Disposable
@@ -18,12 +32,48 @@ export class Hud
   /** Action button action, or undefined to hide it. */
   readonly action :Mutable<Function|undefined> = Mutable.local<Function|undefined>(undefined)
 
+  readonly button1 :Mutable<ActionOpt> = Mutable.local<ActionOpt>(undefined)
+
+  readonly button2 :Mutable<ActionOpt> = Mutable.local<ActionOpt>(undefined)
+
   constructor (
     host :Host,
     renderer :Renderer,
   ) {
     log.debug("Compiler anal about unused imports")
 
+    // a bunch of helper bits to ease creation of standard buttons
+    const getActionVisible = (v :ActionOpt) => (v !== undefined)
+    const getActionText = (v :ActionOpt) => v ? v.label : ""
+    const getActionEnabled = (v :ActionOpt) => v && !v.disabled
+    const makeButtonModel = (v :Mutable<ActionOpt>) => {
+      return {
+        visible: v.map(getActionVisible),
+        text: v.map(getActionText),
+        enabled: v.map(getActionEnabled),
+        clicked: () => this.buttonClicked(v),
+      }
+    }
+    const makeButtonConfig = (name :string) => {
+      return {
+        type: "button",
+        visible: name + ".visible",
+        enabled: name + ".enabled",
+        onClick: name + ".clicked",
+        contents: {
+          type: "box",
+          contents: {
+            type: "label",
+            text: name + ".text",
+            style: {
+              font: {size: 64},
+            },
+          },
+        },
+      }
+    }
+
+    log.debug("Gruntle: " + (makeButtonConfig !== undefined))
     const model :ModelData = {
       status: {
         text: this.statusLabel,
@@ -31,9 +81,12 @@ export class Hud
       },
       button: {
         text: this.actionButton,
+        enabled: Value.constant(true),
         visible: this.action.map(v => (v !== undefined)),
         clicked: () => this.actionClicked(),
       },
+      button1: makeButtonModel(this.button1),
+      button2: makeButtonModel(this.button2),
     }
 
     const rootConfig :RootConfig = {
@@ -47,19 +100,12 @@ export class Hud
           type: "column",
           constraints: {stretchX: true, stretchY: false},
           contents: [{
-            type: "button",
-            visible: "button.visible",
-            onClick: "button.clicked",
-            contents: {
-              type: "box",
-              contents: {
-                type: "label",
-                text: "button.text",
-                style: {
-                  font: {size: 64}, // le big egg
-                },
-              },
-            },
+            type: "row",
+            contents: [
+              makeButtonConfig("button"), // TODO: TEMP: REMOVE
+              makeButtonConfig("button1"),
+              makeButtonConfig("button2"),
+            ],
           }, {
             type: "box",
             visible: "status.visible",
@@ -94,6 +140,12 @@ export class Hud
     const fn = this.action.current
     if (fn) fn()
     else console.log("No action but action clicked")
+  }
+
+  protected buttonClicked (action :Value<ActionOpt>) :void {
+    const act = action.current
+    if (act) act.action()
+    else console.log("Button clicked with no action?")
   }
 
   protected readonly _disposer :Disposer = new Disposer()
