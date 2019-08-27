@@ -568,7 +568,7 @@ export class RanchMode extends Mode
 
     } else {
       const foodModel :ActorModel = {
-        model: "monsters/LobberGreen.glb",
+        model: "monsters/Acorn.glb",
       }
       actorConfig = new ActorConfig(undefined, foodModel, ActorKind.FOOD)
     }
