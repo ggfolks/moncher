@@ -240,7 +240,7 @@ export class RanchMode extends Mode
     /*const animsys =*/ this._animsys = new AnimationSystem(domain, obj, mixer)
 
     // add lights and camera
-    const CAMERA_MOVEMENT_FACTOR = 80 // Hacky multiplication factor so we get noticeable movement
+    const CAMERA_MOVEMENT_FACTOR = 20 // Hacky multiplication factor so we get noticeable movement
     const cameraHeight = Mutable.local(RanchMode.CAMERA_HEIGHT)
     const cameraId = this._cameraId = domain.add({
       components: {
@@ -264,6 +264,8 @@ export class RanchMode extends Mode
         },
       },
     })
+    trans.updateQuaternion(cameraId, new Quaternion().setFromAxisAngle(
+        new Vector3(1, 0, 0), -Math.PI/5))
 
     // TEMP: set up mouse wheel to do a little camera Y adjustment
     const MIN_CAMERA = RanchMode.CAMERA_HEIGHT / 5
@@ -277,12 +279,6 @@ export class RanchMode extends Mode
     root.addEventListener("wheel", wheelHandler)
     this.onDispose.add(() => root.removeEventListener("wheel", wheelHandler))
 
-//    setInterval(() => {
-//      log.debug("Camera position", "pos", trans.readPosition(cameraId, new Vector3()))
-//    }, 1200)
-    //console.log("GRuntle: " + cameraId + "/" + Quaternion)
-    trans.updateQuaternion(cameraId, new Quaternion().setFromAxisAngle(
-        new Vector3(1, 0, 0), -Math.PI/5))
     domain.add({
       components: {
         trans: {},
@@ -298,14 +294,12 @@ export class RanchMode extends Mode
     })
 
     // add the ranch terrain
-    const ranchTerrainId = this._terrainId = domain.add({
+    /*const ranchTerrainId =*/ this._terrainId = domain.add({
       components: {
         trans: {},
-        // Contains a "NavMesh" object. TODO
-        obj: {type: "gltf", url: "ranch/Ranch.glb", postLoad: this.ranchLoaded.bind(this)},
+        obj: {type: "gltf", url: "ranch/Ranch.glb", onLoad: this.ranchLoaded.bind(this)},
       },
     })
-    trans.updateScale(ranchTerrainId, new Vector3(.5, .5, .5))
   }
 
   render (clock :Clock) :void {
@@ -624,6 +618,7 @@ export class RanchMode extends Mode
         if (change.type === "set" && change.value.pressed) {
           this.doPlacement(change.value.position)
         }
+        break
     }
   }
 
