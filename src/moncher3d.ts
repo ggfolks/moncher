@@ -337,6 +337,11 @@ export class RanchMode extends Mode
    * Effect updates received from the RanchModel.
    */
   protected updateMonsterActor (actorInfo :ActorInfo, state :ActorState) :void {
+    if (!this._domain.entityExists(actorInfo.entityId)) {
+      log.debug("Got update for removed actor. Discarding.")
+      return
+    }
+
     // store their state in the entity system...
     this._state.update(actorInfo.entityId, state)
 
@@ -406,11 +411,26 @@ export class RanchMode extends Mode
       if (cfg.model.idle && cfg.kind === ActorKind.EGG) {
         graphCfg.idle = animation(cfg.model.idle, "notHatching")
       }
-//      graphCfg.log = <NodeConfig>{
-//        type: "log",
-//        message: "Action is: ",
-//        input: "action",
-//      }
+      if (cfg.kind === ActorKind.EGG) {
+        // configure the egg to be removed when the animation finishes
+        graphCfg.eggEntityId = <NodeConfig>{
+          type: "entityId"
+        }
+        graphCfg.entityToDelete = <NodeConfig>{
+          type: "conditional",
+          condition: "hatch",
+          ifTrue: "eggEntityId",
+        }
+        graphCfg.removeEgg = <NodeConfig>{
+          type: "deleteEntity",
+          input: "entityToDelete",
+        }
+//        graphCfg.logAnimFinished = <NodeConfig>{
+//          type: "log",
+//          message: "Finished the hatch animation???!",
+//          input: "hatch",
+//        }
+      }
     }
 
     if (cfg.model.walk) {
@@ -484,7 +504,9 @@ export class RanchMode extends Mode
     const actorInfo = this._actors.get(id)
     if (!actorInfo) return
     this._actors.delete(id)
-    this._domain.delete(actorInfo.entityId)
+    if (this._domain.entityExists(actorInfo.entityId)) {
+      this._domain.delete(actorInfo.entityId)
+    }
   }
 
   protected getY (x :number, z :number) :number
