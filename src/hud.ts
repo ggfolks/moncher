@@ -27,13 +27,8 @@ export class Hud
 {
   /** The status label text, or "" to hide it. */
   readonly statusLabel :Mutable<string> = Mutable.local("")
-  /** Action button text. */
-  readonly actionButton :Mutable<string> = Mutable.local("")
-  /** Action button action, or undefined to hide it. */
-  readonly action :Mutable<Function|undefined> = Mutable.local<Function|undefined>(undefined)
 
   readonly button1 :Mutable<ActionOpt> = Mutable.local<ActionOpt>(undefined)
-
   readonly button2 :Mutable<ActionOpt> = Mutable.local<ActionOpt>(undefined)
 
   constructor (
@@ -79,12 +74,6 @@ export class Hud
         text: this.statusLabel,
         visible: this.statusLabel.map(v => (v !== "")), // visible if label isn't blank
       },
-      button: {
-        text: this.actionButton,
-        enabled: Value.constant(true),
-        visible: this.action.map(v => (v !== undefined)),
-        clicked: () => this.actionClicked(),
-      },
       button1: makeButtonModel(this.button1),
       button2: makeButtonModel(this.button2),
     }
@@ -102,7 +91,6 @@ export class Hud
           contents: [{
             type: "row",
             contents: [
-              makeButtonConfig("button"), // TODO: TEMP: REMOVE
               makeButtonConfig("button1"),
               makeButtonConfig("button2"),
             ],
@@ -134,12 +122,6 @@ export class Hud
   // from Disposable
   public dispose () :void {
     this._disposer.dispose()
-  }
-
-  protected actionClicked () :void {
-    const fn = this.action.current
-    if (fn) fn()
-    else console.log("No action but action clicked")
   }
 
   protected buttonClicked (action :Value<ActionOpt>) :void {

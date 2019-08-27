@@ -15,7 +15,9 @@ import {MonsterMenu} from "./monstermenu"
  */
 export class ActorKind
 {
+  // Big fat TODO...
   static readonly EGG :ActorKind = new ActorKind(false, false, false)
+  static readonly FOOD :ActorKind = new ActorKind(false, false, false)
   static readonly RUNNER :ActorKind = new ActorKind(true, false, false)
   static readonly HEALER :ActorKind = new ActorKind(false, true, true)
   static readonly TESTER :ActorKind = new ActorKind(true, true, true)
@@ -113,10 +115,19 @@ class Actor
     this.actionPts = config.startingActionPts
   }
 
-  isEggOrHatching () :boolean
+  isMobile () :boolean
   {
-    return (this.config.kind === ActorKind.EGG) || (this.action === ActorAction.Hatching)
+    switch (this.config.kind) {
+      case ActorKind.EGG: return false
+      case ActorKind.FOOD: return false
+      default: return (this.action !== ActorAction.Hatching)
+    }
   }
+
+//  isEggOrHatching () :boolean
+//  {
+//    return (this.config.kind === ActorKind.EGG) || (this.action === ActorAction.Hatching)
+//  }
 
   maybeSetAction (cost :number, action :ActorAction) :boolean
   {
@@ -309,6 +320,8 @@ export class RanchModel
       monst.actionPts += monst.config.regenActionPts
 
       switch (monst.config.kind) {
+        case ActorKind.FOOD: continue STATE_LOOP
+
         case ActorKind.EGG:
           switch (monst.action) {
             default:
@@ -383,7 +396,7 @@ export class RanchModel
 
     // then figure out if a monster wants to update state/loc
     for (const monst of this._actorData.values()) {
-      if (monst.isEggOrHatching()) {
+      if (!monst.isMobile()) {
         continue
       }
 

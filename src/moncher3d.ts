@@ -126,6 +126,7 @@ enum UiState
 {
   Default,
   PlacingEgg,
+  PlacingFood,
 }
 
 const vec3NearlyEqual = (a :Vector3, b :Vector3) => {
@@ -505,15 +506,25 @@ export class RanchMode extends Mode
     this._uiState = uiState
     switch (uiState) {
     case UiState.Default:
-      this._hud.actionButton.update("🥚") // egg
-      this._hud.action.update(() => this.setUiState(UiState.PlacingEgg))
+      this._hud.button1.update({
+        label: "🥚",
+        action: () => this.setUiState(UiState.PlacingEgg),
+      })
+      this._hud.button2.update({
+        label: "🍕",
+        action: () => this.setUiState(UiState.PlacingFood),
+      })
       this._hud.statusLabel.update("")
       break
 
     case UiState.PlacingEgg:
-      this._hud.actionButton.update("Cancel")
-      this._hud.action.update(() => this.setUiState(UiState.Default))
-      this._hud.statusLabel.update("Place the egg")
+    case UiState.PlacingFood:
+      this._hud.button1.update({
+        label: "Cancel",
+        action: () => this.setUiState(UiState.Default),
+      })
+      this._hud.button2.update(undefined)
+      this._hud.statusLabel.update((uiState == UiState.PlacingEgg) ? "Place the egg" : "Drop Food")
       // TODO: stop normal scene panning? Or maybe you can pan and it always puts the egg
       // on your last touch and then there's a "hatch" button to confirm the placement.
       // For now, we unforgivingly hatch it on their first touch.
@@ -522,8 +533,8 @@ export class RanchMode extends Mode
   }
 
   /**
-   * Place an egg. */
-  protected placeEgg (pos :vec2) :void
+   * Place an egg or food. */
+  protected doPlacement (pos :vec2) :void
   {
     //log.debug("Got egg placing request", "pos", pos)
     const terrain = this._obj.read(this._terrainId)!
@@ -533,6 +544,15 @@ export class RanchMode extends Mode
         (pos[1] / window.innerHeight) * -2 + 1)
     caster.setFromCamera(ndc, this._obj.read(this._cameraId) as Camera)
     for (const result of caster.intersectObject(terrain, true)) {
+      this.doPlacement2(result.point)
+      return
+    }
+  }
+
+  protected doPlacement2 (pos :Vector3) :void
+  {
+    let actorConfig :ActorConfig
+    if (this._uiState === UiState.PlacingEgg) {
       // Freeze these?
       const monsterModel :ActorModel = {
         model:  "monsters/LobberBlue.glb",
@@ -541,20 +561,24 @@ export class RanchMode extends Mode
         walk:   "monsters/LobberBlue.glb#Walk",
         attack: "monsters/LobberBlue.glb#Attack",
       }
+      const config :ActorConfig = new ActorConfig(undefined, monsterModel)
       const eggModel :ActorModel = {
         model: "monsters/Egg.glb",
         idle:  "monsters/Egg.glb#Idle",
         hatch: "monsters/Egg.glb#Hatch",
       }
+      // we will be placing an egg
+      actorConfig = new ActorConfig(undefined, eggModel, ActorKind.EGG, config)
 
-      const config :ActorConfig = new ActorConfig(undefined, monsterModel)
-      const eggConfig :ActorConfig = new ActorConfig(undefined,
-        eggModel, ActorKind.EGG, config)
-
-      this._ranch.addMonster(eggConfig, Math.round(result.point.x), Math.round(-result.point.z))
-      this.setUiState(UiState.Default)
-      return // stop after first result
+    } else {
+      const foodModel :ActorModel = {
+        model: "monsters/LobberGreen.glb",
+      }
+      actorConfig = new ActorConfig(undefined, foodModel, ActorKind.FOOD)
     }
+
+    this._ranch.addMonster(actorConfig, Math.round(pos.x), Math.round(-pos.z))
+    this.setUiState(UiState.Default)
   }
 
   /** Our heads-up-display: global UI. */
@@ -590,8 +614,14 @@ export class RanchMode extends Mode
   }
 
   protected readonly _handChanged = (change :MapChange<number, Pointer>) => {
-    if (this._uiState === UiState.PlacingEgg && change.type === "set" && change.value.pressed) {
-      this.placeEgg(change.value.position)
+    switch (this._uiState) {
+      default: return
+
+      case UiState.PlacingEgg:
+      case UiState.PlacingFood:
+        if (change.type === "set" && change.value.pressed) {
+          this.doPlacement(change.value.position)
+        }
     }
   }
 
