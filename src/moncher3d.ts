@@ -379,7 +379,7 @@ export class RanchMode extends Mode
     const graphCfg :GraphConfig = {}
     const animation = (url :string, play :NodeInput<boolean>, reps? :number, clamp? :boolean) => {
       const cfg :NodeConfig = {
-        type: "AnimationAction",
+        type: "animationAction",
         component: "mixer",
         url: url,
         play: play,
