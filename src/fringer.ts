@@ -1,14 +1,14 @@
 import {GridTileSceneModel, GridTileInfo, GridTileSet} from "./gridtiles"
 import {Tile} from "tfw/scene2/gl"
 
-export const NORTH = 1
-export const NORTHEAST = 2
-export const EAST = 4
-export const SOUTHEAST = 8
-export const SOUTH = 16
-export const SOUTHWEST = 32
-export const WEST = 64
-export const NORTHWEST = 128
+export const NORTH     = 1 << 0
+export const NORTHEAST = 1 << 1
+export const EAST      = 1 << 2
+export const SOUTHEAST = 1 << 3
+export const SOUTH     = 1 << 4
+export const SOUTHWEST = 1 << 5
+export const WEST      = 1 << 6
+export const NORTHWEST = 1 << 7
 const FRINGEBITS = 8
 
 export const SOUTHERN = SOUTH | SOUTHWEST | SOUTHEAST
