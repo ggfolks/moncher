@@ -343,11 +343,6 @@ export class RanchMode extends Mode
    * Effect updates received from the RanchModel.
    */
   protected updateMonsterActor (actorInfo :ActorInfo, state :ActorState) :void {
-    if (!this._domain.entityExists(actorInfo.entityId)) {
-      log.debug("Got update for removed actor. Discarding.")
-      return
-    }
-
     // store their state in the entity system...
     this._state.update(actorInfo.entityId, state)
 
@@ -511,9 +506,7 @@ export class RanchMode extends Mode
     const actorInfo = this._actors.get(id)
     if (!actorInfo) return
     this._actors.delete(id)
-    if (this._domain.entityExists(actorInfo.entityId)) {
-      this._domain.delete(actorInfo.entityId)
-    }
+    this._domain.delete(actorInfo.entityId)
   }
 
   protected getY (x :number, z :number) :number
