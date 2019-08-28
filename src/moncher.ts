@@ -40,6 +40,10 @@ export interface ActorModel {
   hatch? :string
   walk? :string
   attack? :string
+  hitReact? :string
+  faint? :string
+  sleep?: string
+  wakeUp?: string
 }
 
 /**

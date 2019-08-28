@@ -26,25 +26,39 @@ export class MonsterDb
     const monsters :ActorConfig[] = MonsterDb._monsters = []
 
     monsters.push(new ActorConfig(undefined, <ActorModel>{
-      model: "monsters/LobberBlue.glb",
-      idle:   "monsters/LobberBlue.glb#Idle",
-      hatch:  "monsters/LobberBlue.glb#Hatch",
-      walk:   "monsters/LobberBlue.glb#Walk",
-      attack: "monsters/LobberBlue.glb#Attack",
+      model:    "monsters/LobberBlue.glb",
+      idle:     "monsters/LobberBlue.glb#Idle",
+      hatch:    "monsters/LobberBlue.glb#Hatch",
+      walk:     "monsters/LobberBlue.glb#Walk",
+      attack:   "monsters/LobberBlue.glb#Attack",
+      hitReact: "monsters/LobberBlue.glb#HitReact",
+      faint:    "monsters/LobberBlue.glb#Faint",
+      sleep:    "monsters/LobberBlue.glb#Sleep",
+      wakeUp:   "monsters/LobberBlue.glb#WakeUp",
     }))
 
     monsters.push(new ActorConfig(undefined, <ActorModel>{
-      model: "monsters/LobberGreen.glb",
-      idle: "monsters/LobberGreen.glb#Idle",
-      walk: "monsters/LobberGreen.glb#Walk",
-      attack: "monsters/LobberGreen.glb#Attack",
+      model:    "monsters/LobberGreen.glb",
+      idle:     "monsters/LobberGreen.glb#Idle",
+      walk:     "monsters/LobberGreen.glb#Walk",
+      attack:   "monsters/LobberGreen.glb#Attack",
+      hitReact: "monsters/LobberGreen.glb#HitReact",
+      faint:    "monsters/LobberGreen.glb#Faint",
+
+      // TODO: use correct hatch animation
+      hatch:    "monsters/LobberBlue.glb#Hatch",
     }))
 
     monsters.push(new ActorConfig(undefined, <ActorModel>{
-      idle: "monsters/LobberRed.glb#Idle",
-      walk: "monsters/LobberRed.glb#Walk",
-      attack: "monsters/LobberRed.glb#Attack",
-      model: "monsters/LobberRed.glb",
+      idle:     "monsters/LobberRed.glb#Idle",
+      walk:     "monsters/LobberRed.glb#Walk",
+      attack:   "monsters/LobberRed.glb#Attack",
+      model:    "monsters/LobberRed.glb",
+      hitReact: "monsters/LobberRed.glb#HitReact",
+      faint:    "monsters/LobberRed.glb#Faint",
+
+      // TODO: use correct hatch animation
+      hatch:    "monsters/LobberBlue.glb#Hatch",
     }))
   }
 
