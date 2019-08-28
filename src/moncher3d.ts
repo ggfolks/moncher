@@ -623,9 +623,11 @@ export class RanchMode extends Mode
 
   protected location3to2 (pos :Vector3) :vec2
   {
-    const x2 = ((pos.x - this._minX) / this._extentX) * (this._ranch.model.sceneWidth + 1)
-    const y2 = ((pos.z - this._minZ) / this._extentZ) * (this._ranch.model.sceneHeight + 1)
-    return vec2.fromValues(x2, y2)
+    const x2 = ((pos.x - this._minX) / this._extentX) * (this._ranch.model.sceneWidth - 1)
+    const y2 = ((pos.z - this._minZ) / this._extentZ) * (this._ranch.model.sceneHeight - 1)
+    // bound it into the ranch model
+    return vec2.fromValues(Math.max(0, Math.min(x2, this._ranch.model.sceneWidth - 1)),
+                           Math.max(0, Math.min(y2, this._ranch.model.sceneHeight - 1)))
   }
 
   /** Our heads-up-display: global UI. */
