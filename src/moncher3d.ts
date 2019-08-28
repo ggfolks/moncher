@@ -54,6 +54,7 @@ import {
   ActorState,
   RanchModel,
 } from "./moncher"
+import {MonsterDb} from "./monsterdb"
 import {Hud} from "./hud"
 
 class ActorInfo
@@ -577,22 +578,7 @@ export class RanchMode extends Mode
   {
     let actorConfig :ActorConfig
     if (this._uiState === UiState.PlacingEgg) {
-      // Freeze these?
-      const monsterModel :ActorModel = {
-        model:  "monsters/LobberBlue.glb",
-        idle:   "monsters/LobberBlue.glb#Idle",
-        hatch:  "monsters/LobberBlue.glb#Hatch",
-        walk:   "monsters/LobberBlue.glb#Walk",
-        attack: "monsters/LobberBlue.glb#Attack",
-      }
-      const config :ActorConfig = new ActorConfig(undefined, monsterModel)
-      const eggModel :ActorModel = {
-        model: "monsters/Egg.glb",
-        idle:  "monsters/Egg.glb#Idle",
-        hatch: "monsters/Egg.glb#Hatch",
-      }
-      // we will be placing an egg
-      actorConfig = new ActorConfig(undefined, eggModel, ActorKind.EGG, config)
+      actorConfig = MonsterDb.getRandomEgg()
 
     } else {
       const foodModel :ActorModel = {
