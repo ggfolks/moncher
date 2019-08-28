@@ -404,13 +404,15 @@ export class RanchMode extends Mode
         x: "action",
         y: ActorAction.Hatching,
       }
-      graphCfg.hatch = animation(cfg.model.hatch, "isHatching", 1, true)
+      const isEgg :boolean = (cfg.kind === ActorKind.EGG)
+      graphCfg.hatch = animation(cfg.model.hatch, "isHatching", 1, isEgg)
       graphCfg.notHatching = <NodeConfig>{type: "not", input: "isHatching"}
 
-      if (cfg.model.idle && cfg.kind === ActorKind.EGG) {
-        graphCfg.idle = animation(cfg.model.idle, "notHatching")
-      }
-      if (cfg.kind === ActorKind.EGG) {
+      if (isEgg) {
+        if (cfg.model.idle) {
+          graphCfg.idle = animation(cfg.model.idle, "notHatching")
+        }
+
         // configure the egg to be removed when the animation finishes
         graphCfg.eggEntityId = <NodeConfig>{
           type: "entityId"
@@ -451,9 +453,13 @@ export class RanchMode extends Mode
       if (cfg.model.idle && cfg.kind !== ActorKind.EGG) {
         let idleInput = "noLerp"
         if (cfg.model.hatch) {
+          graphCfg.notHatchingOrFinishedHatching = <NodeConfig>{
+            type: "or",
+            inputs: ["notHatching", "hatch"]
+          }
           graphCfg.isIdle = <NodeConfig>{
             type: "and",
-            inputs: [ "noLerp", "notHatching" ],
+            inputs: [ "noLerp", "notHatchingOrFinishedHatching" ],
           }
           idleInput = "isIdle"
         }
