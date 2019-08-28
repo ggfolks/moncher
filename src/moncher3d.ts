@@ -325,10 +325,16 @@ export class RanchMode extends Mode
    * React to a monster being added to the ranch model.
    */
   protected updateMonster (id :number, state :ActorState) :void {
+//    log.info("updateMonster",
+//      "id", id, "action", state.action)
     // see if we've given this monster an entity ID yet
     let actorInfo = this._actors.get(id)
     if (!actorInfo) {
       actorInfo = this.addMonster(id, state)
+//      log.info("ADDING monster",
+//        "id", id,
+//        "entityId", actorInfo.entityId,
+//        "egg?", (actorInfo.config.kind === ActorKind.EGG))
     }
     this.updateMonsterActor(actorInfo, state)
   }
@@ -413,23 +419,19 @@ export class RanchMode extends Mode
           graphCfg.idle = animation(cfg.model.idle, "notHatching")
         }
 
-        // configure the egg to be removed when the animation finishes
-        graphCfg.eggEntityId = <NodeConfig>{
-          type: "entityId"
+        graphCfg.notFinishedHatching = <NodeConfig>{
+          type: "not",
+          input: "hatch",
         }
-        graphCfg.entityToDelete = <NodeConfig>{
-          type: "conditional",
-          condition: "hatch",
-          ifTrue: "eggEntityId",
+        graphCfg.setInvisible = <NodeConfig>{
+          type: "updateVisible",
+          component: "obj",
+          input: "notFinishedHatching",
         }
-        graphCfg.removeEgg = <NodeConfig>{
-          type: "deleteEntity",
-          input: "entityToDelete",
-        }
-//        graphCfg.logAnimFinished = <NodeConfig>{
+//        graphCfg.logVisible = <NodeConfig>{
 //          type: "log",
-//          message: "Finished the hatch animation???!",
-//          input: "hatch",
+//          message: "updateVisible",
+//          input: "notFinishedHatching",
 //        }
       }
     }
