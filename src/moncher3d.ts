@@ -376,16 +376,15 @@ export class RanchMode extends Mode
     }
 
     const graphCfg :GraphConfig = {}
-    const animation = (url :string, play :NodeInput<boolean>, reps? :number) => {
+    const animation = (url :string, play :NodeInput<boolean>, reps? :number, clamp? :boolean) => {
       const cfg :NodeConfig = {
         type: "AnimationAction",
         component: "mixer",
         url: url,
         play: play,
       }
-      if (reps) {
-        cfg.repetitions = reps
-      }
+      if (reps) cfg.repetitions = reps
+      if (clamp !== undefined) cfg.clampWhenFinished = clamp
       return cfg
     }
 
@@ -405,7 +404,7 @@ export class RanchMode extends Mode
         x: "action",
         y: ActorAction.Hatching,
       }
-      graphCfg.hatch = animation(cfg.model.hatch, "isHatching", 1)
+      graphCfg.hatch = animation(cfg.model.hatch, "isHatching", 1, true)
       graphCfg.notHatching = <NodeConfig>{type: "not", input: "isHatching"}
 
       if (cfg.model.idle && cfg.kind === ActorKind.EGG) {
