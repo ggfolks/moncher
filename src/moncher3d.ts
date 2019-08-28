@@ -4,6 +4,7 @@ import {
 //  Color,
 //  Math as ThreeMath,
   Object3D,
+  Mesh,
   Quaternion,
   Raycaster,
   Vector2,
@@ -140,7 +141,7 @@ function vec3NearlyEqual (a :Vector3, b :Vector3) :boolean {
 }
 
 /**
- * Look for a descendant called "NavMesh", remove and return it. */
+ * Look for a descendant with the specified name; remove and return it. */
 function spliceNamedChild (obj :Object3D, name :string) :Object3D|undefined {
   let result :Object3D|undefined = undefined
   for (let ii = 0; ii < obj.children.length; ii++) {
@@ -166,8 +167,12 @@ export class RanchMode extends Mode
     super()
     this.configureScene(app)
 
-    this.onDispose.add(_ranch.actors.onChange(this._monsterChanged))
-    _ranch.actors.forEach((monster, id) => { this.updateMonster(id, monster) })
+    // But, let's set things to be ready after a short delay even if there's *trouble at the mill*
+    // Dispatches to setReady() unless we've been disposed already, but setReady is idempotent.
+    let handle :any
+    const cancelTimeout = () => { clearTimeout(handle) }
+    handle = setTimeout(() => { this.onDispose.remove(cancelTimeout); this.setReady() }, 2000)
+    this.onDispose.add(cancelTimeout)
 
     this.onDispose.add(this._hud = new Hud(this._host, app.renderer))
     this.setUiState(UiState.Default)
@@ -314,12 +319,28 @@ export class RanchMode extends Mode
 
   protected ranchLoaded (scene :Object3D) :Object3D|undefined {
     const navMesh = spliceNamedChild(scene, "NavMesh")
-    if (navMesh) {
-      log.info("I have the navmesh", "navmesh", navMesh.name)
-      // let's wait a spell and then replace this
-      //return navMesh
+    if (navMesh instanceof Mesh) {
+      navMesh.geometry.computeBoundingBox()
+      const box = navMesh.geometry.boundingBox
+      log.info("Got the navmesh", "box", box)
+      this._minX = box.min.x
+      this._extentX = box.max.x - box.min.x
+      this._minZ = box.min.z
+      this._extentZ = box.max.z - box.min.z
+      this.setReady()
     }
     return undefined
+  }
+
+  /**
+   * Called once we know enough to start adding actors. */
+  protected setReady () :void
+  {
+    if (this._ready) return
+    this._ready = true
+
+    this.onDispose.add(this._ranch.actors.onChange(this._monsterChanged))
+    this._ranch.actors.forEach((monster, id) => { this.updateMonster(id, monster) })
   }
 
   /**
@@ -348,7 +369,7 @@ export class RanchMode extends Mode
     this._state.update(actorInfo.entityId, state)
 
     // then check their location against their LerpRec...
-    const pos = new Vector3(state.x, this.getY(state.x, -state.y), -state.y)
+    const pos = this.location2to3(state.x, state.y)
     const oldRec = this._lerp.read(actorInfo.entityId)
     if (oldRec && vec3NearlyEqual(oldRec.dest, pos)) {
       // just update the position in the old record
@@ -484,10 +505,10 @@ export class RanchMode extends Mode
       }
     }
 
+    const loc = this.location2to3(state.x, state.y)
     const entityId = this._domain.add({
       components: {
-        trans: {initial: new Float32Array([state.x, this.getY(state.x, -state.y), -state.y,
-            0, 0, 0, 1, 1, 1, 1])},
+        trans: {initial: new Float32Array([loc.x, loc.y, loc.z, 0, 0, 0, 1, 1, 1, 1])},
         obj: {type: "gltf", url: cfg.model.model},
         state: {initial: state},
         mixer: {},
@@ -508,20 +529,6 @@ export class RanchMode extends Mode
     if (!actorInfo) return
     this._actors.delete(id)
     this._domain.delete(actorInfo.entityId)
-  }
-
-  protected getY (x :number, z :number) :number
-  {
-    const terrain = this._obj.read(this._terrainId)
-    if (terrain) {
-      const HAWK_HEIGHT = 10
-      const caster = new Raycaster(new Vector3(x, HAWK_HEIGHT, z), new Vector3(0, -1, 0))
-      const results = caster.intersectObject(terrain, true)
-      for (const result of results) {
-        return HAWK_HEIGHT - result.distance
-      }
-    }
-    return 2.5 // bogus fallback height
   }
 
   protected setUiState (uiState :UiState) :void
@@ -587,14 +594,50 @@ export class RanchMode extends Mode
       actorConfig = new ActorConfig(undefined, foodModel, ActorKind.FOOD)
     }
 
-    this._ranch.addMonster(actorConfig, Math.round(pos.x), Math.round(-pos.z))
+    const loc :vec2 = this.location3to2(pos)
+    this._ranch.addMonster(actorConfig, loc[0], loc[1])
     this.setUiState(UiState.Default)
+  }
+
+  protected getY (x :number, z :number) :number
+  {
+    const terrain = this._obj.read(this._terrainId)
+    if (terrain) {
+      const HAWK_HEIGHT = 10
+      const caster = new Raycaster(new Vector3(x, HAWK_HEIGHT, z), new Vector3(0, -1, 0))
+      const results = caster.intersectObject(terrain, true)
+      for (const result of results) {
+        return HAWK_HEIGHT - result.distance
+      }
+    }
+    return 2.5 // bogus fallback height
+  }
+
+  protected location2to3 (x :number, y :number) :Vector3
+  {
+    // Currently x/y range from 0 to model.sceneWidth-1 and model.sceneHeight-1
+    const x3 = ((x / (this._ranch.model.sceneWidth - 1)) * this._extentX) + this._minX
+    const z3 = ((y / (this._ranch.model.sceneHeight - 1)) * this._extentZ) + this._minZ
+    return new Vector3(x3, this.getY(x3, z3), z3)
+  }
+
+  protected location3to2 (pos :Vector3) :vec2
+  {
+    const x2 = ((pos.x - this._minX) / this._extentX) * (this._ranch.model.sceneWidth + 1)
+    const y2 = ((pos.z - this._minZ) / this._extentZ) * (this._ranch.model.sceneHeight + 1)
+    return vec2.fromValues(x2, y2)
   }
 
   /** Our heads-up-display: global UI. */
   protected _hud :Hud
 
   protected _uiState :UiState = UiState.Default
+
+  protected _ready :boolean = false
+  protected _minX = 0
+  protected _extentX = 1
+  protected _minZ = 0
+  protected _extentZ = 1
 
   // The properties below are all definitely initialized via the constructor
   protected _host! :Host3

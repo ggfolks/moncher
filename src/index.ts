@@ -11,6 +11,7 @@ import * as Fringer from "./fringer"
 import {CarcTile, generateGridModel} from "./carctiles"
 import {RanchModel, MonsterRancherMode} from "./moncher"
 import {RanchMode} from "./moncher3d"
+import {MonsterDb} from "./monsterdb"
 
 const root = document.getElementById("root")
 if (!root) throw new Error(`No root?`)
@@ -244,26 +245,12 @@ let tiles = [ roadN, roadS, roadE, roadW,
 //let model :GridTileSceneModel = generateGridModel(tiles, 30, 30, gridConfig)
 let model :GridTileSceneModel = generateGridModel(tiles.concat(additional), 30, 30, gridConfig)
 let ranch :RanchModel = new RanchModel(model)
-//ranch.addMonster(
-//  new ActorConfig(
-//    new PropTileInfo("mlp", "monsters/_0018_RunnerGreen.png", undefined, undefined, 13),
-//    <ActorModel>{
-//      model: "monsters/LobberGreen.glb",
-//      idle: "monsters/LobberGreen.glb#Idle",
-//      walk: "monsters/LobberGreen.glb#Walk",
-//      attack: "monsters/LobberGreen.glb#Attack",
-//    }),
-//  4, 4)
-//ranch.addMonster(
-//  new ActorConfig(
-//    new PropTileInfo("grunt", "monsters/_0017_GruntRed.png", undefined, undefined, 13),
-//    <ActorModel>{
-//      model: "monsters/LobberRed.glb",
-//      idle: "monsters/LobberRed.glb#Idle",
-//      walk: "monsters/LobberRed.glb#Walk",
-//      attack: "monsters/LobberRed.glb#Attack",
-//    }),
-//  6, 6)
+
+// add sample monsters at the 4 corners
+ranch.addMonster(MonsterDb.getRandomEgg(), 0, 0)
+ranch.addMonster(MonsterDb.getRandomEgg(), model.sceneWidth - 1, 0)
+ranch.addMonster(MonsterDb.getRandomEgg(), 0, model.sceneHeight - 1)
+ranch.addMonster(MonsterDb.getRandomEgg(), model.sceneWidth - 1, model.sceneHeight - 1)
 
 console.log("Gruntle: " + (RanchMode !== undefined) + "," + (MonsterRancherMode !== undefined))
 
