@@ -96,7 +96,7 @@ export class ActorState
 /**
  * An actor.
  */
-class Actor
+abstract class Actor
 {
   /** All actors have health. */
   health :number
@@ -127,10 +127,7 @@ class Actor
     }
   }
 
-  tick (model :RanchModel) :void
-  {
-    // nothing by default
-  }
+  abstract tick (model :RanchModel) :void
 
   toState () :ActorState
   {
@@ -200,7 +197,7 @@ export class RanchModel
     this.validateConfig(config)
 
     const id = this._nextActorId++
-    const clazz :typeof Actor = this.pickActorClass(config)
+    const clazz = this.pickActorClass(config)
     const data = new clazz(id, config, x, y, action)
     this.actorConfig.set(id, config)
     this._actorData.set(id, data)
@@ -221,7 +218,7 @@ export class RanchModel
     }
   }
 
-  protected pickActorClass (config :ActorConfig) :typeof Actor
+  protected pickActorClass (config :ActorConfig) :{ new (...args: any[]): Actor}
   {
     switch (config.kind) {
       case ActorKind.EGG: return Egg
