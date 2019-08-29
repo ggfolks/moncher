@@ -96,7 +96,7 @@ export class ActorState
 /**
  * An actor.
  */
-class ActorNew
+class Actor
 {
   /** All actors have health. */
   health :number
@@ -127,7 +127,7 @@ class ActorNew
     }
   }
 
-  tick (model :RanchModelNew) :void
+  tick (model :RanchModel) :void
   {
     // nothing by default
   }
@@ -148,14 +148,14 @@ class ActorNew
   }
 }
 
-class Egg extends ActorNew
+class Egg extends Actor
 {
   protected postConstruct () :void {
     // force health because we're going to do modify it in tick
     this.health = 50
   }
 
-  tick (model :RanchModelNew) :void {
+  tick (model :RanchModel) :void {
     this.health -= 1
     if (this.action === ActorAction.None && (this.health < 20)) {
       this.action = ActorAction.Hatching
@@ -164,21 +164,21 @@ class Egg extends ActorNew
   }
 }
 
-class Monster extends ActorNew
+class Monster extends Actor
 {
-  tick (model :RanchModelNew) :void {
+  tick (model :RanchModel) :void {
     // TODO!
   }
 }
 
-class Food extends ActorNew
+class Food extends Actor
 {
-  tick (model :RanchModelNew) :void {
+  tick (model :RanchModel) :void {
     this.health -= .01
   }
 }
 
-export class RanchModelNew
+export class RanchModel
 {
   /** The public view of monster state. */
   get actors () :RMap<number, ActorState> {
@@ -200,7 +200,7 @@ export class RanchModelNew
     this.validateConfig(config)
 
     const id = this._nextActorId++
-    const clazz :typeof ActorNew = this.pickActorClass(config)
+    const clazz :typeof Actor = this.pickActorClass(config)
     const data = new clazz(id, config, x, y, action)
     this.actorConfig.set(id, config)
     this._actorData.set(id, data)
@@ -221,7 +221,7 @@ export class RanchModelNew
     }
   }
 
-  protected pickActorClass (config :ActorConfig) :typeof ActorNew
+  protected pickActorClass (config :ActorConfig) :typeof Actor
   {
     switch (config.kind) {
       case ActorKind.EGG: return Egg
@@ -230,7 +230,7 @@ export class RanchModelNew
     }
   }
 
-  protected removeActor (data :ActorNew)
+  protected removeActor (data :Actor)
   {
     this._actorData.delete(data.id)
     this._actors.delete(data.id)
@@ -238,7 +238,7 @@ export class RanchModelNew
     this.actorConfig.delete(data.id)
   }
 
-  getNearbyActors (x :number, y :number, maxDist :number = Math.sqrt(2)) :ActorNew[]
+  getNearbyActors (x :number, y :number, maxDist :number = Math.sqrt(2)) :Actor[]
   {
     // TODO
     return []
@@ -264,7 +264,7 @@ export class RanchModelNew
   }
 
   protected _nextActorId :number = 0
-  protected readonly _actorData :Map<number, ActorNew> = new Map()
+  protected readonly _actorData :Map<number, Actor> = new Map()
   /** A mutable view of our public actors RMap. */
   protected readonly _actors :MutableMap<number, ActorState> = MutableMap.local()
 }

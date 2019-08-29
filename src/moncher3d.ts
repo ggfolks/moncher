@@ -339,14 +339,14 @@ export class RanchMode extends Mode
     if (this._ready) return
     this._ready = true
 
-    this.onDispose.add(this._ranch.actors.onChange(this._monsterChanged))
-    this._ranch.actors.forEach((monster, id) => { this.updateMonster(id, monster) })
+    this.onDispose.add(this._ranch.actors.onChange(this._actorChanged))
+    this._ranch.actors.forEach((actor, id) => { this.updateActor(id, actor) })
   }
 
   /**
-   * React to a monster being added to the ranch model.
+   * React to a actor being updated in the ranch model.
    */
-  protected updateMonster (id :number, state :ActorState) :void {
+  protected updateActor (id :number, state :ActorState) :void {
 //    log.info("updateMonster",
 //      "id", id, "action", state.action)
     // see if we've given this monster an entity ID yet
@@ -358,13 +358,13 @@ export class RanchMode extends Mode
 //        "entityId", actorInfo.entityId,
 //        "egg?", (actorInfo.config.kind === ActorKind.EGG))
     }
-    this.updateMonsterActor(actorInfo, state)
+    this.updateActorSprite(actorInfo, state)
   }
 
   /**
    * Effect updates received from the RanchModel.
    */
-  protected updateMonsterActor (actorInfo :ActorInfo, state :ActorState) :void {
+  protected updateActorSprite (actorInfo :ActorInfo, state :ActorState) :void {
     // store their state in the entity system...
     this._state.update(actorInfo.entityId, state)
 
@@ -593,6 +593,7 @@ export class RanchMode extends Mode
       actorConfig = MonsterDb.getRandomEgg()
 
     } else {
+      // Food DB?
       const foodModel :ActorModel = {
         model: "monsters/Acorn.glb",
       }
@@ -600,7 +601,7 @@ export class RanchMode extends Mode
     }
 
     const loc :vec2 = this.location3to2(pos)
-    this._ranch.addMonster(actorConfig, loc[0], loc[1])
+    this._ranch.addActor(actorConfig, loc[0], loc[1])
     this.setUiState(UiState.Default)
   }
 
@@ -620,16 +621,16 @@ export class RanchMode extends Mode
 
   protected location2to3 (x :number, y :number) :Vector3
   {
-    // Currently x/y range from 0 to model.sceneWidth-1 and model.sceneHeight-1
-    const x3 = ((x / (this._ranch.model.sceneWidth - 1)) * this._extentX) + this._minX
-    const z3 = ((y / (this._ranch.model.sceneHeight - 1)) * this._extentZ) + this._minZ
+    // Currently x/y range from 0 to 1
+    const x3 = (x * this._extentX) + this._minX
+    const z3 = (y * this._extentZ) + this._minZ
     return new Vector3(x3, this.getY(x3, z3), z3)
   }
 
   protected location3to2 (pos :Vector3) :vec2
   {
-    const x2 = ((pos.x - this._minX) / this._extentX) * (this._ranch.model.sceneWidth - 1)
-    const y2 = ((pos.z - this._minZ) / this._extentZ) * (this._ranch.model.sceneHeight - 1)
+    const x2 = (pos.x - this._minX) / this._extentX
+    const y2 = (pos.z - this._minZ) / this._extentZ
     // bound it into the ranch model
     return vec2.fromValues(x2, y2)
   }
@@ -664,9 +665,9 @@ export class RanchMode extends Mode
 
   protected readonly _actors :Map<number, ActorInfo> = new Map()
 
-  protected readonly _monsterChanged = (change :MapChange<number, ActorState>) => {
+  protected readonly _actorChanged = (change :MapChange<number, ActorState>) => {
     if (change.type === "set") {
-      this.updateMonster(change.key, change.value)
+      this.updateActor(change.key, change.value)
     } else {
       this.deleteMonster(change.key)
     }
