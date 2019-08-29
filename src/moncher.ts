@@ -272,7 +272,7 @@ export class RanchModelNew
 /**
  * An actor.
  */
-class Actor
+class OldActor
 {
   // Toy attributes while playing around. These will all go away.
   hunger :number = 0
@@ -342,7 +342,7 @@ class Actor
       // splice it out of the old location
       this.locationMemory.splice(index, 1)
 
-    } else if (this.locationMemory.length === Actor.MEMORY_SIZE) {
+    } else if (this.locationMemory.length === OldActor.MEMORY_SIZE) {
       // if we're already at the size, make room for the new location
       this.locationMemory.pop()
     }
@@ -368,7 +368,7 @@ class Actor
 
 type ScoreFn = (x :number, y :number) => number
 
-export class RanchModel
+export class OldRanchModel
 {
   /** The public view of monster state. */
   get actors () :RMap<number, ActorState> {
@@ -394,7 +394,7 @@ export class RanchModel
     this.validateConfig(config)
 
     const id = this._nextActorId++
-    const data = new Actor(id, config, Math.trunc(x), Math.trunc(y), action)
+    const data = new OldActor(id, config, Math.trunc(x), Math.trunc(y), action)
     this.actorConfig.set(id, config)
     this._actorData.set(id, data)
     // move the monster to its current location to map it by location
@@ -416,7 +416,7 @@ export class RanchModel
     }
   }
 
-  protected removeMonster (data :Actor)
+  protected removeMonster (data :OldActor)
   {
     this.unmapLocation(data)
     this._actorData.delete(data.id)
@@ -425,7 +425,7 @@ export class RanchModel
     this.actorConfig.delete(data.id)
   }
 
-  protected moveMonster (data :Actor, newX :number, newY :number)
+  protected moveMonster (data :OldActor, newX :number, newY :number)
   {
     this.unmapLocation(data)
     data.setLocation(newX, newY)
@@ -435,7 +435,7 @@ export class RanchModel
   /**
    * Unmap the actor by location.
    */
-  protected unmapLocation (data :Actor)
+  protected unmapLocation (data :OldActor)
   {
     const oldKey = this.locToKey(data.x, data.y)
     const oldVals = this._actorsByLocation.get(oldKey)
@@ -447,7 +447,7 @@ export class RanchModel
     }
   }
 
-  protected mapLocation (data :Actor)
+  protected mapLocation (data :OldActor)
   {
     const newKey = this.locToKey(data.x, data.x)
     let newVals = this._actorsByLocation.get(newKey)
@@ -617,7 +617,7 @@ export class RanchModel
     }
   }
 
-  protected getScoreFn (monst :Actor) :ScoreFn|undefined
+  protected getScoreFn (monst :OldActor) :ScoreFn|undefined
   {
     let fns :ScoreFn[] = []
     if (monst.hunger > 50) {
@@ -647,7 +647,7 @@ export class RanchModel
   }
 
   protected _nextActorId :number = 0
-  protected _actorData :Map<number, Actor> = new Map()
+  protected _actorData :Map<number, OldActor> = new Map()
   /** A mutable view of our public actors RMap. */
   protected _actors :MutableMap<number, ActorState>
   /** Maps a location to actors ids. */
@@ -672,7 +672,7 @@ class ActorSprite
 export class MonsterRancherMode extends GridTileSceneViewMode {
   constructor (
     app :App,
-    protected _ranch :RanchModel
+    protected _ranch :OldRanchModel
   ) {
     super(app, _ranch.model)
 
