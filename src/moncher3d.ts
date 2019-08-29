@@ -1,5 +1,5 @@
 import {
-  AnimationAction,
+//  AnimationAction,
   AnimationMixer,
   Camera,
 //  Color,
@@ -411,9 +411,10 @@ export class RanchMode extends Mode
       }
       if (reps) cfg.repetitions = reps
       if (clamp !== undefined) cfg.clampWhenFinished = clamp
-      cfg.onLoad = (action :AnimationAction) => {
-        action.timeScale = 1 + ((Math.random() - .5) / 5)
-      }
+//      // experimental: vary the speed of the animation slightly
+//      cfg.onLoad = (action :AnimationAction) => {
+//        action.timeScale = 1 + ((Math.random() - .5) / 5)
+//      }
       return cfg
     }
 
