@@ -368,6 +368,8 @@ class OldActor
 
 type ScoreFn = (x :number, y :number) => number
 
+/**
+ * I'm gonna take my monch to the old ranch model.. I'm gonna riiiiide till I can't no more. */
 export class OldRanchModel
 {
   /** The public view of monster state. */

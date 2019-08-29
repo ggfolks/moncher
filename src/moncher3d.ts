@@ -1,4 +1,5 @@
 import {
+  AnimationAction,
   AnimationMixer,
   Camera,
 //  Color,
@@ -76,7 +77,7 @@ class LerpRec
     readonly src :Vector3,
     /** The destination location. */
     public dest :Vector3,
-    /** How long shall we take? (TODO: compute based on speed / distance?) */
+    /** How long shall we take? */
     readonly duration :number,
     /** Ending timestamp (start time + duration) (filled-in by LerpSystem) */
     public stamp? :number
@@ -112,7 +113,7 @@ class LerpSystem extends System
         if (timeLeft <= 0) {
           this.trans.updatePosition(id, lerpRec.dest)
           this.lerp.update(id, undefined)
-          this.trans.updateQuaternion(id, new Quaternion())
+          this.trans.updateQuaternion(id, new Quaternion()) // face forward
         } else {
           pos.lerpVectors(lerpRec.dest, lerpRec.src, timeLeft / lerpRec.duration)
           // but override the Y value according to terrain?
@@ -304,6 +305,8 @@ export class RanchMode extends Mode
       components: {
         trans: {},
         obj: {type: "gltf", url: "ranch/Ranch.glb", onLoad: this.ranchLoaded.bind(this)},
+        // TODO: have a graph here with hover ability, and a callback?
+        // (Remove manual Hand listening)
       },
     })
   }
@@ -352,7 +355,7 @@ export class RanchMode extends Mode
     // see if we've given this monster an entity ID yet
     let actorInfo = this._actors.get(id)
     if (!actorInfo) {
-      actorInfo = this.addMonster(id, state)
+      actorInfo = this.addActor(id, state)
 //      log.info("ADDING monster",
 //        "id", id,
 //        "entityId", actorInfo.entityId,
@@ -383,19 +386,19 @@ export class RanchMode extends Mode
       this._trans.updatePosition(actorInfo.entityId, pos)
       return
     }
-    const duration = (oldPos.distanceTo(pos) * 1000) / RanchMode.MONSTER_MOVE_DISTANCE_PER_SECOND
+    const duration = (oldPos.distanceTo(pos) * 1000) / RanchMode.ACTOR_MOVE_DISTANCE_PER_SECOND
     const rec = new LerpRec(oldPos, pos, duration)
     this._lerp.update(actorInfo.entityId, rec)
   }
 
-  protected addMonster (id :number, state :ActorState) :ActorInfo
+  protected addActor (id :number, state :ActorState) :ActorInfo
   {
     const cfg = this._ranch.actorConfig.get(id)
     if (!cfg) {
-      throw new Error("Monster doesn't have a config in the RanchModel")
+      throw new Error("Actor doesn't have a config in the RanchModel")
     }
     if (!cfg.model) {
-      throw new Error("Monster doesn't have 3d model configuration")
+      throw new Error("Actor doesn't have 3d model configuration")
     }
 
     const graphCfg :GraphConfig = {}
@@ -408,6 +411,9 @@ export class RanchMode extends Mode
       }
       if (reps) cfg.repetitions = reps
       if (clamp !== undefined) cfg.clampWhenFinished = clamp
+      cfg.onLoad = (action :AnimationAction) => {
+        action.timeScale = 1 + ((Math.random() - .5) / 5)
+      }
       return cfg
     }
 
@@ -522,9 +528,9 @@ export class RanchMode extends Mode
   }
 
   /**
-   * React to a monster being removed from the ranch model.
+   * React to an actor being removed from the ranch model.
    */
-  protected deleteMonster (id :number) :void {
+  protected deleteActor (id :number) :void {
     const actorInfo = this._actors.get(id)
     if (!actorInfo) return
     this._actors.delete(id)
@@ -669,7 +675,7 @@ export class RanchMode extends Mode
     if (change.type === "set") {
       this.updateActor(change.key, change.value)
     } else {
-      this.deleteMonster(change.key)
+      this.deleteActor(change.key)
     }
   }
 
@@ -686,7 +692,7 @@ export class RanchMode extends Mode
     }
   }
 
-  private static MONSTER_MOVE_DISTANCE_PER_SECOND = 0.8
+  private static ACTOR_MOVE_DISTANCE_PER_SECOND = 0.8
   private static CAMERA_HEIGHT = 7 // starting y coordinate of camera
   private static CAMERA_SETBACK = 14 // starting z coordinate of camera
 }
