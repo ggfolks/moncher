@@ -323,6 +323,7 @@ export class RanchMode extends Mode
   protected ranchLoaded (scene :Object3D) :Object3D|undefined {
     const navMesh = spliceNamedChild(scene, "NavMesh")
     if (navMesh instanceof Mesh) {
+      this._navMesh = navMesh
       navMesh.geometry.computeBoundingBox()
       const box = navMesh.geometry.boundingBox
       log.info("Got the navmesh", "box", box)
@@ -575,14 +576,15 @@ export class RanchMode extends Mode
    * Place an egg or food. */
   protected doPlacement (pos :vec2) :void
   {
+    // use the navmesh for validating placement, if available
+    const obj = this._navMesh || this._obj.read(this._terrainId)
     //log.debug("Got egg placing request", "pos", pos)
-    const terrain = this._obj.read(this._terrainId)!
     const caster = new Raycaster()
     const ndc = new Vector2(
         (pos[0] / window.innerWidth) * 2 - 1,
         (pos[1] / window.innerHeight) * -2 + 1)
     caster.setFromCamera(ndc, this._obj.read(this._cameraId) as Camera)
-    for (const result of caster.intersectObject(terrain, true)) {
+    for (const result of caster.intersectObject(obj, true)) {
       this.doPlacement2(result.point)
       return
     }
@@ -669,6 +671,9 @@ export class RanchMode extends Mode
 
   protected _cameraId! :ID
   protected _terrainId! :ID
+
+  /** Our navigation mesh, if loaded. */
+  protected _navMesh? :Mesh
 
   protected readonly _actors :Map<number, ActorInfo> = new Map()
 
