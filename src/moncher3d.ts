@@ -230,7 +230,7 @@ export class RanchMode extends Mode
     const body = new DenseValueComponent<Body>("body", new Body())
     const state = this._state =
         new DenseValueComponent<ActorState>("state",
-          new ActorState(0, 0, 0, 0, ActorAction.None))
+          new ActorState(0, 0, ActorAction.None))
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
     const lerp = this._lerp = new SparseValueComponent<LerpRec|undefined>("lerp", undefined)
     const graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))

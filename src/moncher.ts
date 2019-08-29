@@ -16,16 +16,18 @@ import {MonsterMenu} from "./monstermenu"
 export class ActorKind
 {
   // Big fat TODO...
-  static readonly EGG :ActorKind = new ActorKind(false, false, false)
-  static readonly FOOD :ActorKind = new ActorKind(false, false, false)
+  static readonly EGG :ActorKind = new ActorKind(false, false, false, 0)
+  static readonly FOOD :ActorKind = new ActorKind(false, false, false, 0)
   static readonly RUNNER :ActorKind = new ActorKind(true, false, false)
   static readonly HEALER :ActorKind = new ActorKind(false, true, true)
+  static readonly LOBBER :ActorKind = new ActorKind(true, false, false)
   static readonly TESTER :ActorKind = new ActorKind(true, true, true)
 
   private constructor (
     readonly canRangeAttack :boolean,
     readonly canMeleeAttack :boolean,
     readonly canHeal :boolean,
+    readonly maxSpeed :number = .025 // units per second
   ) {}
 }
 
@@ -80,16 +82,192 @@ export class ActorState
     readonly x :number,
     /** Visual Y coordinate (tile coordinates, floating point). */
     readonly y :number,
-    /** The actor's current amount of HP, possibly 0 if deceased during battle. */
-    readonly health :number,
-    /** The actor's current action points. */
-    readonly actionPts :number,
     /** TODO */
     readonly action :ActorAction,
   ) {}
+
+  // Legacy // TODO: Remove
+  get actionPts () :number
+  {
+    return 20
+  }
 }
 
-type ScoreFn = (x :number, y :number) => number
+/**
+ * An actor.
+ */
+class ActorNew
+{
+  /** All actors have health. */
+  health :number
+
+  constructor (
+    readonly id :number,
+    readonly config :ActorConfig,
+    public x :number,
+    public y :number,
+    public action :ActorAction,
+  ) {
+    this.health = config.startingHealth
+    this.postConstruct()
+  }
+
+  /**
+   * Additional constructor logic for subclasses without having to reimpl the constructor. */
+  protected postConstruct () :void
+  {
+  }
+
+  isMobile () :boolean
+  {
+    switch (this.config.kind) {
+      case ActorKind.EGG: return false
+      case ActorKind.FOOD: return false
+      default: return (this.action !== ActorAction.Hatching)
+    }
+  }
+
+  tick (model :RanchModelNew) :void
+  {
+    // nothing by default
+  }
+
+  toState () :ActorState
+  {
+    return new ActorState(this.x, this.y, this.action)
+  }
+
+  setLocation (x :number, y :number) :void
+  {
+    this.x = x
+    this.y = y
+  }
+
+  moveTowards (x :number, y :number) :void
+  {
+  }
+}
+
+class Egg extends ActorNew
+{
+  protected postConstruct () :void {
+    // force health because we're going to do modify it in tick
+    this.health = 50
+  }
+
+  tick (model :RanchModelNew) :void {
+    this.health -= 1
+    if (this.action === ActorAction.None && (this.health < 20)) {
+      this.action = ActorAction.Hatching
+      model.addActor(this.config.spawn!, this.x, this.y, ActorAction.Hatching)
+    }
+  }
+}
+
+class Monster extends ActorNew
+{
+  tick (model :RanchModelNew) :void {
+    // TODO!
+  }
+}
+
+class Food extends ActorNew
+{
+  tick (model :RanchModelNew) :void {
+    this.health -= .01
+  }
+}
+
+export class RanchModelNew
+{
+  /** The public view of monster state. */
+  get actors () :RMap<number, ActorState> {
+    return this._actors
+  }
+
+  /** The configuration data for an actor, guaranteed to be populated prior to
+   *  'actors' being updated. */
+  readonly actorConfig :Map<number, ActorConfig> = new Map<number, ActorConfig>()
+
+  /**
+   * Le constructor. */
+  constructor (
+  ) {
+  }
+
+  addActor (config :ActorConfig, x :number, y :number, action = ActorAction.None) :void
+  {
+    this.validateConfig(config)
+
+    const id = this._nextActorId++
+    const clazz :typeof ActorNew = this.pickActorClass(config)
+    const data = new clazz(id, config, x, y, action)
+    this.actorConfig.set(id, config)
+    this._actorData.set(id, data)
+    // finally, publish the state of the monster
+    this._actors.set(data.id, data.toState())
+  }
+
+  protected validateConfig (config :ActorConfig)
+  {
+    switch (config.kind) {
+      case ActorKind.EGG:
+        if (!config.spawn) {
+          throw new Error("Eggs must specify a spawn config.")
+        }
+        // validate the spawn too
+        this.validateConfig(config.spawn)
+        break
+    }
+  }
+
+  protected pickActorClass (config :ActorConfig) :typeof ActorNew
+  {
+    switch (config.kind) {
+      case ActorKind.EGG: return Egg
+      case ActorKind.FOOD: return Food
+      default: return Monster
+    }
+  }
+
+  protected removeActor (data :ActorNew)
+  {
+    this._actorData.delete(data.id)
+    this._actors.delete(data.id)
+    // unmap the config last in the reverse of how we started
+    this.actorConfig.delete(data.id)
+  }
+
+  getNearbyActors (x :number, y :number, maxDist :number = Math.sqrt(2)) :ActorNew[]
+  {
+    // TODO
+    return []
+  }
+
+  /**
+   * Advance the simulation.
+   */
+  tick () :void
+  {
+    for (const actor of this._actorData.values()) {
+      actor.tick(this)
+    }
+
+    // publish all changes..
+    for (const actor of this._actorData.values()) {
+      if (actor.health <= 0) {
+        this.removeActor(actor)
+      } else {
+        this._actors.set(actor.id, actor.toState())
+      }
+    }
+  }
+
+  protected _nextActorId :number = 0
+  protected readonly _actorData :Map<number, ActorNew> = new Map()
+  /** A mutable view of our public actors RMap. */
+  protected readonly _actors :MutableMap<number, ActorState> = MutableMap.local()
+}
 
 /**
  * An actor.
@@ -144,8 +322,7 @@ class Actor
 
   toState () :ActorState
   {
-    // TODO: Rethink? We keep monsters in tile coords but we center it for the visual state
-    return new ActorState(this.x + .5, this.y + .5, this.health, this.actionPts, this.action)
+    return new ActorState(this.x, this.y, this.action)
   }
 
   setLocation (x :number, y :number) :void
@@ -188,6 +365,8 @@ class Actor
   /** How much memory to keep. */
   protected static readonly MEMORY_SIZE = 16
 }
+
+type ScoreFn = (x :number, y :number) => number
 
 export class RanchModel
 {

@@ -35,7 +35,7 @@ export class MonsterDb
       faint:    "monsters/LobberBlue.glb#Faint",
       sleep:    "monsters/LobberBlue.glb#Sleep",
       wakeUp:   "monsters/LobberBlue.glb#WakeUp",
-    }))
+    }, ActorKind.LOBBER))
 
     monsters.push(new ActorConfig(undefined, <ActorModel>{
       model:    "monsters/LobberGreen.glb",
@@ -47,7 +47,7 @@ export class MonsterDb
 
       // TODO: use correct hatch animation
       hatch:    "monsters/LobberBlue.glb#Hatch",
-    }))
+    }, ActorKind.LOBBER))
 
     monsters.push(new ActorConfig(undefined, <ActorModel>{
       idle:     "monsters/LobberRed.glb#Idle",
@@ -59,7 +59,7 @@ export class MonsterDb
 
       // TODO: use correct hatch animation
       hatch:    "monsters/LobberBlue.glb#Hatch",
-    }))
+    }, ActorKind.LOBBER))
   }
 
   private static _monsters? :ActorConfig[]
