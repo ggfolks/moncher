@@ -188,7 +188,7 @@ class Monster extends Actor
         if (Math.random() < .025) {
           this.setLocation(Math.random(), Math.random())
         }
-        break;
+        break
     }
   }
 
@@ -266,7 +266,7 @@ export class RanchModel
   getNearestActor (pos :vec2, predicate :(actor :Actor) => boolean) :Actor|undefined
   {
     let nearest = undefined
-    let dist = Number.MAX_VALUE
+    let dist = Number.POSITIVE_INFINITY
     for (const actor of this._actorData.values()) {
       if (predicate(actor)) {
         const dd = vec2.squaredDistance(pos, actor.pos)
