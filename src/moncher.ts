@@ -44,7 +44,6 @@ export interface ActorModel {
 export class ActorConfig
 {
   constructor (
-    /** What the actor looks like in 2D. */
     readonly kind :ActorKind = ActorKind.TESTER,
     readonly model :ActorModel,
     readonly spawn? :ActorConfig,

@@ -13,6 +13,8 @@ import {
   WebGLRenderer,
 } from "three"
 
+//import {PathFinding} from "three-pathfinding"
+
 import {Body} from "cannon"
 
 import {Clock} from "tfw/core/clock"
@@ -70,7 +72,7 @@ class ActorInfo
   ) {}
 }
 
-class LerpRec
+class PathRec
 {
   constructor (
     /** The source location. */
@@ -79,43 +81,43 @@ class LerpRec
     public dest :Vector3,
     /** How long shall we take? */
     readonly duration :number,
-    /** Ending timestamp (start time + duration) (filled-in by LerpSystem) */
+    /** Ending timestamp (start time + duration) (filled-in by PathSystem) */
     public stamp? :number
   ) {}
 }
 
-class LerpSystem extends System
+class PathSystem extends System
 {
   constructor (
     domain :Domain,
     readonly trans :TransformComponent,
-    readonly lerp :Component<LerpRec|undefined>,
+    readonly paths :Component<PathRec|undefined>,
     readonly getY :(x :number, z :number) => number,
   ) {
-    super(domain, Matcher.hasAllC(trans.id, lerp.id))
+    super(domain, Matcher.hasAllC(trans.id, paths.id))
   }
 
   update (clock :Clock) {
     const pos :Vector3 = new Vector3()
     this.onEntities(id => {
-      const lerpRec = this.lerp.read(id)
-      if (lerpRec) {
-        if (!lerpRec.stamp) {
+      const pathRec = this.paths.read(id)
+      if (pathRec) {
+        if (!pathRec.stamp) {
           // calculate the end time for the walk
-          lerpRec.stamp = clock.time + lerpRec.duration
+          pathRec.stamp = clock.time + pathRec.duration
           // calculate the direction
-          const subbed = new Vector3().subVectors(lerpRec.dest, lerpRec.src)
+          const subbed = new Vector3().subVectors(pathRec.dest, pathRec.src)
           subbed.y = 0
           this.trans.updateQuaternion(id,
               new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), subbed.normalize()))
         }
-        const timeLeft = lerpRec.stamp - clock.time
+        const timeLeft = pathRec.stamp - clock.time
         if (timeLeft <= 0) {
-          this.trans.updatePosition(id, lerpRec.dest)
-          this.lerp.update(id, undefined)
+          this.trans.updatePosition(id, pathRec.dest)
+          this.paths.update(id, undefined)
           this.trans.updateQuaternion(id, new Quaternion()) // face forward
         } else {
-          pos.lerpVectors(lerpRec.dest, lerpRec.src, timeLeft / lerpRec.duration)
+          pos.lerpVectors(pathRec.dest, pathRec.src, timeLeft / pathRec.duration)
           // but override the Y value according to terrain?
           pos.y = this.getY(pos.x, pos.z)
           this.trans.updatePosition(id, pos)
@@ -233,12 +235,12 @@ export class RanchMode extends Mode
         new DenseValueComponent<ActorState>("state",
           new ActorState(0, 0, ActorAction.None))
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
-    const lerp = this._lerp = new SparseValueComponent<LerpRec|undefined>("lerp", undefined)
+    const paths = this._paths = new SparseValueComponent<PathRec|undefined>("paths", undefined)
     const graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
 
     const domain = this._domain = new Domain({},
-        {trans, obj, mixer, body, state, lerp, hovers, graph})
-    /*const lerpsys =*/ this._lerpsys = new LerpSystem(domain, trans, lerp, this.getY.bind(this))
+        {trans, obj, mixer, body, state, paths, hovers, graph})
+    this._pathsys = new PathSystem(domain, trans, paths, this.getY.bind(this))
     const scenesys = this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
     /*const graphsys =*/ this._graphsys = new GraphSystem(nodeCtx, domain, graph)
@@ -314,7 +316,7 @@ export class RanchMode extends Mode
   render (clock :Clock) :void {
     this._hand.update()
     this._host.update(clock)
-    this._lerpsys.update(clock)
+    this._pathsys.update(clock)
     this._animsys.update(clock)
     this._scenesys.update()
     this._scenesys.render(this._webGlRenderer)
@@ -324,6 +326,8 @@ export class RanchMode extends Mode
     const navMesh = spliceNamedChild(scene, "NavMesh")
     if (navMesh instanceof Mesh) {
       this._navMesh = navMesh
+
+      // compute the boundaries of the ranch (TEMP?)
       navMesh.geometry.computeBoundingBox()
       const box = navMesh.geometry.boundingBox
       log.info("Got the navmesh", "box", box)
@@ -331,9 +335,19 @@ export class RanchMode extends Mode
       this._extentX = box.max.x - box.min.x
       this._minZ = box.min.z
       this._extentZ = box.max.z - box.min.z
+
+      this.configurePathFinding(navMesh)
       this.setReady()
     }
     return undefined
+  }
+
+  /**
+   * Configure pathfinding once we have the navmesh. */
+  protected configurePathFinding (navMesh :Mesh) :void
+  {
+//    this._pathFinder = new PathFinding()
+//    this._pathFinder.setZoneData(RanchMode.RANCH_ZONE, PathFinding.createZone(navMesh.geometry))
   }
 
   /**
@@ -372,9 +386,9 @@ export class RanchMode extends Mode
     // store their state in the entity system...
     this._state.update(actorInfo.entityId, state)
 
-    // then check their location against their LerpRec...
+    // then check their location against their PathRec...
     const pos = this.location2to3(state.x, state.y)
-    const oldRec = this._lerp.read(actorInfo.entityId)
+    const oldRec = this._paths.read(actorInfo.entityId)
     if (oldRec && vec3NearlyEqual(oldRec.dest, pos)) {
       // just update the position in the old record
       oldRec.dest = pos
@@ -388,8 +402,8 @@ export class RanchMode extends Mode
       return
     }
     const duration = (oldPos.distanceTo(pos) * 1000) / RanchMode.ACTOR_MOVE_DISTANCE_PER_SECOND
-    const rec = new LerpRec(oldPos, pos, duration)
-    this._lerp.update(actorInfo.entityId, rec)
+    const rec = new PathRec(oldPos, pos, duration)
+    this._paths.update(actorInfo.entityId, rec)
   }
 
   protected addActor (id :number, state :ActorState) :ActorInfo
@@ -459,23 +473,23 @@ export class RanchMode extends Mode
     }
 
     if (cfg.model.walk) {
-      graphCfg.readLerp = <NodeConfig>{
+      graphCfg.readPath = <NodeConfig>{
         type: "readComponent",
-        component: "lerp",
+        component: "paths",
       }
-      graphCfg.noLerp = <NodeConfig>{
+      graphCfg.noPath = <NodeConfig>{
         type: "equals",
-        x: "readLerp",
+        x: "readPath",
         y: undefined,
       }
-      graphCfg.yesLerp = <NodeConfig>{
+      graphCfg.yesPath = <NodeConfig>{
         type: "not",
-        input: "noLerp",
+        input: "noPath",
       }
-      graphCfg.walk = animation(cfg.model.walk, "yesLerp")
+      graphCfg.walk = animation(cfg.model.walk, "yesPath")
 
       if (cfg.model.idle && cfg.kind !== ActorKind.EGG) {
-        let idleInput = "noLerp"
+        let idleInput = "noPath"
         if (cfg.model.hatch) {
           graphCfg.notHatchingOrFinishedHatching = <NodeConfig>{
             type: "or",
@@ -483,30 +497,11 @@ export class RanchMode extends Mode
           }
           graphCfg.isIdle = <NodeConfig>{
             type: "and",
-            inputs: [ "noLerp", "notHatchingOrFinishedHatching" ],
+            inputs: [ "noPath", "notHatchingOrFinishedHatching" ],
           }
           idleInput = "isIdle"
         }
         graphCfg.idle = animation(cfg.model.idle, idleInput)
-
-//        if (cfg.model.model.indexOf("LobberBlue") !== -1) {
-//          log.info("Spawning lobber!")
-//          graphCfg.monsterLog = <NodeConfig>{
-//            type: "log",
-//            message: "isIdle",
-//            input: idleInput,
-//          }
-//          graphCfg.logNoLerp = <NodeConfig>{
-//            type: "log",
-//            message: "isNoLerp",
-//            input: "noLerp",
-//          }
-//          graphCfg.logHatching = <NodeConfig>{
-//            type: "log",
-//            message: "isHatching",
-//            input: "isHatching",
-//          }
-//        }
       }
     }
 
@@ -517,7 +512,7 @@ export class RanchMode extends Mode
         obj: {type: "gltf", url: cfg.model.model},
         state: {initial: state},
         mixer: {},
-        lerp: {},
+        paths: {},
         graph: graphCfg,
       },
     })
@@ -603,7 +598,7 @@ export class RanchMode extends Mode
       const foodModel :ActorModel = {
         model: "monsters/Acorn.glb",
       }
-      actorConfig = new ActorConfig(undefined, foodModel, ActorKind.FOOD)
+      actorConfig = new ActorConfig(ActorKind.FOOD, foodModel)
     }
 
     const loc :vec2 = this.location3to2(pos)
@@ -646,6 +641,8 @@ export class RanchMode extends Mode
 
   protected _uiState :UiState = UiState.Default
 
+//  protected _pathFinder :PathFinding
+
   protected _ready :boolean = false
   protected _minX = 0
   protected _extentX = 1
@@ -659,9 +656,9 @@ export class RanchMode extends Mode
   protected _trans! :TransformComponent
   protected _obj! :Component<Object3D>
   protected _state! :Component<ActorState>
-  protected _lerp! :Component<LerpRec|undefined>
+  protected _paths! :Component<PathRec|undefined>
   protected _graphsys! :GraphSystem
-  protected _lerpsys! :LerpSystem
+  protected _pathsys! :PathSystem
   protected _scenesys! :SceneSystem
   protected _animsys! :AnimationSystem
   protected _domain! :Domain
@@ -698,4 +695,6 @@ export class RanchMode extends Mode
   private static ACTOR_MOVE_DISTANCE_PER_SECOND = 0.8
   private static CAMERA_HEIGHT = 7 // starting y coordinate of camera
   private static CAMERA_SETBACK = 14 // starting z coordinate of camera
+
+  private static RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
 }
