@@ -160,39 +160,41 @@ class Egg extends Actor
 
 class Monster extends Actor
 {
+  protected static DEBUG_FACTOR = 1
+
   tick (model :RanchModel) :void {
     switch (this.action) {
       case ActorAction.Hatching:
-        if (++this._counter >= 20) {
+        if (++this._counter >= 20 / Monster.DEBUG_FACTOR) {
           this.action = ActorAction.Idle
         }
         break
 
       case ActorAction.Eating:
-        if (++this._counter >= 20) {
+        if (++this._counter >= 20 / Monster.DEBUG_FACTOR) {
           this.setAction(ActorAction.Sleeping)
         }
         break
 
       case ActorAction.Sleeping:
-        if (++this._counter >= 100) {
+        if (++this._counter >= 100 / Monster.DEBUG_FACTOR) {
           this.setAction(ActorAction.Waking)
         }
         break
 
       case ActorAction.Waking:
-        if (++this._counter >= 10) {
+        if (++this._counter >= 10 / Monster.DEBUG_FACTOR) {
           this.setAction(ActorAction.Idle)
         }
         break
 
       default:
-        if (++this._hunger > 100) {
+        if (++this._hunger > 100 / Monster.DEBUG_FACTOR) {
           const food = model.getNearestActor(this.pos,
               actor => (actor.config.kind === ActorKind.FOOD))
           if (food) {
             if (vec2.distance(food.pos, this.pos) < .01) {
-              if (++this._counter >= 10) {
+              if (++this._counter >= 10 / Monster.DEBUG_FACTOR) {
                 food.health -= 10
                 this._hunger = 0
                 this.setAction(ActorAction.Eating)
