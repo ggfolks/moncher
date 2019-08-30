@@ -41,7 +41,7 @@ export class Hud
     const getActionVisible = (v :ActionOpt) => (v !== undefined)
     const getActionText = (v :ActionOpt) => v ? v.label : ""
     const getActionEnabled = (v :ActionOpt) => v && !v.disabled
-    const makeButtonModel = (v :Mutable<ActionOpt>) => {
+    const makeButtonModel = (v :Value<ActionOpt>) => {
       return {
         visible: v.map(getActionVisible),
         text: v.map(getActionText),
@@ -61,14 +61,13 @@ export class Hud
             type: "label",
             text: name + ".text",
             style: {
-              font: {size: 64},
+              font: {size: 128},
             },
           },
         },
       }
     }
 
-    log.debug("Gruntle: " + (makeButtonConfig !== undefined))
     const model :ModelData = {
       status: {
         text: this.statusLabel,
