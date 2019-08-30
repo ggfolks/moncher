@@ -701,15 +701,25 @@ export class RanchMode extends Mode
 
   protected getY (x :number, z :number) :number
   {
-    const terrain = this._navMesh || this._obj.read(this._terrainId)
+    // Try to use the navmesh first, but if we get no hits we'll circle back to the terrain anyway
+    let terrain = this._navMesh || this._obj.read(this._terrainId)
     if (terrain) {
       const HAWK_HEIGHT = 10
       const caster = new Raycaster(new Vector3(x, HAWK_HEIGHT, z), new Vector3(0, -1, 0))
-      const results = caster.intersectObject(terrain, true)
-      for (const result of results) {
-        return HAWK_HEIGHT - result.distance
+
+      while (true) {
+        const results = caster.intersectObject(terrain, true)
+        for (const result of results) {
+          return HAWK_HEIGHT - result.distance
+        }
+        if (terrain === this._navMesh) {
+          terrain = this._obj.read(this._terrainId)
+        } else {
+          break
+        }
       }
     }
+    log.debug("Didn't find decent height")
     return 2.5 // bogus fallback height
   }
 
