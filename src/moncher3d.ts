@@ -675,7 +675,8 @@ export class RanchMode extends Mode
   protected doPlacement (pos :vec2) :void
   {
     // use the navmesh for validating placement, if available
-    const obj = this._navMesh || this._obj.read(this._terrainId)
+    const obj = this._navMesh || this._terrain
+    if (!obj) return
     //log.debug("Got egg placing request", "pos", pos)
     const caster = new Raycaster()
     const ndc = new Vector2(
@@ -706,7 +707,7 @@ export class RanchMode extends Mode
   protected getY (x :number, z :number) :number
   {
     // Try to use the navmesh first, but if we get no hits we'll circle back to the terrain anyway
-    let terrain = this._navMesh || this._obj.read(this._terrainId)
+    let terrain = this._navMesh || this._terrain
     if (terrain) {
       const HAWK_HEIGHT = 10
       const caster = new Raycaster(new Vector3(x, HAWK_HEIGHT, z), new Vector3(0, -1, 0))
@@ -717,7 +718,7 @@ export class RanchMode extends Mode
           return HAWK_HEIGHT - result.distance
         }
         if (terrain === this._navMesh) {
-          terrain = this._obj.read(this._terrainId)
+          terrain = this._terrain!
         } else {
           break
         }
