@@ -168,6 +168,24 @@ class Monster extends Actor
         }
         break
 
+      case ActorAction.Eating:
+        if (++this._counter >= 20) {
+          this.setAction(ActorAction.Sleeping)
+        }
+        break
+
+      case ActorAction.Sleeping:
+        if (++this._counter >= 100) {
+          this.setAction(ActorAction.Waking)
+        }
+        break
+
+      case ActorAction.Waking:
+        if (++this._counter >= 10) {
+          this.setAction(ActorAction.Idle)
+        }
+        break
+
       default:
         if (++this._hunger > 100) {
           const food = model.getNearestActor(this.pos,
@@ -177,9 +195,11 @@ class Monster extends Actor
               if (++this._counter >= 10) {
                 food.health -= 10
                 this._hunger = 0
+                this.setAction(ActorAction.Eating)
               }
             } else {
               vec2.copy(this.pos, food.pos)
+              // TODO: maybe we split off an ActorAction.FindingFood or Walking
               this._counter = 0
             }
             break
@@ -193,6 +213,12 @@ class Monster extends Actor
         }
         break
     }
+  }
+
+  protected setAction (action :ActorAction) :void
+  {
+    this.action = action
+    this._counter = 0
   }
 
   protected _counter :number = 0

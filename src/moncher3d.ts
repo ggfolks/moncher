@@ -430,17 +430,20 @@ export class RanchMode extends Mode
       return cfg
     }
 
+    // Always add graph nodes to read the state
+    graphCfg.state = <NodeConfig>{
+      type: "readComponent",
+      component: "state",
+    }
+    graphCfg.action = <NodeConfig>{
+      type: "property",
+      input: "state",
+      name: "action",
+    }
+
     // add animation logic for animations we support
+    const isIdle :string[] = []
     if (cfg.model.hatch) {
-      graphCfg.state = <NodeConfig>{
-        type: "readComponent",
-        component: "state",
-      }
-      graphCfg.action = <NodeConfig>{
-        type: "property",
-        input: "state",
-        name: "action",
-      }
       graphCfg.isHatching = <NodeConfig>{
         type: "equals",
         x: "action",
@@ -451,6 +454,7 @@ export class RanchMode extends Mode
       graphCfg.notHatching = <NodeConfig>{type: "not", input: "isHatching"}
 
       if (isEgg) {
+        isIdle.push("notHatching")
         if (cfg.model.idle) {
           graphCfg.idle = animation(cfg.model.idle, "notHatching")
         }
@@ -472,6 +476,7 @@ export class RanchMode extends Mode
       }
     }
 
+    // TODO A real Walking activity would simplify this, TODO when we walk on the navmesh
     if (cfg.model.walk) {
       graphCfg.readPath = <NodeConfig>{
         type: "readComponent",
@@ -487,21 +492,66 @@ export class RanchMode extends Mode
         input: "noPath",
       }
       graphCfg.walk = animation(cfg.model.walk, "yesPath")
+      isIdle.push("noPath")
 
-      if (cfg.model.idle && cfg.kind !== ActorKind.EGG) {
-        let idleInput = "noPath"
-        if (cfg.model.hatch) {
-          graphCfg.notHatchingOrFinishedHatching = <NodeConfig>{
-            type: "or",
-            inputs: ["notHatching", "hatch"]
-          }
-          graphCfg.isIdle = <NodeConfig>{
-            type: "and",
-            inputs: [ "noPath", "notHatchingOrFinishedHatching" ],
-          }
-          idleInput = "isIdle"
+      if (cfg.model.hatch && cfg.kind !== ActorKind.EGG) {
+        // make us go idle right away when hatching has finished
+        graphCfg.notHatchingOrFinishedHatching = <NodeConfig>{
+          type: "or",
+          inputs: ["notHatching", "hatch"]
         }
-        graphCfg.idle = animation(cfg.model.idle, idleInput)
+        isIdle.push("notHatchingOrFinishedHatching")
+      }
+    }
+
+    if (cfg.model.sleep && cfg.model.faint) {
+      graphCfg.isSleeping = <NodeConfig>{
+        type: "equals",
+        x: "action",
+        y: ActorAction.Sleeping,
+      }
+      graphCfg.triggerSleep = <NodeConfig>{
+        type: "and",
+        inputs: ["isSleeping", "noPath"],
+      }
+      graphCfg.faintFirst = animation(cfg.model.faint, "triggerSleep", 1)
+      graphCfg.sleep = animation(cfg.model.sleep, "faintFirst")
+      graphCfg.notSleeping = <NodeConfig>{
+        type: "not",
+        input: "isSleeping",
+      }
+      isIdle.push("notSleeping")
+    }
+
+    if (cfg.model.wakeUp) {
+      graphCfg.isWaking = <NodeConfig>{
+        type: "equals",
+        x: "action",
+        y: ActorAction.Waking,
+      }
+      graphCfg.triggerWake = <NodeConfig>{
+        type: "and",
+        inputs: ["isWaking", "noPath"],
+      }
+      graphCfg.wake = animation(cfg.model.wakeUp, "triggerWake", 1)
+      graphCfg.notWaking = <NodeConfig>{type: "not", input: "isWaking"}
+      graphCfg.notWakingOrFinishedWaking = <NodeConfig>{
+        type: "or",
+        inputs: ["notWaking", "wake"],
+      }
+      isIdle.push("notWakingOrFinishedWaking")
+    }
+
+    // trigger idle when all the idle conditions are true
+    if (cfg.model.idle) {
+      if (isIdle.length === 1) {
+        graphCfg.idle = animation(cfg.model.idle, isIdle[0])
+      } else {
+        graphCfg.isIdle = <NodeConfig>{
+          type: "and",
+          inputs: isIdle,
+        }
+        graphCfg.idle = animation(cfg.model.idle, "isIdle")
       }
     }
 

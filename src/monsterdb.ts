@@ -45,8 +45,10 @@ export class MonsterDb
       hitReact: "monsters/LobberGreen.glb#HitReact",
       faint:    "monsters/LobberGreen.glb#Faint",
 
-      // TODO: use correct hatch animation
+      // TODO: use correct hatch / sleep animation
       hatch:    "monsters/LobberBlue.glb#Hatch",
+      sleep:    "monsters/LobberBlue.glb#Sleep",
+      wakeUp:   "monsters/LobberBlue.glb#WakeUp",
     }))
 
     monsters.push(new ActorConfig(ActorKind.LOBBER, <ActorModel>{
@@ -57,8 +59,10 @@ export class MonsterDb
       hitReact: "monsters/LobberRed.glb#HitReact",
       faint:    "monsters/LobberRed.glb#Faint",
 
-      // TODO: use correct hatch animation
+      // TODO: use correct hatch / sleep animation
       hatch:    "monsters/LobberBlue.glb#Hatch",
+      sleep:    "monsters/LobberBlue.glb#Sleep",
+      wakeUp:   "monsters/LobberBlue.glb#WakeUp",
     }))
   }
 
