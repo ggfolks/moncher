@@ -23,6 +23,7 @@ import {MapChange} from "tfw/core/rcollect"
 import {Mutable} from "tfw/core/react"
 import {log} from "tfw/core/util"
 import {Hand, Pointer} from "tfw/input/hand"
+import {Keyboard} from "tfw/input/keyboard"
 import {
   Component,
   DenseValueComponent,
@@ -196,6 +197,8 @@ export class RanchMode extends Mode
 
     this.onDispose.add(this._hud = new Hud(this._host, app.renderer))
     this.setUiState(UiState.Default)
+
+    this.onDispose.add(Keyboard.instance.getKeyState(32).onChange((ov, nv) => this.swapTerrain()))
   }
 
   protected configureScene (app :App) :void {
@@ -340,6 +343,7 @@ export class RanchMode extends Mode
   }
 
   protected ranchLoaded (scene :Object3D) :Object3D|undefined {
+    this._terrain = scene
     const navMesh = spliceNamedChild(scene, "NavMesh")
     if (navMesh instanceof Mesh) {
       this._navMesh = navMesh
@@ -739,6 +743,21 @@ export class RanchMode extends Mode
     return vec2.fromValues(x2, y2)
   }
 
+  protected swapTerrain () :void
+  {
+    if (!this._terrain || !this._navMesh) return
+    const obj = this._obj.read(this._terrainId)
+    if (obj === this._terrain) {
+      this._obj.update(this._terrainId, this._navMesh)
+      this._scenesys.scene.add(this._navMesh)
+      this._scenesys.scene.remove(this._terrain)
+    } else {
+      this._obj.update(this._terrainId, this._terrain)
+      this._scenesys.scene.add(this._terrain)
+      this._scenesys.scene.remove(this._navMesh)
+    }
+  }
+
   /** Our heads-up-display: global UI. */
   protected _hud :Hud
 
@@ -771,6 +790,7 @@ export class RanchMode extends Mode
 
   /** Our navigation mesh, if loaded. */
   protected _navMesh? :Mesh
+  protected _terrain? :Object3D
 
   protected readonly _actors :Map<number, ActorInfo> = new Map()
 
@@ -784,7 +804,8 @@ export class RanchMode extends Mode
 
   protected readonly _handChanged = (change :MapChange<number, Pointer>) => {
     switch (this._uiState) {
-      default: return
+      default:
+        break
 
       case UiState.PlacingEgg:
       case UiState.PlacingFood:
