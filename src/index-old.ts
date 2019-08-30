@@ -245,7 +245,9 @@ let tiles = [ roadN, roadS, roadE, roadW,
 let model :GridTileSceneModel = generateGridModel(tiles.concat(additional), 30, 30, gridConfig)
 let ranch :OldRanchModel = new OldRanchModel(model)
 app.setMode(new MonsterRancherMode(app, ranch))
-ranch.addMonster(MonsterDb.getRandomEgg(), 0, 0)
+const monst :PropTileInfo = new PropTileInfo(
+  "mlp", "monsters/_0018_RunnerGreen.png", undefined, undefined, 13)
+ranch.addMonster(MonsterDb.getRandomMonster(), monst, 0, 0)
 
 
 setInterval(() => { ranch.tick() }, 800)

@@ -7,7 +7,7 @@ import {Pointer} from "tfw/input/hand"
 import {Texture, Tile} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {App} from "./app"
-import {GridTileSceneModel, GridTileSceneViewMode} from "./gridtiles"
+import {GridTileSceneModel, GridTileSceneViewMode, PropTileInfo} from "./gridtiles"
 import {MonsterMenu} from "./monstermenu"
 
 import {
@@ -129,6 +129,10 @@ export class OldRanchModel
    *  'actors' being updated. */
   actorConfig :Map<number, ActorConfig> = new Map<number, ActorConfig>()
 
+  /**
+   * PropTileInfo for the actors. */
+  actorPropInfo :Map<number, PropTileInfo> = new Map<number, PropTileInfo>()
+
   constructor (
     /** The model we're on. */
     readonly model :GridTileSceneModel
@@ -139,13 +143,16 @@ export class OldRanchModel
   /**
    * Add a new monster.
    */
-  addMonster (config :ActorConfig, x :number, y :number, action = ActorAction.None) :void
+  addMonster (
+      config :ActorConfig, info :PropTileInfo, x :number, y :number, action = ActorAction.None)
+      :void
   {
     this.validateConfig(config)
 
     const id = this._nextActorId++
     const data = new OldActor(id, config, Math.trunc(x), Math.trunc(y), action)
     this.actorConfig.set(id, config)
+    this.actorPropInfo.set(id, info)
     this._actorData.set(id, data)
     // move the monster to its current location to map it by location
     this.moveMonster(data, data.x, data.y)
@@ -259,8 +266,12 @@ export class OldRanchModel
           switch (monst.action) {
             default:
               if (monst.maybeSetAction(6, ActorAction.Hatching)) {
+                // TODO: we have a bogus proptileinfo here
+                log.warn("Spawning eggs sorta not working in old stuff")
+                const spawnInfo = new PropTileInfo("", "")
                 // spawn the baby (spawn is asserted as present because we check when egg added)
-                this.addMonster(monst.config.spawn!, monst.x, monst.y, ActorAction.Hatching)
+                this.addMonster(
+                    monst.config.spawn!, spawnInfo, monst.x, monst.y, ActorAction.Hatching)
               }
               break
 
@@ -473,7 +484,8 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
       if (!cfg) {
         throw new Error("Monster doesn't have a config in the model")
       }
-      if (!cfg.info) {
+      const info = this._ranch.actorPropInfo.get(id)
+      if (!info) {
         if (this._doPropSpriteWarning) {
           log.warn("Not creating sprites for monsters with missing PropTileInfo")
           this._doPropSpriteWarning = false
@@ -485,7 +497,7 @@ export class MonsterRancherMode extends GridTileSceneViewMode {
       this._actors.set(id, sprite)
       this.onDispose.add(sprite.disposer)
       // TODO: NOTE: we're not honoring the width/height in the PropTileInfo here
-      const img :Subject<Texture> = this.getTexture(cfg.info.base, cfg.info.scale)
+      const img :Subject<Texture> = this.getTexture(info.base, info.scale)
       const remover = img.onValue(tex => {
         sprite!.tile = tex
         // let's just call into updateActorSprite to rejiggle the location

@@ -1,5 +1,4 @@
 import {MutableMap, RMap} from "tfw/core/rcollect"
-import {PropTileInfo} from "./gridtiles"
 
 /**
  * The kind of actor.
@@ -46,9 +45,8 @@ export class ActorConfig
 {
   constructor (
     /** What the actor looks like in 2D. */
-    readonly info? :PropTileInfo, // temp
-    readonly model? :ActorModel,
     readonly kind :ActorKind = ActorKind.TESTER,
+    readonly model? :ActorModel,
     readonly spawn? :ActorConfig,
     readonly startingHealth :number = 50,
     readonly maximumHealth :number = 50,

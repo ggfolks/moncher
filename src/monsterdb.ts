@@ -17,7 +17,7 @@ export class MonsterDb
       idle: "monsters/Egg.glb#Idle",
       hatch: "monsters/Egg.glb#Hatch",
     }
-    return new ActorConfig(undefined, eggModel, ActorKind.EGG, monster)
+    return new ActorConfig(ActorKind.EGG, eggModel, monster)
   }
 
   /**
@@ -25,7 +25,7 @@ export class MonsterDb
   private static _initMonsters () :void {
     const monsters :ActorConfig[] = MonsterDb._monsters = []
 
-    monsters.push(new ActorConfig(undefined, <ActorModel>{
+    monsters.push(new ActorConfig(ActorKind.LOBBER, <ActorModel>{
       model:    "monsters/LobberBlue.glb",
       idle:     "monsters/LobberBlue.glb#Idle",
       hatch:    "monsters/LobberBlue.glb#Hatch",
@@ -35,9 +35,9 @@ export class MonsterDb
       faint:    "monsters/LobberBlue.glb#Faint",
       sleep:    "monsters/LobberBlue.glb#Sleep",
       wakeUp:   "monsters/LobberBlue.glb#WakeUp",
-    }, ActorKind.LOBBER))
+    }))
 
-    monsters.push(new ActorConfig(undefined, <ActorModel>{
+    monsters.push(new ActorConfig(ActorKind.LOBBER, <ActorModel>{
       model:    "monsters/LobberGreen.glb",
       idle:     "monsters/LobberGreen.glb#Idle",
       walk:     "monsters/LobberGreen.glb#Walk",
@@ -47,9 +47,9 @@ export class MonsterDb
 
       // TODO: use correct hatch animation
       hatch:    "monsters/LobberBlue.glb#Hatch",
-    }, ActorKind.LOBBER))
+    }))
 
-    monsters.push(new ActorConfig(undefined, <ActorModel>{
+    monsters.push(new ActorConfig(ActorKind.LOBBER, <ActorModel>{
       idle:     "monsters/LobberRed.glb#Idle",
       walk:     "monsters/LobberRed.glb#Walk",
       attack:   "monsters/LobberRed.glb#Attack",
@@ -59,7 +59,7 @@ export class MonsterDb
 
       // TODO: use correct hatch animation
       hatch:    "monsters/LobberBlue.glb#Hatch",
-    }, ActorKind.LOBBER))
+    }))
   }
 
   private static _monsters? :ActorConfig[]
