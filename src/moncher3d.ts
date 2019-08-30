@@ -515,7 +515,11 @@ export class RanchMode extends Mode
         inputs: ["isSleeping", "noPath"],
       }
       graphCfg.faintFirst = animation(cfg.model.faint, "triggerSleep", 1)
-      graphCfg.sleep = animation(cfg.model.sleep, "faintFirst")
+      graphCfg.reallySleeping = <NodeConfig>{
+        type: "and",
+        inputs: ["isSleeping", "faintFirst"],
+      }
+      graphCfg.sleep = animation(cfg.model.sleep, "reallySleeping")
       graphCfg.notSleeping = <NodeConfig>{
         type: "not",
         input: "isSleeping",
