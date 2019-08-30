@@ -398,9 +398,6 @@ export class RanchMode extends Mode
     if (!cfg) {
       throw new Error("Actor doesn't have a config in the RanchModel")
     }
-    if (!cfg.model) {
-      throw new Error("Actor doesn't have 3d model configuration")
-    }
 
     const graphCfg :GraphConfig = {}
     const animation = (url :string, play :NodeInput<boolean>, reps? :number, clamp? :boolean) => {

@@ -46,7 +46,7 @@ export class ActorConfig
   constructor (
     /** What the actor looks like in 2D. */
     readonly kind :ActorKind = ActorKind.TESTER,
-    readonly model? :ActorModel,
+    readonly model :ActorModel,
     readonly spawn? :ActorConfig,
     readonly startingHealth :number = 50,
     readonly maximumHealth :number = 50,
