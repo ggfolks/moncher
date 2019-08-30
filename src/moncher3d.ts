@@ -455,6 +455,7 @@ export class RanchMode extends Mode
   {
     const cfg = this._ranch.actorConfig.get(id)
     if (!cfg) {
+      // this isn't supposed to happen
       throw new Error("Actor doesn't have a config in the RanchModel")
     }
 
@@ -707,7 +708,7 @@ export class RanchMode extends Mode
 
   protected getY (x :number, z :number) :number
   {
-    const terrain = this._obj.read(this._terrainId)
+    const terrain = this._navMesh || this._obj.read(this._terrainId)
     if (terrain) {
       const HAWK_HEIGHT = 10
       const caster = new Raycaster(new Vector3(x, HAWK_HEIGHT, z), new Vector3(0, -1, 0))
