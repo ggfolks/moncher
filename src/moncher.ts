@@ -166,7 +166,7 @@ class Monster extends Actor
     switch (this.action) {
       case ActorAction.Hatching:
         if (++this._counter >= 20 / Monster.DEBUG_FACTOR) {
-          this.action = ActorAction.Idle
+          this.setAction(ActorAction.Idle)
         }
         break
 
@@ -210,7 +210,7 @@ class Monster extends Actor
         }
 
         // Wander randomly!
-        if (Math.random() < .025) {
+        if (Math.random() < (.025 * Monster.DEBUG_FACTOR)) {
           this.setLocation(Math.random(), Math.random())
         }
         break

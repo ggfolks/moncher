@@ -13,7 +13,7 @@ import {
   WebGLRenderer,
 } from "three"
 
-//import {Pathfinding} from "three-pathfinding"
+import {Pathfinding} from "three-pathfinding"
 
 import {Body} from "cannon"
 
@@ -81,9 +81,12 @@ class PathRec
     public dest :Vector3,
     /** How long shall we take? */
     readonly duration :number,
-    /** Ending timestamp (start time + duration) (filled-in by PathSystem) */
-    public stamp? :number
+    /** The next section of the path. */
+    public next? :PathRec
   ) {}
+
+  /** Ending timestamp (start time + duration) (filled-in by PathSystem) */
+  stamp? :number
 }
 
 class PathSystem extends System
@@ -103,6 +106,9 @@ class PathSystem extends System
       const pathRec = this.paths.read(id)
       if (pathRec) {
         if (!pathRec.stamp) {
+//          log.debug("Starting",
+//            "dest", pathRec.dest,
+//            "src", pathRec.src)
           // calculate the end time for the walk
           pathRec.stamp = clock.time + pathRec.duration
           // calculate the direction
@@ -114,10 +120,19 @@ class PathSystem extends System
         const timeLeft = pathRec.stamp - clock.time
         if (timeLeft <= 0) {
           this.trans.updatePosition(id, pathRec.dest)
-          this.paths.update(id, undefined)
           this.trans.updateQuaternion(id, new Quaternion()) // face forward
+          this.paths.update(id, pathRec.next)
+//          log.debug("Reached destination",
+//            "dest", pathRec.dest)
+          // TODO: carry over remainder time to next segment?
+
         } else {
           pos.lerpVectors(pathRec.dest, pathRec.src, timeLeft / pathRec.duration)
+//          log.debug("Lerping...",
+//            "dest", pathRec.dest,
+//            "src", pathRec.src,
+//            "%", timeLeft / pathRec.duration,
+//            "pos", pos)
           // but override the Y value according to terrain?
           pos.y = this.getY(pos.x, pos.z)
           this.trans.updatePosition(id, pos)
@@ -346,8 +361,8 @@ export class RanchMode extends Mode
    * Configure pathfinding once we have the navmesh. */
   protected configurePathFinding (navMesh :Mesh) :void
   {
-//    this._pathFinder = new Pathfinding()
-//    this._pathFinder.setZoneData(RanchMode.RANCH_ZONE, Pathfinding.createZone(navMesh.geometry))
+    this._pathFinder = new Pathfinding()
+    this._pathFinder.setZoneData(RanchMode.RANCH_ZONE, Pathfinding.createZone(navMesh.geometry))
   }
 
   /**
@@ -388,11 +403,16 @@ export class RanchMode extends Mode
 
     // then check their location against their PathRec...
     const pos = this.location2to3(state.x, state.y)
-    const oldRec = this._paths.read(actorInfo.entityId)
-    if (oldRec && vec3NearlyEqual(oldRec.dest, pos)) {
-      // just update the position in the old record
-      oldRec.dest = pos
-      return
+    let oldRec = this._paths.read(actorInfo.entityId)
+    if (oldRec) {
+      while (oldRec.next) {
+        oldRec = oldRec.next
+      }
+      if (vec3NearlyEqual(oldRec.dest, pos)) {
+        // just update the position in the old record
+        oldRec.dest = pos
+        return
+      }
     }
 
     const oldPos = this._trans.readPosition(actorInfo.entityId, new Vector3())
@@ -401,8 +421,33 @@ export class RanchMode extends Mode
       this._trans.updatePosition(actorInfo.entityId, pos)
       return
     }
-    const duration = (oldPos.distanceTo(pos) * 1000) / RanchMode.ACTOR_MOVE_DISTANCE_PER_SECOND
-    const rec = new PathRec(oldPos, pos, duration)
+//    log.debug("Want new path", "oldPos", oldPos)
+
+    let path :Vector3[]
+    if (this._pathFinder) {
+      const groupId = this._pathFinder.getGroup(RanchMode.RANCH_ZONE, oldPos)
+      const foundPath = this._pathFinder.findPath(oldPos, pos, RanchMode.RANCH_ZONE, groupId)
+      if (foundPath) {
+        path = foundPath
+        path.unshift(oldPos) // we need to manually put the first point at the beginning
+      } else {
+        log.debug("Rejecting bogus path")
+        return
+      }
+
+    } else {
+      path = [oldPos, pos]
+    }
+//    log.debug("Found path!", "path", path)
+
+    let rec :PathRec|undefined = undefined
+    while (path.length > 1) {
+      const dest = path.pop()!
+      const src = path[path.length - 1]
+      const duration = (src.distanceTo(dest) * 1000) / RanchMode.ACTOR_MOVE_DISTANCE_PER_SECOND
+      rec = new PathRec(src, dest, duration, rec)
+//      log.info("Added to end...", "src", src, "dest", dest)
+    }
     this._paths.update(actorInfo.entityId, rec)
   }
 
@@ -597,7 +642,7 @@ export class RanchMode extends Mode
         action: () => this.setUiState(UiState.PlacingEgg),
       })
       this._hud.button2.update({
-        label: "🍕",
+        label: "🌰",
         action: () => this.setUiState(UiState.PlacingFood),
       })
       this._hud.statusLabel.update("")
@@ -695,7 +740,7 @@ export class RanchMode extends Mode
 
   protected _uiState :UiState = UiState.Default
 
-//  protected _pathFinder? :Pathfinding
+  protected _pathFinder? :Pathfinding
 
   protected _ready :boolean = false
   protected _minX = 0
@@ -750,5 +795,5 @@ export class RanchMode extends Mode
   private static CAMERA_HEIGHT = 7 // starting y coordinate of camera
   private static CAMERA_SETBACK = 14 // starting z coordinate of camera
 
-//  private static RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
+  private static RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
 }
