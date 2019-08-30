@@ -13,7 +13,7 @@ import {
   WebGLRenderer,
 } from "three"
 
-//import {PathFinding} from "three-pathfinding"
+//import {Pathfinding} from "three-pathfinding"
 
 import {Body} from "cannon"
 
@@ -346,8 +346,8 @@ export class RanchMode extends Mode
    * Configure pathfinding once we have the navmesh. */
   protected configurePathFinding (navMesh :Mesh) :void
   {
-//    this._pathFinder = new PathFinding()
-//    this._pathFinder.setZoneData(RanchMode.RANCH_ZONE, PathFinding.createZone(navMesh.geometry))
+//    this._pathFinder = new Pathfinding()
+//    this._pathFinder.setZoneData(RanchMode.RANCH_ZONE, Pathfinding.createZone(navMesh.geometry))
   }
 
   /**
@@ -641,7 +641,7 @@ export class RanchMode extends Mode
 
   protected _uiState :UiState = UiState.Default
 
-//  protected _pathFinder :PathFinding
+//  protected _pathFinder? :Pathfinding
 
   protected _ready :boolean = false
   protected _minX = 0
@@ -696,5 +696,5 @@ export class RanchMode extends Mode
   private static CAMERA_HEIGHT = 7 // starting y coordinate of camera
   private static CAMERA_SETBACK = 14 // starting z coordinate of camera
 
-  private static RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
+//  private static RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
 }
