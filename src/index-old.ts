@@ -9,7 +9,7 @@ import {
 import {FringeConfig} from "./fringer"
 import * as Fringer from "./fringer"
 import {CarcTile, generateGridModel} from "./carctiles"
-import {OldRanchModel, MonsterRancherMode} from "./moncher"
+import {OldRanchModel, MonsterRancherMode} from "./moncher-old"
 import {MonsterDb} from "./monsterdb"
 
 const root = document.getElementById("root")
