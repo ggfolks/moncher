@@ -120,8 +120,10 @@ class PathSystem extends System
         const timeLeft = pathRec.stamp - clock.time
         if (timeLeft <= 0) {
           this.trans.updatePosition(id, pathRec.dest)
-          this.trans.updateQuaternion(id, new Quaternion()) // face forward
           this.paths.update(id, pathRec.next)
+          if (!pathRec.next) {
+            this.trans.updateQuaternion(id, new Quaternion()) // face forward
+          }
 //          log.debug("Reached destination",
 //            "dest", pathRec.dest)
           // TODO: carry over remainder time to next segment?
@@ -687,20 +689,11 @@ export class RanchMode extends Mode
     // restrict placement to our navigation area
     pos.x = Math.max(this._minX, Math.min(this._extentX + this._minX, pos.x))
     pos.z = Math.max(this._minZ, Math.min(this._extentZ + this._minZ, pos.z))
-    // we could also update y with getY but why? :)
+    // we could also update y with getY but why? :)   (Because we'll throw it away)
 
-    let actorConfig :ActorConfig
-    if (this._uiState === UiState.PlacingEgg) {
-      actorConfig = MonsterDb.getRandomEgg()
-
-    } else {
-      // Food DB?
-      const foodModel :ActorModel = {
-        model: "monsters/Acorn.glb",
-      }
-      actorConfig = new ActorConfig(ActorKind.FOOD, foodModel)
-    }
-
+    const actorConfig :ActorConfig = (this._uiState === UiState.PlacingEgg)
+        ? MonsterDb.getRandomEgg()
+        : new ActorConfig(ActorKind.FOOD, <ActorModel>{ model: "monsters/Acorn.glb" })
     const loc :vec2 = this.location3to2(pos)
     this._ranch.addActor(actorConfig, loc[0], loc[1])
     this.setUiState(UiState.Default)
