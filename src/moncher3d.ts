@@ -127,7 +127,7 @@ class PathSystem extends System
   }
 }
 
-enum UiState
+const enum UiState
 {
   Default,
   PlacingEgg,

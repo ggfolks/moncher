@@ -57,7 +57,7 @@ export class ActorConfig
   ) {}
 }
 
-export enum ActorAction {
+export const enum ActorAction {
   Idle,
   Hatching,
   Eating,
