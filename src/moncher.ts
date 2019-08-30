@@ -1,4 +1,5 @@
 import {MutableMap, RMap} from "tfw/core/rcollect"
+//import {log} from "tfw/core/util"
 
 /**
  * The kind of actor.
@@ -152,8 +153,23 @@ class Egg extends Actor
 class Monster extends Actor
 {
   tick (model :RanchModel) :void {
-    // TODO!
+    switch (this.action) {
+      case ActorAction.Hatching:
+        if (--this._hatchCounter === 0) {
+          this.action = ActorAction.None
+        }
+        break
+
+      default:
+        // for now, let's simply move around randomly
+        if (Math.random() < .025) {
+          this.setLocation(Math.random(), Math.random())
+        }
+        break;
+    }
   }
+
+  protected _hatchCounter :number = 20
 }
 
 class Food extends Actor
