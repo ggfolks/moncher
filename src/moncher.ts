@@ -1,4 +1,5 @@
 import {MutableMap, RMap} from "tfw/core/rcollect"
+import {vec2} from "tfw/core/math"
 //import {log} from "tfw/core/util"
 
 /**
@@ -85,18 +86,23 @@ export class ActorState
 /**
  * An actor.
  */
+type ConstructableActorClass = { new (...args :any[]) :Actor }
 abstract class Actor
 {
+  /** Location. */
+  pos :vec2
+
   /** All actors have health. */
   health :number
 
   constructor (
     readonly id :number,
     readonly config :ActorConfig,
-    public x :number,
-    public y :number,
+    x :number,
+    y :number,
     public action :ActorAction,
   ) {
+    this.pos = vec2.fromValues(x, y)
     this.health = config.startingHealth
     this.postConstruct()
   }
@@ -120,13 +126,12 @@ abstract class Actor
 
   toState () :ActorState
   {
-    return new ActorState(this.x, this.y, this.action)
+    return new ActorState(this.pos[0], this.pos[1], this.action)
   }
 
   setLocation (x :number, y :number) :void
   {
-    this.x = x
-    this.y = y
+    vec2.set(this.pos, x, y)
   }
 
   moveTowards (x :number, y :number) :void
@@ -145,7 +150,7 @@ class Egg extends Actor
     this.health -= 1
     if (this.action === ActorAction.None && (this.health < 20)) {
       this.action = ActorAction.Hatching
-      model.addActor(this.config.spawn!, this.x, this.y, ActorAction.Hatching)
+      model.addActor(this.config.spawn!, this.pos[0], this.pos[1], ActorAction.Hatching)
     }
   }
 }
@@ -155,13 +160,31 @@ class Monster extends Actor
   tick (model :RanchModel) :void {
     switch (this.action) {
       case ActorAction.Hatching:
-        if (--this._hatchCounter === 0) {
+        if (++this._counter >= 20) {
           this.action = ActorAction.None
         }
         break
 
       default:
-        // for now, let's simply move around randomly
+        if (++this._hunger > 100) {
+          const food = model.getNearestActor(this.pos,
+              actor => (actor.config.kind === ActorKind.FOOD))
+          if (food) {
+            if (vec2.distance(food.pos, this.pos) < .01) {
+              if (++this._counter >= 10) {
+                food.health -= 10
+                this._hunger = 0
+              }
+            } else {
+              vec2.copy(this.pos, food.pos)
+              this._counter = 0
+            }
+            break
+          }
+          // no food? Fall back to wandering...
+        }
+
+        // Wander randomly!
         if (Math.random() < .025) {
           this.setLocation(Math.random(), Math.random())
         }
@@ -169,7 +192,8 @@ class Monster extends Actor
     }
   }
 
-  protected _hatchCounter :number = 20
+  protected _counter :number = 0
+  protected _hunger :number = 0
 }
 
 class Food extends Actor
@@ -222,7 +246,7 @@ export class RanchModel
     }
   }
 
-  protected pickActorClass (config :ActorConfig) :{ new (...args: any[]): Actor}
+  protected pickActorClass (config :ActorConfig) :ConstructableActorClass
   {
     switch (config.kind) {
       case ActorKind.EGG: return Egg
@@ -239,10 +263,20 @@ export class RanchModel
     this.actorConfig.delete(data.id)
   }
 
-  getNearbyActors (x :number, y :number, maxDist :number = Math.sqrt(2)) :Actor[]
+  getNearestActor (pos :vec2, predicate :(actor :Actor) => boolean) :Actor|undefined
   {
-    // TODO
-    return []
+    let nearest = undefined
+    let dist = Number.MAX_VALUE
+    for (const actor of this._actorData.values()) {
+      if (predicate(actor)) {
+        const dd = vec2.squaredDistance(pos, actor.pos)
+        if (dd < dist) {
+          dist = dd
+          nearest = actor
+        }
+      }
+    }
+    return nearest
   }
 
   /**
