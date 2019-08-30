@@ -6,7 +6,7 @@ import {log, Disposer} from "tfw/core/util"
 import {Pointer} from "tfw/input/hand"
 import {Texture, Tile} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
-import {App} from "./app"
+import {App} from "../app"
 import {GridTileSceneModel, GridTileSceneViewMode, PropTileInfo} from "./gridtiles"
 import {MonsterMenu} from "./monstermenu"
 
@@ -15,7 +15,7 @@ import {
   ActorConfig,
   ActorKind,
   ActorState
-} from "./moncher"
+} from "../moncher"
 
 /**
  * An actor.

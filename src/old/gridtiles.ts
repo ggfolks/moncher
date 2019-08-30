@@ -7,7 +7,7 @@ import {MapChange} from "tfw/core/rcollect"
 import {Hand, Pointer} from "tfw/input/hand"
 import {GLC, Texture, TextureConfig, Tile, makeTexture} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
-import {App, SurfaceMode} from "./app"
+import {App, SurfaceMode} from "../app"
 import {FringeConfig, FringeAdder, applyFringe} from "./fringer"
 
 abstract class TileInfo

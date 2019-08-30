@@ -1,4 +1,4 @@
-import {App} from "./app"
+import {App} from "../app"
 import {ShowTilesetMode} from "./tiles"
 
 const root = document.getElementById("root")

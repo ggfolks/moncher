@@ -10,8 +10,8 @@ import {Host2} from "tfw/ui/host2"
 import {Model, ModelData} from "tfw/ui/model"
 import {ImageResolver} from "tfw/ui/style"
 import {UI} from "tfw/ui/ui"
-import {ActorConfig, ActorState} from "./moncher"
-import {moncherStyles, moncherTheme} from "./uistyles"
+import {ActorConfig, ActorState} from "../moncher"
+import {moncherStyles, moncherTheme} from "../uistyles"
 
 export class MonsterMenu
 {

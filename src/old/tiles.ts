@@ -5,7 +5,7 @@ import {vec2} from "tfw/core/math"
 import {loadImage} from "tfw/core/assets"
 import {GLC, Texture, Tile, makeTexture} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
-import {App, SurfaceMode} from "./app"
+import {App, SurfaceMode} from "../app"
 
 type TileInfo = {x :number, y :number, width :number, height :number}
 
