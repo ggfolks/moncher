@@ -144,7 +144,7 @@ export class OldRanchModel
    * Add a new monster.
    */
   addMonster (
-      config :ActorConfig, info :PropTileInfo, x :number, y :number, action = ActorAction.None)
+      config :ActorConfig, info :PropTileInfo, x :number, y :number, action = ActorAction.Idle)
       :void
   {
     this.validateConfig(config)
@@ -289,7 +289,7 @@ export class OldRanchModel
             default: break
 
             case ActorAction.Hatching:
-              if (!monst.maybeSetAction(7, ActorAction.None)) {
+              if (!monst.maybeSetAction(7, ActorAction.Idle)) {
                 continue STATE_LOOP
               }
               break

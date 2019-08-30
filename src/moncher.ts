@@ -58,8 +58,11 @@ export class ActorConfig
 }
 
 export enum ActorAction {
-  None,
+  Idle,
   Hatching,
+  Eating,
+  Sleeping,
+  Waking,
 }
 
 /**
@@ -148,7 +151,7 @@ class Egg extends Actor
 
   tick (model :RanchModel) :void {
     this.health -= 1
-    if (this.action === ActorAction.None && (this.health < 20)) {
+    if (this.action === ActorAction.Idle && (this.health < 20)) {
       this.action = ActorAction.Hatching
       model.addActor(this.config.spawn!, this.pos[0], this.pos[1], ActorAction.Hatching)
     }
@@ -161,7 +164,7 @@ class Monster extends Actor
     switch (this.action) {
       case ActorAction.Hatching:
         if (++this._counter >= 20) {
-          this.action = ActorAction.None
+          this.action = ActorAction.Idle
         }
         break
 
@@ -220,7 +223,7 @@ export class RanchModel
   ) {
   }
 
-  addActor (config :ActorConfig, x :number, y :number, action = ActorAction.None) :void
+  addActor (config :ActorConfig, x :number, y :number, action = ActorAction.Idle) :void
   {
     this.validateConfig(config)
 
