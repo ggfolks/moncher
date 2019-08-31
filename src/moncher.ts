@@ -75,7 +75,9 @@ export class ActorState
     readonly x :number,
     /** Visual Y coordinate (tile coordinates, floating point). */
     readonly y :number,
-    /** TODO */
+    /** The actor's scale. */
+    readonly scale :number,
+    /** The current activity of the actor. */
     readonly action :ActorAction,
   ) {}
 
@@ -129,7 +131,7 @@ abstract class Actor
 
   toState () :ActorState
   {
-    return new ActorState(this.pos[0], this.pos[1], this.action)
+    return new ActorState(this.pos[0], this.pos[1], this.getScale(), this.action)
   }
 
   setLocation (x :number, y :number) :void
@@ -137,8 +139,8 @@ abstract class Actor
     vec2.set(this.pos, x, y)
   }
 
-  moveTowards (x :number, y :number) :void
-  {
+  getScale () :number {
+    return 1
   }
 }
 
@@ -160,7 +162,7 @@ class Egg extends Actor
 
 class Monster extends Actor
 {
-  protected static DEBUG_FACTOR = 1
+  protected static DEBUG_FACTOR = 5
 
   tick (model :RanchModel) :void {
     switch (this.action) {
@@ -172,6 +174,8 @@ class Monster extends Actor
 
       case ActorAction.Eating:
         if (++this._counter >= 20 / Monster.DEBUG_FACTOR) {
+          this._hunger = 0
+          this._scale *= 1.2
           this.setAction(ActorAction.Sleeping)
         }
         break
@@ -196,7 +200,6 @@ class Monster extends Actor
             if (vec2.distance(food.pos, this.pos) < .01) {
               if (++this._counter >= 10 / Monster.DEBUG_FACTOR) {
                 food.health -= 10
-                this._hunger = 0
                 this.setAction(ActorAction.Eating)
               }
             } else {
@@ -217,6 +220,10 @@ class Monster extends Actor
     }
   }
 
+  getScale () :number {
+    return this._scale
+  }
+
   protected setAction (action :ActorAction) :void
   {
     this.action = action
@@ -225,6 +232,7 @@ class Monster extends Actor
 
   protected _counter :number = 0
   protected _hunger :number = 0
+  protected _scale :number = 1
 }
 
 class Food extends Actor

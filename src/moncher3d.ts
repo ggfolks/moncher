@@ -253,7 +253,7 @@ export class RanchMode extends Mode
     const body = new DenseValueComponent<Body>("body", new Body())
     const state = this._state =
         new DenseValueComponent<ActorState>("state",
-          new ActorState(0, 0, ActorAction.Idle))
+          new ActorState(0, 0, 1, ActorAction.Idle))
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
     const paths = this._paths = new SparseValueComponent<PathRec|undefined>("paths", undefined)
     const graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
@@ -406,6 +406,7 @@ export class RanchMode extends Mode
   protected updateActorSprite (actorInfo :ActorInfo, state :ActorState) :void {
     // store their state in the entity system...
     this._state.update(actorInfo.entityId, state)
+    this._trans.updateScale(actorInfo.entityId, new Vector3(state.scale, state.scale, state.scale))
 
     // then check their location against their PathRec...
     const pos = this.location2to3(state.x, state.y)

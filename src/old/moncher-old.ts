@@ -70,7 +70,7 @@ class OldActor
 
   toState () :ActorState
   {
-    return new ActorState(this.x, this.y, this.action)
+    return new ActorState(this.x, this.y, 1, this.action)
   }
 
   setLocation (x :number, y :number) :void
