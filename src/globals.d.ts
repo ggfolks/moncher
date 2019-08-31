@@ -1,6 +1,6 @@
-import {BufferGeometry, Geometry, Object3D, Vector3} from "three"
-
 declare module "three-pathfinding" {
+  import {BufferGeometry, Geometry, Object3D, Vector3} from "three"
+
   export type Node = {
     id :number
     neighbors :number[]
