@@ -25,7 +25,8 @@
     }
   },
   "dependencies": {
-    "tfw": "file:../platform/lib"
+    "tfw": "file:../platform/lib",
+    "three-pathfinding": "^0.11.0"
   },
   "devDependencies": {
     "awesome-typescript-loader": "^5.2.0",
