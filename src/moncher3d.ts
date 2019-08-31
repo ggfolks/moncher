@@ -652,7 +652,7 @@ export class RanchMode extends Mode
         label: "🌰",
         action: () => this.setUiState(UiState.PlacingFood),
       })
-      this._hud.statusLabel.update("")
+      this._hud.statusLabel.update("Hold SPACE to see the navmesh")
       break
 
     case UiState.PlacingEgg:
