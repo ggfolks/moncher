@@ -451,7 +451,8 @@ export class RanchMode extends Mode
     while (path.length > 1) {
       const dest = path.pop()!
       const src = path[path.length - 1]
-      const duration = (src.distanceTo(dest) * 1000) / RanchMode.ACTOR_MOVE_DISTANCE_PER_SECOND
+      const duration = (src.distanceTo(dest) * 1000) /
+          (RanchMode.ACTOR_MOVE_DISTANCE_PER_SECOND * state.scale)
       rec = new PathRec(src, dest, duration, rec)
 //      log.info("Added to end...", "src", src, "dest", dest)
     }
