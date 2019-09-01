@@ -36,8 +36,9 @@ export interface ActorModel {
   attack? :string
   hitReact? :string
   faint? :string
-  sleep?: string
-  wakeUp?: string
+  sleep? :string
+  wakeUp? :string
+  eat? :string
 }
 
 /**

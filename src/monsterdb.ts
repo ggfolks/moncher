@@ -32,6 +32,7 @@ export class MonsterDb
       walk:     "monsters/LobberBlue.glb#Walk",
       attack:   "monsters/LobberBlue.glb#Attack",
       hitReact: "monsters/LobberBlue.glb#HitReact",
+      eat:      "monsters/LobberBlue.glb#Eat",
       faint:    "monsters/LobberBlue.glb#Faint",
       sleep:    "monsters/LobberBlue.glb#Sleep",
       wakeUp:   "monsters/LobberBlue.glb#WakeUp",
@@ -40,29 +41,27 @@ export class MonsterDb
     monsters.push(new ActorConfig(ActorKind.LOBBER, <ActorModel>{
       model:    "monsters/LobberGreen.glb",
       idle:     "monsters/LobberGreen.glb#Idle",
+      hatch:    "monsters/LobberGreen.glb#Hatch",
       walk:     "monsters/LobberGreen.glb#Walk",
       attack:   "monsters/LobberGreen.glb#Attack",
       hitReact: "monsters/LobberGreen.glb#HitReact",
+      eat:      "monsters/LobberGreen.glb#Eat",
       faint:    "monsters/LobberGreen.glb#Faint",
-
-      // TODO: use correct hatch / sleep animation
-      hatch:    "monsters/LobberBlue.glb#Hatch",
-      sleep:    "monsters/LobberBlue.glb#Sleep",
-      wakeUp:   "monsters/LobberBlue.glb#WakeUp",
+      sleep:    "monsters/LobberGreen.glb#Sleep",
+      wakeUp:   "monsters/LobberGreen.glb#WakeUp",
     }))
 
     monsters.push(new ActorConfig(ActorKind.LOBBER, <ActorModel>{
+      model:    "monsters/LobberRed.glb",
       idle:     "monsters/LobberRed.glb#Idle",
+      hatch:    "monsters/LobberRed.glb#Hatch",
       walk:     "monsters/LobberRed.glb#Walk",
       attack:   "monsters/LobberRed.glb#Attack",
-      model:    "monsters/LobberRed.glb",
       hitReact: "monsters/LobberRed.glb#HitReact",
+      eat:      "monsters/LobberRed.glb#Eat",
       faint:    "monsters/LobberRed.glb#Faint",
-
-      // TODO: use correct hatch / sleep animation
-      hatch:    "monsters/LobberBlue.glb#Hatch",
-      sleep:    "monsters/LobberBlue.glb#Sleep",
-      wakeUp:   "monsters/LobberBlue.glb#WakeUp",
+      sleep:    "monsters/LobberRed.glb#Sleep",
+      wakeUp:   "monsters/LobberRed.glb#WakeUp",
     }))
   }
 
