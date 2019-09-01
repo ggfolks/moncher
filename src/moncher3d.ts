@@ -558,6 +558,20 @@ export class RanchMode extends Mode
       }
     }
 
+    if (cfg.model.eat) {
+      graphCfg.isEating = <NodeConfig>{
+        type: "equals",
+        x: "action",
+        y: ActorAction.Eating,
+      }
+      graphCfg.eat = animation(cfg.model.eat, "isEating")
+      graphCfg.notEating = <NodeConfig>{
+        type: "not",
+        input: "isEating",
+      }
+      isIdle.push("notEating")
+    }
+
     if (cfg.model.sleep && cfg.model.faint) {
       graphCfg.isSleeping = <NodeConfig>{
         type: "equals",
