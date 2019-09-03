@@ -26,16 +26,20 @@ declare module "three-pathfinding" {
 
     // Note: getRandomNode is documented everywhere as returning Node, but the code
     // reveals that it returns a Vector3.
+    /** Will return a blank Vector3 on various error conditions. */
     getRandomNode (
         zoneID :string, groupID :number, nearPosition :Vector3, nearRange :number) :Vector3
 
     getClosestNode (
         position :Vector3, zoneID :string, groupID :number, checkPolygon? :boolean) :Node
 
+    /** Will return null if the start/end are invalid, otherwise tries to get close. */
     findPath (
-        startPosition :Vector3, targetPosition :Vector3, zoneID :string, groupID :number) :Vector3[]
+        startPosition :Vector3, targetPosition :Vector3, zoneID :string, groupID :number)
+        :Vector3[]|null
 
-    getGroup (zoneID :string, position :Vector3, checkPolygon? :boolean) :number
+    /** Can return null if zone is invalid. */
+    getGroup (zoneID :string, position :Vector3, checkPolygon? :boolean) :number|null
 
     clampStep (
         start :Vector3, end :Vector3, node :Node, zoneID :string, groupID :number,

@@ -449,7 +449,9 @@ export class RanchMode extends Mode
     let path :Vector3[]
     if (this._pathFinder) {
       const groupId = this._pathFinder.getGroup(RanchMode.RANCH_ZONE, oldPos)
-      const foundPath = this._pathFinder.findPath(
+      const foundPath = (groupId === null)
+        ? null
+        : this._pathFinder.findPath(
           oldPos, state.pos, RanchMode.RANCH_ZONE, groupId)
       if (foundPath) {
         path = foundPath

@@ -321,8 +321,10 @@ export class RanchModel
     }
 
     const groupId = this._pathFinder.getGroup(RanchModel.RANCH_ZONE, pos)
-    const node = this._pathFinder.getRandomNode(
-        RanchModel.RANCH_ZONE, groupId, pos, Number.POSITIVE_INFINITY)
+    const node = (groupId === null)
+        ? new Vector3()
+        : this._pathFinder.getRandomNode(
+            RanchModel.RANCH_ZONE, groupId, pos, Number.POSITIVE_INFINITY)
     return node
   }
 
