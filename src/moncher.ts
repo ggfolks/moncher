@@ -221,13 +221,13 @@ class Monster extends Actor
 class Food extends Actor
 {
   tick (model :RanchModel) :void {
-    this.health -= .01
+    this.health -= .01 // food decays
   }
 }
 
 export class RanchModel
 {
-  /** The public view of monster state. */
+  /** The public view of actor state. */
   get actors () :RMap<number, ActorState> {
     return this._actors
   }
@@ -256,13 +256,15 @@ export class RanchModel
   addActor (config :ActorConfig, pos :Vector3, action = ActorAction.Idle) :void
   {
     this.validateConfig(config)
+    // TODO: validate location? // We could pathfind from a known good location on the ranch
+    // and then take the final position of the path.
 
     const id = this._nextActorId++
     const clazz = this.pickActorClass(config)
     const data = new clazz(id, config, pos, action)
     this.actorConfig.set(id, config)
     this._actorData.set(id, data)
-    // finally, publish the state of the monster
+    // finally, publish the state of the actor
     this._actors.set(data.id, data.toState())
   }
 
