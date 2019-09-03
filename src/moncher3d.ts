@@ -17,6 +17,7 @@ import {Pathfinding} from "three-pathfinding"
 
 import {Body} from "cannon"
 
+import {loadImage} from "tfw/core/assets"
 import {Clock} from "tfw/core/clock"
 import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
@@ -245,8 +246,10 @@ export class RanchMode extends Mode
       ),
       hand,
       host,
-      graphTheme,
-      graphStyles,
+      theme: graphTheme,
+      styles: graphStyles,
+      image: {resolve: loadImage},
+      screen: app.renderer.size,
     }
 
     const trans = this._trans = new TransformComponent("trans")
