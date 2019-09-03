@@ -17,7 +17,7 @@ import {Pathfinding} from "three-pathfinding"
 
 import {Body} from "cannon"
 
-import {loadImage} from "tfw/core/assets"
+//import {loadImage} from "tfw/core/assets"
 import {Clock} from "tfw/core/clock"
 import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
@@ -248,7 +248,7 @@ export class RanchMode extends Mode
       host,
       theme: graphTheme,
       styles: graphStyles,
-      image: {resolve: loadImage},
+//      image: {resolve: loadImage},
       screen: app.renderer.size,
     }
 
@@ -259,7 +259,7 @@ export class RanchMode extends Mode
     const body = new DenseValueComponent<Body>("body", new Body())
     const state = this._state =
         new DenseValueComponent<ActorState>("state",
-          new ActorState(0, 0, 1, ActorAction.Idle))
+          new ActorState(new Vector3(), 1, ActorAction.Idle))
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
     const paths = this._paths = new SparseValueComponent<PathRec|undefined>("paths", undefined)
     const graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
@@ -363,19 +363,20 @@ export class RanchMode extends Mode
     if (navMesh instanceof Mesh) {
       this._navMesh = navMesh
 
-      // compute the boundaries of the ranch (TEMP?)
-      navMesh.geometry.computeBoundingBox()
-      const box = navMesh.geometry.boundingBox
-      log.info("Got the navmesh", "box", box)
-      this._minX = box.min.x
-      this._extentX = box.max.x - box.min.x
-      this._minZ = box.min.z
-      this._extentZ = box.max.z - box.min.z
+//      // compute the boundaries of the ranch (TEMP?)
+//      navMesh.geometry.computeBoundingBox()
+//      const box = navMesh.geometry.boundingBox
+//      log.info("Got the navmesh", "box", box)
+      // TODO: constrain scrolling based on the extents of the navmesh
+
+      // update the ranch model TODO: this will be a serverside thing, can't update it from here!
+      this._ranch.setNavMesh(navMesh)
 
       this.configurePathFinding(navMesh)
       this.setReady()
     }
-    return undefined
+
+    return undefined // don't replace the ranch
   }
 
   /**
@@ -424,23 +425,23 @@ export class RanchMode extends Mode
     this._trans.updateScale(actorInfo.entityId, new Vector3(state.scale, state.scale, state.scale))
 
     // then check their location against their PathRec...
-    const pos = this.location2to3(state.x, state.y)
+    //const pos = this.location2to3(state.x, state.y)
     let oldRec = this._paths.read(actorInfo.entityId)
     if (oldRec) {
       while (oldRec.next) {
         oldRec = oldRec.next
       }
-      if (vec3NearlyEqual(oldRec.dest, pos)) {
+      if (vec3NearlyEqual(oldRec.dest, state.pos)) {
         // just update the position in the old record
-        oldRec.dest = pos
+        oldRec.dest = state.pos
         return
       }
     }
 
     const oldPos = this._trans.readPosition(actorInfo.entityId, new Vector3())
-    if (!oldRec && vec3NearlyEqual(pos, oldPos)) {
+    if (!oldRec && vec3NearlyEqual(state.pos, oldPos)) {
       // just update the translation and return
-      this._trans.updatePosition(actorInfo.entityId, pos)
+      this._trans.updatePosition(actorInfo.entityId, state.pos)
       return
     }
 //    log.debug("Want new path", "oldPos", oldPos)
@@ -448,7 +449,8 @@ export class RanchMode extends Mode
     let path :Vector3[]
     if (this._pathFinder) {
       const groupId = this._pathFinder.getGroup(RanchMode.RANCH_ZONE, oldPos)
-      const foundPath = this._pathFinder.findPath(oldPos, pos, RanchMode.RANCH_ZONE, groupId)
+      const foundPath = this._pathFinder.findPath(
+          oldPos, state.pos, RanchMode.RANCH_ZONE, groupId)
       if (foundPath) {
         path = foundPath
         path.unshift(oldPos) // we need to manually put the first point at the beginning
@@ -458,7 +460,7 @@ export class RanchMode extends Mode
       }
 
     } else {
-      path = [oldPos, pos]
+      path = [oldPos, state.pos]
     }
 //    log.debug("Found path!", "path", path)
 
@@ -672,10 +674,10 @@ export class RanchMode extends Mode
       }
     }
 
-    const loc = this.location2to3(state.x, state.y)
     const entityId = this._domain.add({
       components: {
-        trans: {initial: new Float32Array([loc.x, loc.y, loc.z, 0, 0, 0, 1, 1, 1, 1])},
+        trans: {initial: new Float32Array(
+            [state.pos.x, state.pos.y, state.pos.z, 0, 0, 0, 1, 1, 1, 1])},
         obj: {type: "gltf", url: cfg.model.model},
         state: {initial: state},
         hovers: {},
@@ -753,16 +755,10 @@ export class RanchMode extends Mode
 
   protected doPlacement2 (pos :Vector3) :void
   {
-    // restrict placement to our navigation area
-    pos.x = Math.max(this._minX, Math.min(this._extentX + this._minX, pos.x))
-    pos.z = Math.max(this._minZ, Math.min(this._extentZ + this._minZ, pos.z))
-    // we could also update y with getY but why? :)   (Because we'll throw it away)
-
     const actorConfig :ActorConfig = (this._uiState === UiState.PlacingEgg)
         ? MonsterDb.getRandomEgg()
         : new ActorConfig(ActorKind.FOOD, <ActorModel>{ model: "monsters/Acorn.glb" })
-    const loc :vec2 = this.location3to2(pos)
-    this._ranch.addActor(actorConfig, loc[0], loc[1])
+    this._ranch.addActor(actorConfig, pos)
     this.setUiState(UiState.Default)
   }
 
@@ -790,22 +786,6 @@ export class RanchMode extends Mode
     return 2.5 // bogus fallback height
   }
 
-  protected location2to3 (x :number, y :number) :Vector3
-  {
-    // Currently x/y range from 0 to 1
-    const x3 = (x * this._extentX) + this._minX
-    const z3 = (y * this._extentZ) + this._minZ
-    return new Vector3(x3, this.getY(x3, z3), z3)
-  }
-
-  protected location3to2 (pos :Vector3) :vec2
-  {
-    const x2 = (pos.x - this._minX) / this._extentX
-    const y2 = (pos.z - this._minZ) / this._extentZ
-    // bound it into the ranch model
-    return vec2.fromValues(x2, y2)
-  }
-
   protected swapTerrain () :void
   {
     if (!this._terrain || !this._navMesh) return
@@ -829,10 +809,6 @@ export class RanchMode extends Mode
   protected _pathFinder? :Pathfinding
 
   protected _ready :boolean = false
-  protected _minX = 0
-  protected _extentX = 1
-  protected _minZ = 0
-  protected _extentZ = 1
 
   // The properties below are all definitely initialized via the constructor
   protected _host! :Host3

@@ -1,6 +1,8 @@
 import {MutableMap, RMap} from "tfw/core/rcollect"
-import {vec2} from "tfw/core/math"
-//import {log} from "tfw/core/util"
+import {log} from "tfw/core/util"
+
+import {Mesh, Vector3} from "three"
+import {Pathfinding} from "three-pathfinding"
 
 /**
  * The kind of actor.
@@ -72,21 +74,13 @@ export const enum ActorAction {
 export class ActorState
 {
   constructor (
-    /** Visual X coordinate (tile coordinates, floating point). */
-    readonly x :number,
-    /** Visual Y coordinate (tile coordinates, floating point). */
-    readonly y :number,
+    /** The position of this actor. */
+    readonly pos :Vector3,
     /** The actor's scale. */
     readonly scale :number,
     /** The current activity of the actor. */
     readonly action :ActorAction,
   ) {}
-
-  // Legacy // TODO: Remove
-  get actionPts () :number
-  {
-    return 20
-  }
 }
 
 /**
@@ -96,7 +90,7 @@ type ConstructableActorClass = { new (...args :any[]) :Actor }
 abstract class Actor
 {
   /** Location. */
-  pos :vec2
+  pos :Vector3
 
   /** All actors have health. */
   health :number
@@ -104,11 +98,10 @@ abstract class Actor
   constructor (
     readonly id :number,
     readonly config :ActorConfig,
-    x :number,
-    y :number,
+    position :Vector3,
     public action :ActorAction,
   ) {
-    this.pos = vec2.fromValues(x, y)
+    this.pos = position.clone()
     this.health = config.startingHealth
     this.postConstruct()
   }
@@ -119,25 +112,11 @@ abstract class Actor
   {
   }
 
-  isMobile () :boolean
-  {
-    switch (this.config.kind) {
-      case ActorKind.EGG: return false
-      case ActorKind.FOOD: return false
-      default: return (this.action !== ActorAction.Hatching)
-    }
-  }
-
   abstract tick (model :RanchModel) :void
 
   toState () :ActorState
   {
-    return new ActorState(this.pos[0], this.pos[1], this.getScale(), this.action)
-  }
-
-  setLocation (x :number, y :number) :void
-  {
-    vec2.set(this.pos, x, y)
+    return new ActorState(this.pos.clone(), this.getScale(), this.action)
   }
 
   getScale () :number {
@@ -156,14 +135,14 @@ class Egg extends Actor
     this.health -= 1
     if (this.action === ActorAction.Idle && (this.health < 20)) {
       this.action = ActorAction.Hatching
-      model.addActor(this.config.spawn!, this.pos[0], this.pos[1], ActorAction.Hatching)
+      model.addActor(this.config.spawn!, this.pos, ActorAction.Hatching)
     }
   }
 }
 
 class Monster extends Actor
 {
-  protected static DEBUG_FACTOR = 1
+  protected static DEBUG_FACTOR = 5
 
   tick (model :RanchModel) :void {
     switch (this.action) {
@@ -198,13 +177,13 @@ class Monster extends Actor
           const food = model.getNearestActor(this.pos,
               actor => (actor.config.kind === ActorKind.FOOD))
           if (food) {
-            if (vec2.distance(food.pos, this.pos) < .01) {
+            if (this.pos.distanceTo(food.pos) < .1) {
               if (++this._counter >= 10 / Monster.DEBUG_FACTOR) {
                 food.health -= 10
                 this.setAction(ActorAction.Eating)
               }
             } else {
-              vec2.copy(this.pos, food.pos)
+              this.pos.copy(food.pos)
               // TODO: maybe we split off an ActorAction.FindingFood or Walking
               this._counter = 0
             }
@@ -215,7 +194,10 @@ class Monster extends Actor
 
         // Wander randomly!
         if (Math.random() < (.025 * Monster.DEBUG_FACTOR)) {
-          this.setLocation(Math.random(), Math.random())
+          const newpos = model.randomPositionFrom(this.pos)
+          if (newpos) {
+            this.pos.copy(newpos)
+          }
         }
         break
     }
@@ -260,13 +242,24 @@ export class RanchModel
   ) {
   }
 
-  addActor (config :ActorConfig, x :number, y :number, action = ActorAction.Idle) :void
+  /**
+   * Set the navmesh. */
+  // TODO: this will be loaded some other way on the server
+  setNavMesh (navmesh :Mesh) :void {
+    this._navMesh = navmesh
+
+    // configure pathfinding
+    this._pathFinder = new Pathfinding()
+    this._pathFinder.setZoneData(RanchModel.RANCH_ZONE, Pathfinding.createZone(navmesh.geometry))
+  }
+
+  addActor (config :ActorConfig, pos :Vector3, action = ActorAction.Idle) :void
   {
     this.validateConfig(config)
 
     const id = this._nextActorId++
     const clazz = this.pickActorClass(config)
-    const data = new clazz(id, config, x, y, action)
+    const data = new clazz(id, config, pos, action)
     this.actorConfig.set(id, config)
     this._actorData.set(id, data)
     // finally, publish the state of the monster
@@ -295,21 +288,19 @@ export class RanchModel
     }
   }
 
-  protected removeActor (data :Actor)
-  {
+  protected removeActor (data :Actor) {
     this._actorData.delete(data.id)
     this._actors.delete(data.id)
     // unmap the config last in the reverse of how we started
     this.actorConfig.delete(data.id)
   }
 
-  getNearestActor (pos :vec2, predicate :(actor :Actor) => boolean) :Actor|undefined
-  {
+  getNearestActor (pos :Vector3, predicate :(actor :Actor) => boolean) :Actor|undefined {
     let nearest = undefined
     let dist = Number.POSITIVE_INFINITY
     for (const actor of this._actorData.values()) {
       if (predicate(actor)) {
-        const dd = vec2.squaredDistance(pos, actor.pos)
+        const dd = pos.distanceToSquared(actor.pos)
         if (dd < dist) {
           dist = dd
           nearest = actor
@@ -317,6 +308,20 @@ export class RanchModel
       }
     }
     return nearest
+  }
+
+  /**
+   * Find a new random location reachable from the specified location. */
+  randomPositionFrom (pos :Vector3) :Vector3|undefined {
+    if (!this._pathFinder) {
+      log.warn("Pathfinder unknown. Movement limited.")
+      return pos
+    }
+
+    const groupId = this._pathFinder.getGroup(RanchModel.RANCH_ZONE, pos)
+    const node = this._pathFinder.getRandomNode(
+        RanchModel.RANCH_ZONE, groupId, pos, Number.POSITIVE_INFINITY)
+    return node
   }
 
   /**
@@ -338,8 +343,13 @@ export class RanchModel
     }
   }
 
+  protected _navMesh? :Mesh
+  protected _pathFinder? :Pathfinding
+
   protected _nextActorId :number = 0
   protected readonly _actorData :Map<number, Actor> = new Map()
   /** A mutable view of our public actors RMap. */
   protected readonly _actors :MutableMap<number, ActorState> = MutableMap.local()
+
+  private static RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
 }
