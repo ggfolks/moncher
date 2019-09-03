@@ -314,7 +314,7 @@ export class RanchMode extends Mode
     domain.add({
       components: {
         trans: {},
-        obj: {type: "ambientLight", color: 0x202020},
+        obj: {type: "hemisphereLight", color: 0x202080, groundColor: 0x202000},
       },
     })
     domain.add({
