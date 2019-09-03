@@ -24,8 +24,10 @@ declare module "three-pathfinding" {
 
     setZoneData (zoneID :string, zone :Zone) :void
 
+    // Note: getRandomNode is documented everywhere as returning Node, but the code
+    // reveals that it returns a Vector3.
     getRandomNode (
-        zoneID :string, groupID :number, nearPosition :Vector3, nearRange :number) :Node
+        zoneID :string, groupID :number, nearPosition :Vector3, nearRange :number) :Vector3
 
     getClosestNode (
         position :Vector3, zoneID :string, groupID :number, checkPolygon? :boolean) :Node
