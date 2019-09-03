@@ -18,9 +18,9 @@ import {Pathfinding} from "three-pathfinding"
 import {Body} from "cannon"
 
 import {Clock} from "tfw/core/clock"
-import {vec2} from "tfw/core/math"
+import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
-import {Mutable} from "tfw/core/react"
+import {Mutable, Value} from "tfw/core/react"
 import {log} from "tfw/core/util"
 import {Hand, Pointer} from "tfw/input/hand"
 import {Keyboard} from "tfw/input/keyboard"
@@ -61,6 +61,7 @@ import {
 } from "./moncher"
 import {MonsterDb} from "./monsterdb"
 import {Hud} from "./hud"
+import {graphStyles, graphTheme} from "./graphstyles"
 
 class ActorInfo
 {
@@ -182,11 +183,11 @@ function spliceNamedChild (obj :Object3D, name :string) :Object3D|undefined {
 export class RanchMode extends Mode
 {
   constructor (
-    app :App,
+    protected _app :App,
     protected _ranch :RanchModel,
   ) {
     super()
-    this.configureScene(app)
+    this.configureScene(_app)
 
     // But, let's set things to be ready after a short delay even if there's *trouble at the mill*
     // Dispatches to setReady() unless we've been disposed already, but setReady is idempotent.
@@ -195,7 +196,7 @@ export class RanchMode extends Mode
     handle = setTimeout(() => { this.onDispose.remove(cancelTimeout); this.setReady() }, 2000)
     this.onDispose.add(cancelTimeout)
 
-    this.onDispose.add(this._hud = new Hud(this._host, app.renderer))
+    this.onDispose.add(this._hud = new Hud(this._host, _app.renderer))
     this.setUiState(UiState.Default)
 
     this.onDispose.add(Keyboard.instance.getKeyState(32).onChange((ov, nv) => this.swapTerrain()))
@@ -244,6 +245,8 @@ export class RanchMode extends Mode
       ),
       hand,
       host,
+      graphTheme,
+      graphStyles,
     }
 
     const trans = this._trans = new TransformComponent("trans")
@@ -468,6 +471,36 @@ export class RanchMode extends Mode
     }
 
     const graphCfg :GraphConfig = {}
+
+    // make the graph inspectable
+    graphCfg.inspectable = <NodeConfig>{
+      type: "subgraph",
+      graph: {
+        doubleClick: {type: "doubleClick"},
+        hover: {type: "hover", component: "hovers"},
+        inspect: {type: "and", inputs: ["doubleClick", "hover"]},
+        ui: {
+          type: "ui",
+          input: "inspect",
+          model: {
+            editable: Value.constant(true),
+            backButton: {text: Value.constant("<-")},
+            closeButton: {text: Value.constant("x")},
+          },
+          root: {
+            type: "root",
+            scale: this._app.renderer.scale,
+            contents: {
+              type: "box",
+              contents: {type: "graphviewer", editable: "editable"},
+              style: {halign: "stretch", valign: "stretch", background: "$root"},
+            },
+          },
+          size: dim2.fromValues(1024, 768),
+        },
+      },
+    }
+
     const animation = (url :string, play :NodeInput<boolean>, reps? :number, clamp? :boolean) => {
       const cfg :NodeConfig = {
         type: "animationAction",
@@ -633,6 +666,7 @@ export class RanchMode extends Mode
         trans: {initial: new Float32Array([loc.x, loc.y, loc.z, 0, 0, 0, 1, 1, 1, 1])},
         obj: {type: "gltf", url: cfg.model.model},
         state: {initial: state},
+        hovers: {},
         mixer: {},
         paths: {},
         graph: graphCfg,
