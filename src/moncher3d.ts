@@ -496,7 +496,7 @@ export class RanchMode extends Mode
           input: "inspect",
           model: {
             editable: Value.constant(true),
-            backButton: {text: Value.constant("<-")},
+            backButton: {text: Value.constant("←")},
             closeButton: {text: Value.constant("x")},
           },
           root: {
