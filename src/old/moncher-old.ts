@@ -14,8 +14,20 @@ import {
   ActorAction,
   ActorConfig,
   ActorKind,
-  ActorState
 } from "../moncher"
+
+export class ActorState
+{
+  constructor (
+    readonly x :number,
+    readonly y :number,
+    readonly action :ActorAction,
+  ) {}
+
+  get actionPts () :number {
+    return 20
+  }
+}
 
 /**
  * An actor.
@@ -70,7 +82,7 @@ class OldActor
 
   toState () :ActorState
   {
-    return new ActorState(this.x, this.y, 1, this.action)
+    return new ActorState(this.x, this.y, this.action)
   }
 
   setLocation (x :number, y :number) :void
