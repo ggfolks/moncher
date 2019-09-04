@@ -627,6 +627,18 @@ export class RanchMode extends Mode
       isIdle.push("notSleeping")
     }
 
+    // "Petting" a monster has them hit-react
+    if (cfg.model.hitReact) {
+      graphCfg.hover = {type: "hover", component: "hovers"}
+      graphCfg.click0 = {type: "mouseButton", button: 0}
+      graphCfg.click1 = {type: "mouseButton", button: 1}
+      graphCfg.click = {type: "or", inputs: ["click0", "click1"]}
+      graphCfg.pet = {type: "and", inputs: ["hover", "click"]}
+      graphCfg.petLatch = {type: "latch", value: "pet", store: "petOrDonePet"}
+      graphCfg.react = animation(cfg.model.hitReact, "petLatch", 1)
+      graphCfg.petOrDonePet = {type: "or", inputs: ["pet", "react"]}
+    }
+
     if (cfg.model.wakeUp) {
       graphCfg.isWaking = <NodeConfig>{
         type: "equals",
