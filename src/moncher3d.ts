@@ -22,7 +22,7 @@ import {Clock} from "tfw/core/clock"
 import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
 import {Mutable, Value} from "tfw/core/react"
-import {log} from "tfw/core/util"
+//import {log} from "tfw/core/util"
 import {Hand, Pointer} from "tfw/input/hand"
 import {Keyboard} from "tfw/input/keyboard"
 import {
@@ -758,30 +758,6 @@ export class RanchMode extends Mode
         : new ActorConfig(ActorKind.FOOD, <ActorModel>{ model: "monsters/Acorn.glb" })
     this._ranch.addActor(actorConfig, pos)
     this.setUiState(UiState.Default)
-  }
-
-  protected getY (x :number, z :number) :number
-  {
-    // Try to use the navmesh first, but if we get no hits we'll circle back to the terrain anyway
-    let terrain = this._navMesh || this._terrain
-    if (terrain) {
-      const HAWK_HEIGHT = 10
-      const caster = new Raycaster(new Vector3(x, HAWK_HEIGHT, z), new Vector3(0, -1, 0))
-
-      while (true) {
-        const results = caster.intersectObject(terrain, true)
-        for (const result of results) {
-          return HAWK_HEIGHT - result.distance
-        }
-        if (terrain === this._navMesh) {
-          terrain = this._terrain!
-        } else {
-          break
-        }
-      }
-    }
-    log.debug("Didn't find decent height")
-    return 2.5 // bogus fallback height
   }
 
   protected swapTerrain () :void

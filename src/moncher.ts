@@ -369,7 +369,7 @@ export class RanchModel
 
   terrainPressed (pos :Vector3) :void
   {
-    const actor = this.getNearestActor(pos, _ => true, 2)
+    const actor = this.getNearestActor(pos, _ => true, 5)
     if (actor) {
       actor.pressed()
     }
