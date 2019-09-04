@@ -89,7 +89,7 @@ class PathSystem extends System
   update (clock :Clock) {
     const scratch :Vector3 = new Vector3()
     this.onEntities(id => {
-      // TODO: Put paths back into a separate component, so that we can update them.. ?
+      // TODO: Put paths back into a separate component, so that we can strip off earlier segments?
       const state = this.state.read(id)
       let path :PathRec|undefined = state.path
       // TODO: handle "facing" directions somewhere, either here or the model
@@ -103,6 +103,9 @@ class PathSystem extends System
           // TODO: animate turning? Affect walking speed / direction during turn?
           // Have "turning" be a step in path following, where the monster pauses forward
           // movement while it adjusts rotation?
+          // Perhaps near the end of the old path / start of new path it interpolates between
+          // their two angles?
+          // Right now we instantly rotate.
           const subbed = scratch.subVectors(path.dest, path.src)
           subbed.y = 0
           this.trans.updateQuaternion(id,
@@ -116,12 +119,12 @@ class PathSystem extends System
             // rotate back forward
             this.trans.updateQuaternion(id, new Quaternion()) // face forward
           }
-          continue
+        } else {
+          // otherwise, there's time left and we should update the position
+          scratch.lerpVectors(path.dest, path.src, timeLeft / path.duration)
+          this.trans.updatePosition(id, scratch)
+          path = undefined
         }
-        // otherwise, there's time left and we should update the position
-        scratch.lerpVectors(path.dest, path.src, timeLeft / path.duration)
-        this.trans.updatePosition(id, scratch)
-        break
       }
     })
   }
