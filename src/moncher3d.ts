@@ -629,13 +629,9 @@ export class RanchMode extends Mode
 
     // configure petting detection
     graphCfg.hover = {type: "hover", component: "hovers"}
-    graphCfg.click0 = {type: "mouseButton", button: 0}
-    graphCfg.click1 = {type: "mouseButton", button: 1}
-    graphCfg.click = {type: "or", inputs: ["click0", "click1"]}
-    graphCfg.petting = {type: "and", inputs: ["hover", "click"]}
     graphCfg.detectPet = {
       type: "onChange",
-      input: "petting",
+      input: ["hover", "pressed"],
       callback: (nv :boolean, ov :boolean) => {
         if (nv) {
           this.actorPetted(id)
