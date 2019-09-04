@@ -41,6 +41,7 @@ export interface ActorModel {
   sleep? :string
   wakeUp? :string
   eat? :string
+  happyReact? :string
 }
 
 export class PathRec
