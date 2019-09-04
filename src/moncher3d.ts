@@ -106,10 +106,10 @@ class PathSystem extends System
           // Perhaps near the end of the old path / start of new path it interpolates between
           // their two angles?
           // Right now we instantly rotate.
-          const subbed = scratch.subVectors(path.dest, path.src)
-          subbed.y = 0
+          scratch.subVectors(path.dest, path.src)
+          scratch.y = 0
           this.trans.updateQuaternion(id,
-              new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), subbed.normalize()))
+              new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), scratch.normalize()))
         }
         const timeLeft = path.stamp - clock.time
         if (timeLeft <= 0) {
