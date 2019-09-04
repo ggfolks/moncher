@@ -100,6 +100,9 @@ class PathSystem extends System
           path.stamp = clock.time + path.duration - overtime
 
           // calculate the direction
+          // TODO: animate turning? Affect walking speed / direction during turn?
+          // Have "turning" be a step in path following, where the monster pauses forward
+          // movement while it adjusts rotation?
           const subbed = scratch.subVectors(path.dest, path.src)
           subbed.y = 0
           this.trans.updateQuaternion(id,
@@ -118,6 +121,7 @@ class PathSystem extends System
         // otherwise, there's time left and we should update the position
         scratch.lerpVectors(path.dest, path.src, timeLeft / path.duration)
         this.trans.updatePosition(id, scratch)
+        break
       }
     })
   }
