@@ -109,6 +109,8 @@ export class ActorState
     readonly action :ActorAction,
     /** Any path segments the actor is following. */
     readonly path? :PathRec,
+    /** Are we reacting to being touched? */
+    readonly hitReact? :boolean,
   ) {}
 }
 
@@ -143,9 +145,17 @@ abstract class Actor
 
   abstract tick (model :RanchModel, dt :number) :void
 
+  /**
+   * This actor has been touched by a user.
+   */
+  pressed () :void {
+    // by default do nothing
+  }
+
   toState () :ActorState
   {
-    return new ActorState(this.pos.clone(), this.getScale(), this.action, this.getPath())
+    return new ActorState(
+        this.pos.clone(), this.getScale(), this.action, this.getPath(), this.isPressed())
   }
 
   getScale () :number {
@@ -154,6 +164,10 @@ abstract class Actor
 
   getPath () :PathRec|undefined {
     return undefined
+  }
+
+  isPressed () :boolean {
+    return false
   }
 }
 
@@ -178,6 +192,8 @@ class Monster extends Actor
   protected static DEBUG_FACTOR = 1
 
   tick (model :RanchModel, dt :number) :void {
+    if (this._pressed > 0) this._pressed--
+
     switch (this.action) {
       case ActorAction.Hatching:
         if (++this._counter >= 20 / Monster.DEBUG_FACTOR) {
@@ -260,6 +276,10 @@ class Monster extends Actor
     }
   }
 
+  pressed () :void {
+    this._pressed = 2
+  }
+
   getScale () :number {
     return this._scale
   }
@@ -271,6 +291,10 @@ class Monster extends Actor
 
   getPath () :PathRec|undefined {
     return this._path
+  }
+
+  isPressed () :boolean {
+    return this._pressed > 0
   }
 
   protected walkTo (model :RanchModel, newPos :Vector3) :void
@@ -303,6 +327,9 @@ class Monster extends Actor
   protected _hunger :number = 0
   protected _scale :number = 1
   protected _path? :PathRec
+
+  // a countdown since the last time we were "pressed"
+  protected _pressed :number = 0
 }
 
 class Food extends Actor
@@ -338,6 +365,14 @@ export class RanchModel
     // configure pathfinding
     this._pathFinder = new Pathfinding()
     this._pathFinder.setZoneData(RanchModel.RANCH_ZONE, Pathfinding.createZone(navmesh.geometry))
+  }
+
+  terrainPressed (pos :Vector3) :void
+  {
+    const actor = this.getNearestActor(pos, _ => true, 2)
+    if (actor) {
+      actor.pressed()
+    }
   }
 
   addActor (config :ActorConfig, pos :Vector3, action = ActorAction.Idle) :void
@@ -384,14 +419,16 @@ export class RanchModel
     this.actorConfig.delete(data.id)
   }
 
-  getNearestActor (pos :Vector3, predicate :(actor :Actor) => boolean) :Actor|undefined {
+  getNearestActor (
+      pos :Vector3,
+      predicate :(actor :Actor) => boolean,
+      maxDist :number = Number.POSITIVE_INFINITY) :Actor|undefined {
     let nearest = undefined
-    let dist = Number.POSITIVE_INFINITY
     for (const actor of this._actorData.values()) {
       if (predicate(actor)) {
         const dd = pos.distanceToSquared(actor.pos)
-        if (dd < dist) {
-          dist = dd
+        if (dd < maxDist) {
+          maxDist = dd
           nearest = actor
         }
       }

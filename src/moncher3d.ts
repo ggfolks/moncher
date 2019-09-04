@@ -629,14 +629,12 @@ export class RanchMode extends Mode
 
     // "Petting" a monster has them hit-react
     if (cfg.model.hitReact) {
-      graphCfg.hover = {type: "hover", component: "hovers"}
-      graphCfg.click0 = {type: "mouseButton", button: 0}
-      graphCfg.click1 = {type: "mouseButton", button: 1}
-      graphCfg.click = {type: "or", inputs: ["click0", "click1"]}
-      graphCfg.pet = {type: "and", inputs: ["hover", "click"]}
-      graphCfg.petLatch = {type: "latch", value: "pet", store: "petOrDonePet"}
-      graphCfg.react = animation(cfg.model.hitReact, "petLatch", 1)
-      graphCfg.petOrDonePet = {type: "or", inputs: ["pet", "react"]}
+      graphCfg.hitReact = <NodeConfig>{
+        type: "property",
+        input: "state",
+        name: "hitReact",
+      }
+      graphCfg.animReact = animation(cfg.model.hitReact, "hitReact")
     }
 
     if (cfg.model.wakeUp) {
@@ -730,26 +728,30 @@ export class RanchMode extends Mode
     }
   }
 
-  /**
-   * Place an egg or food. */
-  protected doPlacement (pos :vec2) :void
+  protected mouseToLocation (pos :vec2) :Vector3|undefined
   {
-    // use the navmesh for validating placement, if available
     const obj = this._navMesh || this._terrain
-    if (!obj) return
-    //log.debug("Got egg placing request", "pos", pos)
-    const caster = new Raycaster()
-    const ndc = new Vector2(
-        (pos[0] / window.innerWidth) * 2 - 1,
-        (pos[1] / window.innerHeight) * -2 + 1)
-    caster.setFromCamera(ndc, this._obj.read(this._cameraId) as Camera)
-    for (const result of caster.intersectObject(obj, true)) {
-      this.doPlacement2(result.point)
-      return
+    if (obj) {
+      const caster = new Raycaster()
+      const ndc = new Vector2(
+          (pos[0] / window.innerWidth) * 2 - 1,
+          (pos[1] / window.innerHeight) * -2 + 1)
+      caster.setFromCamera(ndc, this._obj.read(this._cameraId) as Camera)
+      for (const result of caster.intersectObject(obj, true)) {
+        return result.point
+      }
     }
+    return undefined
   }
 
-  protected doPlacement2 (pos :Vector3) :void
+  protected terrainPressed (pos :Vector3) :void
+  {
+    this._ranch.terrainPressed(pos)
+  }
+
+  /**
+   * Place an egg or food. */
+  protected doPlacement (pos :Vector3) :void
   {
     const actorConfig :ActorConfig = (this._uiState === UiState.PlacingEgg)
         ? MonsterDb.getRandomEgg()
@@ -838,16 +840,20 @@ export class RanchMode extends Mode
   }
 
   protected readonly _handChanged = (change :MapChange<number, Pointer>) => {
-    switch (this._uiState) {
-      default:
-        break
+    if (change.type === "set" && change.value.pressed) {
+      const loc = this.mouseToLocation(change.value.position)
+      if (loc) {
+        switch (this._uiState) {
+          default:
+            this.terrainPressed(loc)
+            break
 
-      case UiState.PlacingEgg:
-      case UiState.PlacingFood:
-        if (change.type === "set" && change.value.pressed) {
-          this.doPlacement(change.value.position)
+          case UiState.PlacingEgg:
+          case UiState.PlacingFood:
+            this.doPlacement(loc)
+            break
         }
-        break
+      }
     }
   }
 
