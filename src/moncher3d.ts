@@ -307,15 +307,15 @@ export class RanchMode extends Mode
       components: {
         trans: {initial: new Float32Array([1, 1, 1, 0, 0, 0, 1, 1, 1, 1])},
         obj: {type: "directionalLight"},
-        graph: {
-          clock: {type: "clock"},
-          spin: {type: "multiply", inputs: [.1, "clock"]},
-          accumSpin: {type: "accumulate", input: "spin"},
-          rotation: {type: "Euler", z: "accumSpin"},
-          setVec: {type: "Vector3.applyEuler", vector: new Vector3(0, 1, 0), euler: "rotation"},
-          update: {type: "updatePosition", component: "trans", input: "setVec"},
-          //logRotation: {type: "log", message: "Accumulation rotation", input: "setVec"},
-        },
+//        graph: {
+//          clock: {type: "clock"},
+//          spin: {type: "multiply", inputs: [.1, "clock"]},
+//          accumSpin: {type: "accumulate", input: "spin"},
+//          rotation: {type: "Euler", z: "accumSpin"},
+//          setVec: {type: "Vector3.applyEuler", vector: new Vector3(0, 1, 0), euler: "rotation"},
+//          update: {type: "updatePosition", component: "trans", input: "setVec"},
+//          //logRotation: {type: "log", message: "Accumulation rotation", input: "setVec"},
+//        },
       },
     })
 
