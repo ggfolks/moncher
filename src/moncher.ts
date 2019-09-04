@@ -198,14 +198,13 @@ class Monster extends Actor
           // otherwise we used-up a path segment
           if (path.next) {
             dt -= path.timeLeft
-            path = this._path = path.next
-            continue
+          } else {
+            // otherwise we have finished!
+            this.pos.copy(path.dest)
+            this.setAction(ActorAction.Idle)
+            // proceed to assign path to undefined, and we'll fall out of the while.
           }
-          // otherwise we have finished!
-          this.pos.copy(path.dest)
-          this._path = undefined
-          this.setAction(ActorAction.Idle)
-          return
+          path = this._path = path.next
         }
         break
 
