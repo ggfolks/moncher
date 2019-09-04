@@ -1,3 +1,4 @@
+// Pathfinding needs THREE to be a global
 import * as threejs from "three"
 window["THREE"] = threejs
 
@@ -22,4 +23,4 @@ let ranch :RanchModel = new RanchModel()
 
 app.setMode(new RanchMode(app, ranch))
 
-setInterval(() => { ranch.tick() }, 1000)
+setInterval(() => { ranch.tick(1000) }, 1000)

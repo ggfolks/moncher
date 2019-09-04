@@ -58,6 +58,7 @@ import {
   ActorKind,
   ActorModel,
   ActorState,
+  PathRec,
   RanchModel,
 } from "./moncher"
 import {MonsterDb} from "./monsterdb"
@@ -75,73 +76,48 @@ class ActorInfo
   ) {}
 }
 
-class PathRec
-{
-  constructor (
-    /** The source location. */
-    readonly src :Vector3,
-    /** The destination location. */
-    public dest :Vector3,
-    /** How long shall we take? */
-    readonly duration :number,
-    /** The next section of the path. */
-    public next? :PathRec
-  ) {}
-
-  /** Ending timestamp (start time + duration) (filled-in by PathSystem) */
-  stamp? :number
-}
-
 class PathSystem extends System
 {
   constructor (
     domain :Domain,
     readonly trans :TransformComponent,
-    readonly paths :Component<PathRec|undefined>,
-    readonly getY :(x :number, z :number) => number,
+    readonly state :Component<ActorState>,
   ) {
-    super(domain, Matcher.hasAllC(trans.id, paths.id))
+    super(domain, Matcher.hasAllC(trans.id, state.id))
   }
 
   update (clock :Clock) {
-    const pos :Vector3 = new Vector3()
+    const scratch :Vector3 = new Vector3()
     this.onEntities(id => {
-      const pathRec = this.paths.read(id)
-      if (pathRec) {
-        if (!pathRec.stamp) {
-//          log.debug("Starting",
-//            "dest", pathRec.dest,
-//            "src", pathRec.src)
-          // calculate the end time for the walk
-          pathRec.stamp = clock.time + pathRec.duration
+      // TODO: Put paths back into a separate component, so that we can update them.. ?
+      const state = this.state.read(id)
+      let path :PathRec|undefined = state.path
+      // TODO: handle "facing" directions somewhere, either here or the model
+      // maybe here since we handle advancing along segments that the model hasn't yet!
+      let overtime = 0
+      while (path) {
+        if (!path.stamp) {
+          path.stamp = clock.time + path.duration - overtime
+
           // calculate the direction
-          const subbed = new Vector3().subVectors(pathRec.dest, pathRec.src)
+          const subbed = scratch.subVectors(path.dest, path.src)
           subbed.y = 0
           this.trans.updateQuaternion(id,
               new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), subbed.normalize()))
         }
-        const timeLeft = pathRec.stamp - clock.time
+        const timeLeft = path.stamp - clock.time
         if (timeLeft <= 0) {
-          this.trans.updatePosition(id, pathRec.dest)
-          this.paths.update(id, pathRec.next)
-          if (!pathRec.next) {
+          overtime = -timeLeft
+          path = path.next
+          if (!path) {
+            // rotate back forward
             this.trans.updateQuaternion(id, new Quaternion()) // face forward
           }
-//          log.debug("Reached destination",
-//            "dest", pathRec.dest)
-          // TODO: carry over remainder time to next segment?
-
-        } else {
-          pos.lerpVectors(pathRec.dest, pathRec.src, timeLeft / pathRec.duration)
-//          log.debug("Lerping...",
-//            "dest", pathRec.dest,
-//            "src", pathRec.src,
-//            "%", timeLeft / pathRec.duration,
-//            "pos", pos)
-          // but override the Y value according to terrain?
-          pos.y = this.getY(pos.x, pos.z)
-          this.trans.updatePosition(id, pos)
+          continue
         }
+        // otherwise, there's time left and we should update the position
+        scratch.lerpVectors(path.dest, path.src, timeLeft / path.duration)
+        this.trans.updatePosition(id, scratch)
       }
     })
   }
@@ -155,13 +131,13 @@ const enum UiState
 }
 
 /**
- * Vector3.epsilonEquals ?  */
-function vec3NearlyEqual (a :Vector3, b :Vector3) :boolean {
-  const epsilon = .0001
-  return (Math.abs(a.x - b.x) < epsilon) &&
-    (Math.abs(a.y - b.y) < epsilon) &&
-    (Math.abs(a.z - b.z) < epsilon)
-}
+// * Vector3.epsilonEquals ?  */
+//function vec3NearlyEqual (a :Vector3, b :Vector3) :boolean {
+//  const epsilon = .0001
+//  return (Math.abs(a.x - b.x) < epsilon) &&
+//    (Math.abs(a.y - b.y) < epsilon) &&
+//    (Math.abs(a.z - b.z) < epsilon)
+//}
 
 /**
  * Look for a descendant with the specified name; remove and return it. */
@@ -261,12 +237,12 @@ export class RanchMode extends Mode
         new DenseValueComponent<ActorState>("state",
           new ActorState(new Vector3(), 1, ActorAction.Idle))
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
-    const paths = this._paths = new SparseValueComponent<PathRec|undefined>("paths", undefined)
+ //   const paths = this._paths = new SparseValueComponent<PathRec|undefined>("paths", undefined)
     const graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
 
     const domain = this._domain = new Domain({},
-        {trans, obj, mixer, body, state, paths, hovers, graph})
-    this._pathsys = new PathSystem(domain, trans, paths, this.getY.bind(this))
+        {trans, obj, mixer, body, state, /*paths,*/ hovers, graph})
+    this._pathsys = new PathSystem(domain, trans, state)
     const scenesys = this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
     /*const graphsys =*/ this._graphsys = new GraphSystem(nodeCtx, domain, graph)
@@ -424,58 +400,57 @@ export class RanchMode extends Mode
     this._state.update(actorInfo.entityId, state)
     this._trans.updateScale(actorInfo.entityId, new Vector3(state.scale, state.scale, state.scale))
 
-    // then check their location against their PathRec...
-    //const pos = this.location2to3(state.x, state.y)
-    let oldRec = this._paths.read(actorInfo.entityId)
-    if (oldRec) {
-      while (oldRec.next) {
-        oldRec = oldRec.next
-      }
-      if (vec3NearlyEqual(oldRec.dest, state.pos)) {
-        // just update the position in the old record
-        oldRec.dest = state.pos
-        return
-      }
-    }
-
-    const oldPos = this._trans.readPosition(actorInfo.entityId, new Vector3())
-    if (!oldRec && vec3NearlyEqual(state.pos, oldPos)) {
-      // just update the translation and return
-      this._trans.updatePosition(actorInfo.entityId, state.pos)
-      return
-    }
-//    log.debug("Want new path", "oldPos", oldPos)
-
-    let path :Vector3[]
-    if (this._pathFinder) {
-      const groupId = this._pathFinder.getGroup(RanchMode.RANCH_ZONE, oldPos)
-      const foundPath = (groupId === null)
-        ? null
-        : this._pathFinder.findPath(
-          oldPos, state.pos, RanchMode.RANCH_ZONE, groupId)
-      if (foundPath) {
-        path = foundPath
-        path.unshift(oldPos) // we need to manually put the first point at the beginning
-      } else {
-        log.debug("Rejecting bogus path")
-        return
-      }
-
-    } else {
-      path = [oldPos, state.pos]
-    }
-//    log.debug("Found path!", "path", path)
-
-    let rec :PathRec|undefined = undefined
-    while (path.length > 1) {
-      const dest = path.pop()!
-      const src = path[path.length - 1]
-      const duration = (src.distanceTo(dest) * 1000) /
-          (RanchMode.ACTOR_MOVE_DISTANCE_PER_SECOND * state.scale)
-      rec = new PathRec(src, dest, duration, rec)
-//      log.info("Added to end...", "src", src, "dest", dest)
-    }
-    this._paths.update(actorInfo.entityId, rec)
+//    // then check their location against their PathRec...
+//    let oldRec = this._paths.read(actorInfo.entityId)
+//    if (oldRec) {
+//      while (oldRec.next) {
+//        oldRec = oldRec.next
+//      }
+//      if (vec3NearlyEqual(oldRec.dest, state.pos)) {
+//        // just update the position in the old record
+//        oldRec.dest = state.pos
+//        return
+//      }
+//    }
+//
+//    const oldPos = this._trans.readPosition(actorInfo.entityId, new Vector3())
+//    if (!oldRec && vec3NearlyEqual(state.pos, oldPos)) {
+//      // just update the translation and return
+//      this._trans.updatePosition(actorInfo.entityId, state.pos)
+//      return
+//    }
+////    log.debug("Want new path", "oldPos", oldPos)
+//
+//    let path :Vector3[]
+//    if (this._pathFinder) {
+//      const groupId = this._pathFinder.getGroup(RanchMode.RANCH_ZONE, oldPos)
+//      const foundPath = (groupId === null)
+//        ? null
+//        : this._pathFinder.findPath(
+//          oldPos, state.pos, RanchMode.RANCH_ZONE, groupId)
+//      if (foundPath) {
+//        path = foundPath
+//        path.unshift(oldPos) // we need to manually put the first point at the beginning
+//      } else {
+//        log.debug("Rejecting bogus path")
+//        return
+//      }
+//
+//    } else {
+//      path = [oldPos, state.pos]
+//    }
+////    log.debug("Found path!", "path", path)
+//
+//    let rec :PathRec|undefined = undefined
+//    while (path.length > 1) {
+//      const dest = path.pop()!
+//      const src = path[path.length - 1]
+//      const duration = (src.distanceTo(dest) * 1000) /
+//          (RanchMode.ACTOR_MOVE_DISTANCE_PER_SECOND * state.scale)
+//      rec = new PathRec(src, dest, duration, rec)
+////      log.info("Added to end...", "src", src, "dest", dest)
+//    }
+//    this._paths.update(actorInfo.entityId, rec)
   }
 
   protected addActor (id :number, state :ActorState) :ActorInfo
@@ -582,8 +557,9 @@ export class RanchMode extends Mode
     // TODO A real Walking activity would simplify this, TODO when we walk on the navmesh
     if (cfg.model.walk) {
       graphCfg.readPath = <NodeConfig>{
-        type: "readComponent",
-        component: "paths",
+        type: "property",
+        input: "state",
+        name: "path",
       }
       graphCfg.noPath = <NodeConfig>{
         type: "equals",
@@ -684,7 +660,6 @@ export class RanchMode extends Mode
         state: {initial: state},
         hovers: {},
         mixer: {},
-        paths: {},
         graph: graphCfg,
       },
     })
@@ -819,7 +794,7 @@ export class RanchMode extends Mode
   protected _trans! :TransformComponent
   protected _obj! :Component<Object3D>
   protected _state! :Component<ActorState>
-  protected _paths! :Component<PathRec|undefined>
+  //protected _paths! :Component<PathRec|undefined>
   protected _graphsys! :GraphSystem
   protected _pathsys! :PathSystem
   protected _scenesys! :SceneSystem
@@ -857,7 +832,6 @@ export class RanchMode extends Mode
     }
   }
 
-  private static ACTOR_MOVE_DISTANCE_PER_SECOND = 0.8
   private static CAMERA_HEIGHT = 7 // starting y coordinate of camera
   private static CAMERA_SETBACK = 14 // starting z coordinate of camera
 

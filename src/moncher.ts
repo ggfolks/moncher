@@ -43,6 +43,30 @@ export interface ActorModel {
   eat? :string
 }
 
+export class PathRec
+{
+  constructor (
+    /** The source location. */
+    readonly src :Vector3,
+    /** The destination location. */
+    readonly dest :Vector3,
+    /** The duration. */
+    readonly duration :number,
+    /** Any next segment. */
+    readonly next? :PathRec
+  ) {
+    this.timeLeft = duration
+  }
+
+  /** Ending timestamp (client only). */
+  // TRANSIENT?
+  stamp? :number
+
+  /** Time left (server only) */
+  // TRANSIENT?
+  timeLeft :number
+}
+
 /**
  * Configuration of an actor.
  */
@@ -57,15 +81,18 @@ export class ActorConfig
     readonly startingActionPts :number = 5,
     readonly maxActionPts :number = 10,
     readonly regenActionPts :number = .2,
+    readonly baseWalkSpeed :number = 0.8,
   ) {}
 }
 
 export const enum ActorAction {
   Idle,
   Hatching,
+  Walking,
   Eating,
   Sleeping,
   Waking,
+  Unknown,
 }
 
 /**
@@ -80,6 +107,8 @@ export class ActorState
     readonly scale :number,
     /** The current activity of the actor. */
     readonly action :ActorAction,
+    /** Any path segments the actor is following. */
+    readonly path? :PathRec,
   ) {}
 }
 
@@ -112,15 +141,19 @@ abstract class Actor
   {
   }
 
-  abstract tick (model :RanchModel) :void
+  abstract tick (model :RanchModel, dt :number) :void
 
   toState () :ActorState
   {
-    return new ActorState(this.pos.clone(), this.getScale(), this.action)
+    return new ActorState(this.pos.clone(), this.getScale(), this.action, this.getPath())
   }
 
   getScale () :number {
     return 1
+  }
+
+  getPath () :PathRec|undefined {
+    return undefined
   }
 }
 
@@ -131,7 +164,7 @@ class Egg extends Actor
     this.health = 50
   }
 
-  tick (model :RanchModel) :void {
+  tick (model :RanchModel, dt :number) :void {
     this.health -= 1
     if (this.action === ActorAction.Idle && (this.health < 20)) {
       this.action = ActorAction.Hatching
@@ -144,11 +177,35 @@ class Monster extends Actor
 {
   protected static DEBUG_FACTOR = 5
 
-  tick (model :RanchModel) :void {
+  tick (model :RanchModel, dt :number) :void {
     switch (this.action) {
       case ActorAction.Hatching:
         if (++this._counter >= 20 / Monster.DEBUG_FACTOR) {
           this.setAction(ActorAction.Idle)
+        }
+        break
+
+      case ActorAction.Walking:
+        // advance along our path positions
+        let path = this._path
+        while (path) {
+          if (dt < path.timeLeft) {
+            path.timeLeft -= dt
+            // update our position along this path piece
+            this.pos.lerpVectors(path.dest, path.src, path.timeLeft / path.duration)
+            return
+          }
+          // otherwise we used-up a path segment
+          if (path.next) {
+            dt -= path.timeLeft
+            path = this._path = path.next
+            continue
+          }
+          // otherwise we have finished!
+          this.pos.copy(path.dest)
+          this._path = undefined
+          this.setAction(ActorAction.Idle)
+          return
         }
         break
 
@@ -162,30 +219,31 @@ class Monster extends Actor
 
       case ActorAction.Sleeping:
         if (++this._counter >= 100 / Monster.DEBUG_FACTOR) {
-          this.setAction(ActorAction.Waking)
+          this.setAction(ActorAction.Waking, Math.random() * 10)
         }
         break
 
       case ActorAction.Waking:
         if (++this._counter >= 10 / Monster.DEBUG_FACTOR) {
+          this.setAction(ActorAction.Idle) // just giving time to wake up fully
+        }
+        break
+
+      case ActorAction.Unknown: // Do nothing for a little while
+        if (++this._counter >= 20 / Monster.DEBUG_FACTOR) {
           this.setAction(ActorAction.Idle)
         }
         break
 
-      default:
+      default: // Idle
         if (++this._hunger > 100 / Monster.DEBUG_FACTOR) {
           const food = model.getNearestActor(this.pos,
               actor => (actor.config.kind === ActorKind.FOOD))
           if (food) {
             if (this.pos.distanceTo(food.pos) < .1) {
-              if (++this._counter >= 10 / Monster.DEBUG_FACTOR) {
-                food.health -= 10
-                this.setAction(ActorAction.Eating)
-              }
+              this.setAction(ActorAction.Eating)
             } else {
-              this.pos.copy(food.pos)
-              // TODO: maybe we split off an ActorAction.FindingFood or Walking
-              this._counter = 0
+              this.walkTo(model, food.pos)
             }
             break
           }
@@ -196,7 +254,7 @@ class Monster extends Actor
         if (Math.random() < (.025 * Monster.DEBUG_FACTOR)) {
           const newpos = model.randomPositionFrom(this.pos)
           if (newpos) {
-            this.pos.copy(newpos)
+            this.walkTo(model, newpos)
           }
         }
         break
@@ -207,15 +265,45 @@ class Monster extends Actor
     return this._scale
   }
 
-  protected setAction (action :ActorAction) :void
+  /** Get the actor's speed specified in distance per second. */
+  getSpeed () :number {
+    return this.config.baseWalkSpeed * this._scale
+  }
+
+  getPath () :PathRec|undefined {
+    return this._path
+  }
+
+  protected walkTo (model :RanchModel, newPos :Vector3) :void
+  {
+    const path = model.findPath(this.pos, newPos)
+    if (!path) {
+      this.setAction(ActorAction.Unknown)
+      return
+    }
+
+    let rec :PathRec|undefined = undefined
+    const speed = 1000 / this.getSpeed()
+    while (path.length > 1) {
+      const dest = path.pop()!
+      const src = path[path.length - 1]
+      const duration = src.distanceTo(dest) * speed
+      rec = new PathRec(src, dest, duration, rec)
+    }
+    this._path = rec
+    this.setAction(ActorAction.Walking)
+  }
+
+  protected setAction (action :ActorAction, counterInit :number = 0) :void
   {
     this.action = action
-    this._counter = 0
+    this._counter = Math.trunc(counterInit)
   }
 
   protected _counter :number = 0
   protected _hunger :number = 0
   protected _scale :number = 1
+  protected _path? :PathRec
 }
 
 class Food extends Actor
@@ -328,13 +416,30 @@ export class RanchModel
     return node
   }
 
+  findPath (src :Vector3, dest :Vector3) :Vector3[]|undefined {
+    if (!this._pathFinder) {
+      log.warn("Pathfinder unknown. Can't path.")
+      return undefined
+    }
+
+    const groupId = this._pathFinder.getGroup(RanchModel.RANCH_ZONE, src)
+    if (groupId === null) return undefined
+    const foundPath = this._pathFinder.findPath(src, dest, RanchModel.RANCH_ZONE, groupId)
+    if (!foundPath) return undefined
+
+    // put the damn src back on the start of the list
+    foundPath.unshift(src)
+    return foundPath
+  }
+
   /**
    * Advance the simulation.
+   * @param dt delta time, in milliseconds.
    */
-  tick () :void
+  tick (dt :number) :void
   {
     for (const actor of this._actorData.values()) {
-      actor.tick(this)
+      actor.tick(this, dt)
     }
 
     // publish all changes..
