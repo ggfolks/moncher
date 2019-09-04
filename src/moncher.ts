@@ -175,7 +175,7 @@ class Egg extends Actor
 
 class Monster extends Actor
 {
-  protected static DEBUG_FACTOR = 5
+  protected static DEBUG_FACTOR = 1
 
   tick (model :RanchModel, dt :number) :void {
     switch (this.action) {
