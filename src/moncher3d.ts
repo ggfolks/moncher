@@ -627,6 +627,23 @@ export class RanchMode extends Mode
       isIdle.push("notSleeping")
     }
 
+    // configure petting detection
+    graphCfg.hover = {type: "hover", component: "hovers"}
+    graphCfg.click0 = {type: "mouseButton", button: 0}
+    graphCfg.click1 = {type: "mouseButton", button: 1}
+    graphCfg.click = {type: "or", inputs: ["click0", "click1"]}
+    graphCfg.petting = {type: "and", inputs: ["hover", "click"]}
+    graphCfg.detectPet = {
+      type: "onChange",
+      input: "petting",
+      callback: (nv :boolean, ov :boolean) => {
+        if (nv) {
+          this.actorPetted(id)
+        }
+      },
+    }
+    //graphCfg.logPet = {type: "log", message: "pet?", input: "petting"}
+
     // "Petting" a monster has them hit-react
     if (cfg.model.hitReact) {
       graphCfg.hitReact = <NodeConfig>{
@@ -744,9 +761,9 @@ export class RanchMode extends Mode
     return undefined
   }
 
-  protected terrainPressed (pos :Vector3) :void
+  protected actorPetted (id :number) :void
   {
-    this._ranch.terrainPressed(pos)
+    this._ranch.actorPetted(id)
   }
 
   /**
@@ -816,20 +833,16 @@ export class RanchMode extends Mode
   }
 
   protected readonly _handChanged = (change :MapChange<number, Pointer>) => {
-    if (change.type === "set" && change.value.pressed) {
-      const loc = this.mouseToLocation(change.value.position)
-      if (loc) {
-        switch (this._uiState) {
-          default:
-            this.terrainPressed(loc)
-            break
-
-          case UiState.PlacingEgg:
-          case UiState.PlacingFood:
-            this.doPlacement(loc)
-            break
+    switch (this._uiState) {
+      case UiState.PlacingEgg:
+      case UiState.PlacingFood:
+        if (change.type === "set" && change.value.pressed) {
+          const loc = this.mouseToLocation(change.value.position)
+          if (loc) this.doPlacement(loc)
         }
-      }
+        break
+
+      default: break
     }
   }
 

@@ -367,14 +367,18 @@ export class RanchModel
     this._pathFinder.setZoneData(RanchModel.RANCH_ZONE, Pathfinding.createZone(navmesh.geometry))
   }
 
-  terrainPressed (pos :Vector3) :void
+  /**
+   * Called from client. */
+  actorPetted (id :number) :void
   {
-    const actor = this.getNearestActor(pos, _ => true, 5)
+    const actor = this._actorData.get(id)
     if (actor) {
       actor.pressed()
     }
   }
 
+  /**
+   * Called from client. */
   addActor (config :ActorConfig, pos :Vector3, action = ActorAction.Idle) :void
   {
     this.validateConfig(config)
