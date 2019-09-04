@@ -36,7 +36,7 @@ import {
   System,
 } from "tfw/entity/entity"
 import {TransformComponent} from "tfw/space/entity"
-import {AnimationSystem, HoverMap, SceneSystem} from "tfw/scene3/entity"
+import {AnimationSystem, HoverMap, SceneSystem, loadGLTFAnimationClip} from "tfw/scene3/entity"
 import {Host3} from "tfw/ui/host3"
 
 import {registerLogicNodes} from "tfw/graph/logic"
@@ -466,6 +466,17 @@ export class RanchMode extends Mode
     if (!cfg) {
       // this isn't supposed to happen
       throw new Error("Actor doesn't have a config in the RanchModel")
+    }
+
+    // Preloading!
+    if (cfg.spawn) {
+      // let's go ahead and pre-load the model of what we're going to spawn.
+      // Loading the animations is the only way
+      const runLater = () => {
+        // TODO: is this safe? If it never loads, we'll never unlisten. :(
+        loadGLTFAnimationClip(cfg.spawn!.model.model + "#").once(v => {})
+      }
+      setTimeout(runLater, 0)
     }
 
     const graphCfg :GraphConfig = {}
