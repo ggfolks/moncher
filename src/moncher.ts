@@ -3,6 +3,7 @@ import {log} from "tfw/core/util"
 
 import {Mesh, Vector3} from "three"
 import {Pathfinding} from "three-pathfinding"
+import {MONSTER_ACCELERANT} from "./debug"
 
 /**
  * The kind of actor.
@@ -217,15 +218,13 @@ class Egg extends Actor
 
 class Monster extends Actor
 {
-  protected static DEBUG_FACTOR = 5
-
   tick (model :RanchModel, dt :number) :void {
     // clear flags
     this._touched = false
 
     switch (this.action) {
       case ActorAction.Hatching:
-        if (++this._counter >= 20 / Monster.DEBUG_FACTOR) {
+        if (++this._counter >= 20 / MONSTER_ACCELERANT) {
           this.setAction(ActorAction.Idle)
         }
         break
@@ -254,7 +253,7 @@ class Monster extends Actor
         break
 
       case ActorAction.Eating:
-        if (++this._counter >= 20 / Monster.DEBUG_FACTOR) {
+        if (++this._counter >= 20 / MONSTER_ACCELERANT) {
           this._hunger = 0
           this._scale *= 1.2
           this.setAction(ActorAction.Sleeping)
@@ -262,25 +261,25 @@ class Monster extends Actor
         break
 
       case ActorAction.Sleeping:
-        if (++this._counter >= 100 / Monster.DEBUG_FACTOR) {
+        if (++this._counter >= 100 / MONSTER_ACCELERANT) {
           this.setAction(ActorAction.Waking, Math.random() * 10)
         }
         break
 
       case ActorAction.Waking:
-        if (++this._counter >= 10 / Monster.DEBUG_FACTOR) {
+        if (++this._counter >= 10 / MONSTER_ACCELERANT) {
           this.setAction(ActorAction.Idle) // just giving time to wake up fully
         }
         break
 
       case ActorAction.Unknown: // Do nothing for a little while
-        if (++this._counter >= 20 / Monster.DEBUG_FACTOR) {
+        if (++this._counter >= 20 / MONSTER_ACCELERANT) {
           this.setAction(ActorAction.Idle)
         }
         break
 
       default: // Idle
-        if (++this._hunger > 100 / Monster.DEBUG_FACTOR) {
+        if (++this._hunger > 100 / MONSTER_ACCELERANT) {
           const food = model.getNearestActor(this.pos,
               actor => (actor.config.kind === ActorKind.FOOD))
           if (food) {
@@ -295,7 +294,7 @@ class Monster extends Actor
         }
 
         // Wander randomly!
-        if (Math.random() < (.075 * Monster.DEBUG_FACTOR)) {
+        if (Math.random() < (.075 * MONSTER_ACCELERANT)) {
           const newpos = model.randomPositionFrom(this.pos)
           if (newpos) {
             this.walkTo(model, newpos)
