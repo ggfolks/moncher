@@ -195,7 +195,8 @@ class Monster extends Actor
   protected static DEBUG_FACTOR = 1
 
   tick (model :RanchModel, dt :number) :void {
-    if (this._touched > 0) this._touched--
+    // clear flags
+    this._touched = false
 
     switch (this.action) {
       case ActorAction.Hatching:
@@ -280,7 +281,7 @@ class Monster extends Actor
   }
 
   touched () :void {
-    this._touched = 2
+    this._touched = true
   }
 
   getScale () :number {
@@ -297,7 +298,7 @@ class Monster extends Actor
   }
 
   isTouched () :boolean {
-    return this._touched > 0
+    return this._touched
   }
 
   protected walkTo (model :RanchModel, newPos :Vector3) :void
@@ -331,8 +332,8 @@ class Monster extends Actor
   protected _scale :number = 1
   protected _path? :PathRec
 
-  // a countdown since the last time we were touched
-  protected _touched :number = 0
+  protected _touched :boolean = false
+  protected _hit :boolean = false
 }
 
 class Food extends Actor
