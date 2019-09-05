@@ -377,6 +377,8 @@ export class RanchModel
     const actor = this._actorData.get(id)
     if (actor) {
       actor.touched()
+      // re-publish that actor immediately
+      this._actors.set(actor.id, actor.toState())
     }
   }
 
