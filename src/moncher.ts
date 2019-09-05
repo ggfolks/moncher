@@ -281,7 +281,15 @@ class Monster extends Actor
   }
 
   touched () :void {
-    this._touched = true
+    switch (this.action) {
+      case ActorAction.Sleeping:
+        this.setAction(ActorAction.Waking, 10)
+        break
+
+      default:
+        this._touched = true
+        break
+    }
   }
 
   getScale () :number {
