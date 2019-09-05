@@ -112,8 +112,8 @@ export class ActorState
     readonly action :ActorAction,
     /** Any path segments the actor is following. */
     readonly path? :PathRec,
-    /** Are we reacting to being touched? */
-    readonly hitReact? :boolean,
+    /** Are we being touched by a user? */
+    readonly touched? :boolean,
   ) {}
 }
 
@@ -151,14 +151,14 @@ abstract class Actor
   /**
    * This actor has been touched by a user.
    */
-  pressed () :void {
+  touched () :void {
     // by default do nothing
   }
 
   toState () :ActorState
   {
     return new ActorState(
-        this.pos.clone(), this.getScale(), this.action, this.getPath(), this.isPressed())
+        this.pos.clone(), this.getScale(), this.action, this.getPath(), this.isTouched())
   }
 
   getScale () :number {
@@ -169,7 +169,7 @@ abstract class Actor
     return undefined
   }
 
-  isPressed () :boolean {
+  isTouched () :boolean {
     return false
   }
 }
@@ -195,7 +195,7 @@ class Monster extends Actor
   protected static DEBUG_FACTOR = 1
 
   tick (model :RanchModel, dt :number) :void {
-    if (this._pressed > 0) this._pressed--
+    if (this._touched > 0) this._touched--
 
     switch (this.action) {
       case ActorAction.Hatching:
@@ -279,8 +279,8 @@ class Monster extends Actor
     }
   }
 
-  pressed () :void {
-    this._pressed = 2
+  touched () :void {
+    this._touched = 2
   }
 
   getScale () :number {
@@ -296,8 +296,8 @@ class Monster extends Actor
     return this._path
   }
 
-  isPressed () :boolean {
-    return this._pressed > 0
+  isTouched () :boolean {
+    return this._touched > 0
   }
 
   protected walkTo (model :RanchModel, newPos :Vector3) :void
@@ -331,8 +331,8 @@ class Monster extends Actor
   protected _scale :number = 1
   protected _path? :PathRec
 
-  // a countdown since the last time we were "pressed"
-  protected _pressed :number = 0
+  // a countdown since the last time we were touched
+  protected _touched :number = 0
 }
 
 class Food extends Actor
@@ -372,11 +372,11 @@ export class RanchModel
 
   /**
    * Called from client. */
-  actorPetted (id :number) :void
+  actorTouched (id :number) :void
   {
     const actor = this._actorData.get(id)
     if (actor) {
-      actor.pressed()
+      actor.touched()
     }
   }
 

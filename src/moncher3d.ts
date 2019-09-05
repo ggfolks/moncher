@@ -659,27 +659,26 @@ export class RanchMode extends Mode
       isIdle.push("notSleeping")
     }
 
-    // configure petting detection
+    // configure touch detection for actors
     graphCfg.hover = {type: "hover", component: "hovers"}
-    graphCfg.detectPet = {
+    graphCfg.detectTouch = {
       type: "onChange",
       input: ["hover", "pressed"],
       callback: (nv :boolean, ov :boolean) => {
         if (nv) {
-          this.actorPetted(id)
+          this.actorTouched(id)
         }
       },
     }
-    //graphCfg.logPet = {type: "log", message: "pet?", input: "petting"}
 
-    // "Petting" a monster has them hit-react
-    if (cfg.model.hitReact) {
-      graphCfg.hitReact = <NodeConfig>{
+    // Touching a monster has them happy-react
+    if (cfg.model.happyReact) {
+      graphCfg.touched = <NodeConfig>{
         type: "property",
         input: "state",
-        name: "hitReact",
+        name: "touched",
       }
-      graphCfg.animReact = animation(cfg.model.hitReact, "hitReact")
+      graphCfg.animReact = animation(cfg.model.happyReact, "touched")
     }
 
     if (cfg.model.wakeUp) {
@@ -793,9 +792,9 @@ export class RanchMode extends Mode
     return undefined
   }
 
-  protected actorPetted (id :number) :void
+  protected actorTouched (id :number) :void
   {
-    this._ranch.actorPetted(id)
+    this._ranch.actorTouched(id)
   }
 
   /**
