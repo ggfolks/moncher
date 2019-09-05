@@ -369,12 +369,14 @@ export class RanchMode extends Mode
   }
 
   /**
-   * Attempt to colorize the object and all its children.
-   */
+   * Attempt to colorize the object and all its children.  */
   protected colorize (obj :Object3D, color :Color) :void
   {
     if ((obj instanceof Mesh) && (obj.material instanceof MeshStandardMaterial)) {
-      obj.material.color = color
+      // clone the material so that we don't change all instances of this object
+      const newMat = new MeshStandardMaterial(obj.material as object)
+      newMat.color = color
+      obj.material = newMat
     }
     for (const child of obj.children) {
       this.colorize(child, color)
