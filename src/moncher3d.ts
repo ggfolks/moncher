@@ -618,7 +618,6 @@ export class RanchMode extends Mode
         name: "touched",
       }
       graphCfg.animReact = animation(cfg.model.happyReact, "touched", 1)
-      graphCfg.animReact.dontCallStop = true
     }
 
     if (cfg.model.wakeUp) {
