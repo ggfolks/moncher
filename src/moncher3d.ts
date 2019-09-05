@@ -510,10 +510,12 @@ export class RanchMode extends Mode
       graphCfg.notHatching = <NodeConfig>{type: "not", input: "isHatching"}
 
       if (isEgg) {
-        isIdle.push("notHatching")
-        if (cfg.model.idle) {
-          graphCfg.idle = animation(cfg.model.idle, "notHatching")
+        graphCfg.isReady = <NodeConfig>{
+          type: "equals",
+          x: "action",
+          y: ActorAction.ReadyToHatch,
         }
+        isIdle.push("isReady")
 
         graphCfg.notFinishedHatching = <NodeConfig>{
           type: "not",

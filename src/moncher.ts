@@ -90,6 +90,7 @@ export class ActorConfig
 
 export const enum ActorAction {
   Idle,
+  ReadyToHatch,
   Hatching,
   Walking,
   Eating,
@@ -151,7 +152,7 @@ abstract class Actor
   /**
    * This actor has been touched by a user.
    */
-  touched () :void {
+  setTouched (model :RanchModel) :void {
     // by default do nothing
   }
 
@@ -181,18 +182,42 @@ class Egg extends Actor
     this.health = 50
   }
 
+  // override
+  setTouched (model :RanchModel) :void {
+    switch (this.action) {
+      case ActorAction.ReadyToHatch:
+        this.action = ActorAction.Hatching
+        model.addActor(this.config.spawn!, this.pos, ActorAction.Hatching)
+        break
+
+      default:
+        // do nothing  (Maybe play wiggle once?)
+        break
+    }
+  }
+
   tick (model :RanchModel, dt :number) :void {
-    this.health -= 1
-    if (this.action === ActorAction.Idle && (this.health < 20)) {
-      this.action = ActorAction.Hatching
-      model.addActor(this.config.spawn!, this.pos, ActorAction.Hatching)
+    switch (this.action) {
+      case ActorAction.Idle:
+        if (--this.health < 20) {
+          this.action = ActorAction.ReadyToHatch
+        }
+        break;
+
+      case ActorAction.Hatching:
+        --this.health
+        break
+
+      default:
+        // do nothing
+        break
     }
   }
 }
 
 class Monster extends Actor
 {
-  protected static DEBUG_FACTOR = 1
+  protected static DEBUG_FACTOR = 5
 
   tick (model :RanchModel, dt :number) :void {
     // clear flags
@@ -280,7 +305,7 @@ class Monster extends Actor
     }
   }
 
-  touched () :void {
+  setTouched (model :RanchModel) :void {
     switch (this.action) {
       case ActorAction.Sleeping:
         this.setAction(ActorAction.Waking, 10)
@@ -385,7 +410,7 @@ export class RanchModel
   {
     const actor = this._actorData.get(id)
     if (actor) {
-      actor.touched()
+      actor.setTouched(this)
       // re-publish that actor immediately
       this._actors.set(actor.id, actor.toState())
     }
