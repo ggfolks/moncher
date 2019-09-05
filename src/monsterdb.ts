@@ -67,6 +67,20 @@ export class MonsterDb
       wakeUp:     "monsters/LobberRed.glb#WakeUp",
       happyReact: "monsters/LobberRed.glb#HappyReact",
     }))
+
+    monsters.push(new ActorConfig(ActorKind.RUNNER, <ActorModel>{
+      model:      "monsters/PonyBlue.glb",
+      idle:       "monsters/PonyBlue.glb#Idle",
+      hatch:      "monsters/PonyBlue.glb#Hatch",
+      walk:       "monsters/PonyBlue.glb#Walk",
+      attack:     "monsters/PonyBlue.glb#Attack",
+      hitReact:   "monsters/PonyBlue.glb#HitReact",
+      eat:        "monsters/PonyBlue.glb#Eat",
+      faint:      "monsters/PonyBlue.glb#Faint",
+      sleep:      "monsters/PonyBlue.glb#Sleep",
+      wakeUp:     "monsters/PonyBlue.glb#WakeUp",
+      happyReact: "monsters/PonyBlue.glb#HappyReact",
+    }))
   }
 
   private static _monsters? :ActorConfig[]
