@@ -2,10 +2,10 @@ import {
 //  AnimationAction,
   AnimationMixer,
   Camera,
-//  Color,
-//  Math as ThreeMath,
+  Color,
   Object3D,
   Mesh,
+  MeshStandardMaterial,
   Quaternion,
   Raycaster,
   Vector2,
@@ -36,7 +36,13 @@ import {
   System,
 } from "tfw/entity/entity"
 import {TransformComponent} from "tfw/space/entity"
-import {AnimationSystem, HoverMap, SceneSystem, loadGLTFAnimationClip} from "tfw/scene3/entity"
+import {
+  AnimationSystem,
+  GLTFConfig,
+  HoverMap,
+  SceneSystem,
+  loadGLTFAnimationClip
+} from "tfw/scene3/entity"
 import {Host3} from "tfw/ui/host3"
 
 import {registerLogicNodes} from "tfw/graph/logic"
@@ -363,6 +369,19 @@ export class RanchMode extends Mode
   }
 
   /**
+   * Attempt to colorize the object and all its children.
+   */
+  protected colorize (obj :Object3D, color :Color) :void
+  {
+    if ((obj instanceof Mesh) && (obj.material instanceof MeshStandardMaterial)) {
+      obj.material.color = color
+    }
+    for (const child of obj.children) {
+      this.colorize(child, color)
+    }
+  }
+
+  /**
    * Configure pathfinding once we have the navmesh. */
   protected configurePathFinding (navMesh :Mesh) :void
   {
@@ -540,12 +559,12 @@ export class RanchMode extends Mode
     // add animation logic for animations we support
     const isIdle :string[] = []
     if (cfg.model.hatch) {
+      const isEgg :boolean = (cfg.kind === ActorKind.EGG)
       graphCfg.isHatching = <NodeConfig>{
         type: "equals",
         x: "action",
         y: ActorAction.Hatching,
       }
-      const isEgg :boolean = (cfg.kind === ActorKind.EGG)
       graphCfg.hatch = animation(cfg.model.hatch, "isHatching", 1, isEgg)
       graphCfg.notHatching = <NodeConfig>{type: "not", input: "isHatching"}
 
@@ -693,11 +712,15 @@ export class RanchMode extends Mode
       }
     }
 
+    const objDef = <GLTFConfig>{type: "gltf", url: cfg.model.model}
+    if (cfg.color !== undefined) {
+      objDef.onLoad = obj => { this.colorize(obj, new Color(cfg.color)); return undefined }
+    }
     const entityId = this._domain.add({
       components: {
         trans: {initial: new Float32Array(
             [state.pos.x, state.pos.y, state.pos.z, 0, 0, 0, 1, 1, 1, 1])},
-        obj: {type: "gltf", url: cfg.model.model},
+        obj: objDef,
         state: {initial: state},
         hovers: {},
         mixer: {},

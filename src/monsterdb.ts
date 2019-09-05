@@ -17,7 +17,8 @@ export class MonsterDb
       idle: "monsters/Egg.glb#Idle",
       hatch: "monsters/Egg.glb#Hatch",
     }
-    return new ActorConfig(ActorKind.EGG, eggModel, monster)
+    const color = MonsterDb._colors[Math.trunc(Math.random() * MonsterDb._colors.length)]
+    return new ActorConfig(ActorKind.EGG, eggModel, monster, color)
   }
 
   /**
@@ -69,4 +70,6 @@ export class MonsterDb
   }
 
   private static _monsters? :ActorConfig[]
+
+  private static _colors = [0x74c0ff, 0xff8f2f, 0xfff474, 0x7a7fbb, 0xe193c8]
 }

@@ -77,6 +77,8 @@ export class ActorConfig
     readonly kind :ActorKind = ActorKind.TESTER,
     readonly model :ActorModel,
     readonly spawn? :ActorConfig,
+    /** A Custom color that may be used to modify the model. */
+    readonly color? :number,
     readonly startingHealth :number = 50,
     readonly maximumHealth :number = 50,
     readonly startingActionPts :number = 5,
