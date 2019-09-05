@@ -302,7 +302,7 @@ class Monster extends Actor
 
   protected walkTo (model :RanchModel, newPos :Vector3) :void
   {
-    const path = model.findPath(this.pos, newPos)
+    const path = model.findPath(new Vector3().copy(this.pos), newPos)
     if (!path) {
       this.setAction(ActorAction.Unknown)
       return
