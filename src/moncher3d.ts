@@ -22,6 +22,7 @@ import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
 import {Mutable, Value} from "tfw/core/react"
 import {
+  PMap,
   Remover,
 //  log,
 } from "tfw/core/util"
@@ -38,6 +39,7 @@ import {
   System,
 } from "tfw/entity/entity"
 import {TransformComponent} from "tfw/space/entity"
+import {AnimationControllerConfig, StateConfig, TransitionConfig} from "tfw/scene3/animation"
 import {
   AnimationSystem,
   GLTFConfig,
@@ -57,7 +59,7 @@ import {registerPhysics3Nodes} from "tfw/physics3/node"
 import {registerInputNodes} from "tfw/input/node"
 import {registerUINodes} from "tfw/ui/node"
 import {Graph, GraphConfig} from "tfw/graph/graph"
-import {NodeConfig, NodeContext, NodeInput, NodeTypeRegistry} from "tfw/graph/node"
+import {NodeConfig, NodeContext, NodeTypeRegistry} from "tfw/graph/node"
 
 import {App, Mode} from "./app"
 import {
@@ -470,137 +472,7 @@ export class RanchMode extends Mode
       },
     }
 
-    const animation = (url :string, play :NodeInput<boolean>, reps? :number, clamp? :boolean) => {
-      const cfg :NodeConfig = {
-        type: "animationAction",
-        component: "mixer",
-        url: url,
-        play: play,
-      }
-      if (reps) cfg.repetitions = reps
-      if (clamp !== undefined) cfg.clampWhenFinished = clamp
-//      // experimental: vary the speed of the animation slightly
-//      cfg.onLoad = (action :AnimationAction) => {
-//        action.timeScale = 1 + ((Math.random() - .5) / 5)
-//      }
-      return cfg
-    }
-
-    // Always add graph nodes to read the state
-    graphCfg.state = <NodeConfig>{
-      type: "readComponent",
-      component: "state",
-    }
-    graphCfg.action = <NodeConfig>{
-      type: "property",
-      input: "state",
-      name: "action",
-    }
-
-    // add animation logic for animations we support
-    const isIdle :string[] = []
-    if (cfg.model.hatch) {
-      const isEgg :boolean = (cfg.kind === ActorKind.EGG)
-      graphCfg.isHatching = <NodeConfig>{
-        type: "equals",
-        x: "action",
-        y: ActorAction.Hatching,
-      }
-      graphCfg.hatch = animation(cfg.model.hatch, "isHatching", 1, isEgg)
-      graphCfg.notHatching = <NodeConfig>{type: "not", input: "isHatching"}
-
-      if (isEgg) {
-        graphCfg.isReady = <NodeConfig>{
-          type: "equals",
-          x: "action",
-          y: ActorAction.ReadyToHatch,
-        }
-        isIdle.push("isReady")
-
-        graphCfg.notFinishedHatching = <NodeConfig>{
-          type: "not",
-          input: "hatch",
-        }
-        graphCfg.setInvisible = <NodeConfig>{
-          type: "updateVisible",
-          component: "obj",
-          input: "notFinishedHatching",
-        }
-//        graphCfg.logVisible = <NodeConfig>{
-//          type: "log",
-//          message: "updateVisible",
-//          input: "notFinishedHatching",
-//        }
-      }
-    }
-
-    // TODO A real Walking activity would simplify this, TODO when we walk on the navmesh
-    if (cfg.model.walk) {
-      graphCfg.readPath = <NodeConfig>{
-        type: "property",
-        input: "state",
-        name: "path",
-      }
-      graphCfg.noPath = <NodeConfig>{
-        type: "equals",
-        x: "readPath",
-        y: undefined,
-      }
-      graphCfg.yesPath = <NodeConfig>{
-        type: "not",
-        input: "noPath",
-      }
-      graphCfg.walk = animation(cfg.model.walk, "yesPath")
-      isIdle.push("noPath")
-
-      if (cfg.model.hatch && cfg.kind !== ActorKind.EGG) {
-        // make us go idle right away when hatching has finished
-        graphCfg.notHatchingOrFinishedHatching = <NodeConfig>{
-          type: "or",
-          inputs: ["notHatching", "hatch"]
-        }
-        isIdle.push("notHatchingOrFinishedHatching")
-      }
-    }
-
-    if (cfg.model.eat) {
-      graphCfg.isEating = <NodeConfig>{
-        type: "equals",
-        x: "action",
-        y: ActorAction.Eating,
-      }
-      graphCfg.eat = animation(cfg.model.eat, "isEating")
-      graphCfg.notEating = <NodeConfig>{
-        type: "not",
-        input: "isEating",
-      }
-      isIdle.push("notEating")
-    }
-
-    if (cfg.model.sleep && cfg.model.faint) {
-      graphCfg.isSleeping = <NodeConfig>{
-        type: "equals",
-        x: "action",
-        y: ActorAction.Sleeping,
-      }
-      graphCfg.triggerSleep = <NodeConfig>{
-        type: "and",
-        inputs: ["isSleeping", "noPath"],
-      }
-      graphCfg.faintFirst = animation(cfg.model.faint, "triggerSleep", 1)
-      graphCfg.reallySleeping = <NodeConfig>{
-        type: "and",
-        inputs: ["isSleeping", "faintFirst"],
-      }
-      graphCfg.sleep = animation(cfg.model.sleep, "reallySleeping")
-      graphCfg.notSleeping = <NodeConfig>{
-        type: "not",
-        input: "isSleeping",
-      }
-      isIdle.push("notSleeping")
-    }
-
-    // configure touch detection for actors
+    // set up nodes to capture touches on the actor and call our callback
     graphCfg.hover = {type: "hover", component: "hovers"}
     graphCfg.detectTouch = {
       type: "onChange",
@@ -612,45 +484,120 @@ export class RanchMode extends Mode
       },
     }
 
-    // Touching a monster has them happy-react
-    if (cfg.model.happyReact) {
-      graphCfg.touched = <NodeConfig>{
-        type: "property",
-        input: "state",
-        name: "touched",
-      }
-      graphCfg.animReact = animation(cfg.model.happyReact, "touched", 1)
+    // set up nodes to read the actor's state / action
+    graphCfg.state = <NodeConfig>{
+      type: "readComponent",
+      component: "state",
+    }
+    graphCfg.action = <NodeConfig>{
+      type: "property",
+      input: "state",
+      name: "action",
     }
 
-    if (cfg.model.wakeUp) {
-      graphCfg.isWaking = <NodeConfig>{
+    // set up animations
+    const anyTransitions :PMap<TransitionConfig> = {}
+    const animStates :PMap<StateConfig> = {
+      default: <StateConfig>{},
+      any: <StateConfig>{
+        transitions: anyTransitions,
+      },
+    }
+    graphCfg.controller = <NodeConfig>{
+      type: "animationController",
+      component: "mixer",
+      config: <AnimationControllerConfig>{
+        states: animStates,
+      },
+    }
+
+    // set up our "Idle" animation as the default state
+    if (cfg.model.idle) {
+      animStates.default.url = cfg.model.idle
+    }
+
+    const isEgg = (cfg.kind === ActorKind.EGG)
+    if (cfg.model.hatch) {
+      // set up hatching (nearly the same between eggs and monsters)
+      animStates.hatch = {
+        url: cfg.model.hatch,
+        repetitions: 1,
+        clampWhenFinished: isEgg,
+      }
+      graphCfg.isHatching = <NodeConfig>{
         type: "equals",
         x: "action",
-        y: ActorAction.Waking,
+        y: ActorAction.Hatching,
       }
-      graphCfg.triggerWake = <NodeConfig>{
-        type: "and",
-        inputs: ["isWaking", "noPath"],
-      }
-      graphCfg.wake = animation(cfg.model.wakeUp, "triggerWake", 1)
-      graphCfg.notWaking = <NodeConfig>{type: "not", input: "isWaking"}
-      graphCfg.notWakingOrFinishedWaking = <NodeConfig>{
-        type: "or",
-        inputs: ["notWaking", "wake"],
-      }
-      isIdle.push("notWakingOrFinishedWaking")
+      anyTransitions.hatch = {condition: "hatching"}
+      graphCfg.controller.hatching = "isHatching"
     }
 
-    // trigger idle when all the idle conditions are true
-    if (cfg.model.idle) {
-      if (isIdle.length === 1) {
-        graphCfg.idle = animation(cfg.model.idle, isIdle[0])
-      } else {
-        graphCfg.isIdle = <NodeConfig>{
-          type: "and",
-          inputs: isIdle,
+    if (isEgg) {
+      // set up the ready-to-hatch state
+      animStates.readyToHatch = {
+        // TODO: a url!
+      }
+      graphCfg.isReadyToHatch = <NodeConfig>{
+        type: "equals",
+        x: "action",
+        y: ActorAction.ReadyToHatch,
+      }
+      anyTransitions.readyToHatch = {condition: "readyHatch"}
+      graphCfg.controller.readyHatch = "isReadyToHatch"
+
+    } else {
+      // regular monster
+      if (cfg.model.walk) {
+        graphCfg.readPath = <NodeConfig>{
+          type: "property",
+          input: "state",
+          name: "path",
         }
-        graphCfg.idle = animation(cfg.model.idle, "isIdle")
+        graphCfg.noPath = <NodeConfig>{
+          type: "equals",
+          x: "readPath",
+          y: undefined,
+        }
+        graphCfg.yesPath = <NodeConfig>{
+          type: "not",
+          input: "noPath",
+        }
+
+        animStates.walk = {
+          url: cfg.model.walk,
+        }
+        anyTransitions.walk = {condition: "walking"}
+        graphCfg.controller.walking = "yesPath"
+      }
+
+      if (cfg.model.happyReact) {
+        graphCfg.subController = <NodeConfig>{
+          type: "animationController",
+          component: "mixer",
+          config: <AnimationControllerConfig>{
+            states: {
+              default: {},
+              touched: {
+                url: cfg.model.happyReact,
+                repetitions: 1,
+                finishBeforeTransition: true,
+              },
+              any: {
+                transitions: {
+                  touched: {condition: "touchCond"},
+                  default: {}
+                },
+              },
+            },
+          },
+          touchCond: "touched",
+        }
+        graphCfg.touched = <NodeConfig>{
+          type: "property",
+          input: "state",
+          name: "touched",
+        }
       }
     }
 
