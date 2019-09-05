@@ -246,7 +246,7 @@ let model :GridTileSceneModel = generateGridModel(tiles.concat(additional), 30, 
 let ranch :OldRanchModel = new OldRanchModel(model)
 app.setMode(new MonsterRancherMode(app, ranch))
 const monst :PropTileInfo = new PropTileInfo(
-  "mlp", "monsters/_0018_RunnerGreen.png", undefined, undefined, 13)
+  "mlp", "props/_0018_RunnerGreen.png", undefined, undefined, 13)
 ranch.addMonster(MonsterDb.getRandomMonster(), monst, 0, 0)
 
 
