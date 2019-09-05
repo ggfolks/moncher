@@ -1,5 +1,4 @@
 import {
-//  AnimationAction,
   AnimationMixer,
   Camera,
   Color,
@@ -142,15 +141,6 @@ const enum UiState
   PlacingEgg,
   PlacingFood,
 }
-
-/**
-// * Vector3.epsilonEquals ?  */
-//function vec3NearlyEqual (a :Vector3, b :Vector3) :boolean {
-//  const epsilon = .0001
-//  return (Math.abs(a.x - b.x) < epsilon) &&
-//    (Math.abs(a.y - b.y) < epsilon) &&
-//    (Math.abs(a.z - b.z) < epsilon)
-//}
 
 /**
  * Look for a descendant with the specified name; remove and return it. */
@@ -406,16 +396,10 @@ export class RanchMode extends Mode
    * React to a actor being updated in the ranch model.
    */
   protected updateActor (id :number, state :ActorState) :void {
-//    log.info("updateMonster",
-//      "id", id, "action", state.action)
     // see if we've given this monster an entity ID yet
     let actorInfo = this._actors.get(id)
     if (!actorInfo) {
       actorInfo = this.addActor(id, state)
-//      log.info("ADDING monster",
-//        "id", id,
-//        "entityId", actorInfo.entityId,
-//        "egg?", (actorInfo.config.kind === ActorKind.EGG))
     }
     this.updateActorSprite(actorInfo, state)
   }
@@ -427,58 +411,6 @@ export class RanchMode extends Mode
     // store their state in the entity system...
     this._state.update(actorInfo.entityId, state)
     this._trans.updateScale(actorInfo.entityId, new Vector3(state.scale, state.scale, state.scale))
-
-//    // then check their location against their PathRec...
-//    let oldRec = this._paths.read(actorInfo.entityId)
-//    if (oldRec) {
-//      while (oldRec.next) {
-//        oldRec = oldRec.next
-//      }
-//      if (vec3NearlyEqual(oldRec.dest, state.pos)) {
-//        // just update the position in the old record
-//        oldRec.dest = state.pos
-//        return
-//      }
-//    }
-//
-//    const oldPos = this._trans.readPosition(actorInfo.entityId, new Vector3())
-//    if (!oldRec && vec3NearlyEqual(state.pos, oldPos)) {
-//      // just update the translation and return
-//      this._trans.updatePosition(actorInfo.entityId, state.pos)
-//      return
-//    }
-////    log.debug("Want new path", "oldPos", oldPos)
-//
-//    let path :Vector3[]
-//    if (this._pathFinder) {
-//      const groupId = this._pathFinder.getGroup(RanchMode.RANCH_ZONE, oldPos)
-//      const foundPath = (groupId === null)
-//        ? null
-//        : this._pathFinder.findPath(
-//          oldPos, state.pos, RanchMode.RANCH_ZONE, groupId)
-//      if (foundPath) {
-//        path = foundPath
-//        path.unshift(oldPos) // we need to manually put the first point at the beginning
-//      } else {
-//        log.debug("Rejecting bogus path")
-//        return
-//      }
-//
-//    } else {
-//      path = [oldPos, state.pos]
-//    }
-////    log.debug("Found path!", "path", path)
-//
-//    let rec :PathRec|undefined = undefined
-//    while (path.length > 1) {
-//      const dest = path.pop()!
-//      const src = path[path.length - 1]
-//      const duration = (src.distanceTo(dest) * 1000) /
-//          (RanchMode.ACTOR_MOVE_DISTANCE_PER_SECOND * state.scale)
-//      rec = new PathRec(src, dest, duration, rec)
-////      log.info("Added to end...", "src", src, "dest", dest)
-//    }
-//    this._paths.update(actorInfo.entityId, rec)
   }
 
   protected addActor (id :number, state :ActorState) :ActorInfo
