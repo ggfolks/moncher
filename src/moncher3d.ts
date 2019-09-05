@@ -496,7 +496,9 @@ export class RanchMode extends Mode
     }
 
     // set up animations
-    const anyTransitions :PMap<TransitionConfig> = {}
+    const anyTransitions :PMap<TransitionConfig> = {
+//      default: {},
+    }
     const animStates :PMap<StateConfig> = {
       default: <StateConfig>{},
       any: <StateConfig>{
@@ -529,8 +531,8 @@ export class RanchMode extends Mode
         x: "action",
         y: ActorAction.Hatching,
       }
-      anyTransitions.hatch = {condition: "hatching"}
-      graphCfg.controller.hatching = "isHatching"
+      anyTransitions.hatch = {condition: "hatchCond"}
+      graphCfg.controller.hatchCond = "isHatching"
     }
 
     if (isEgg) {
@@ -543,8 +545,8 @@ export class RanchMode extends Mode
         x: "action",
         y: ActorAction.ReadyToHatch,
       }
-      anyTransitions.readyToHatch = {condition: "readyHatch"}
-      graphCfg.controller.readyHatch = "isReadyToHatch"
+      anyTransitions.readyToHatch = {condition: "readyHatchCond"}
+      graphCfg.controller.readyHatchCond = "isReadyToHatch"
 
     } else {
       // regular monster
@@ -567,10 +569,12 @@ export class RanchMode extends Mode
         animStates.walk = {
           url: cfg.model.walk,
         }
-        anyTransitions.walk = {condition: "walking"}
-        graphCfg.controller.walking = "yesPath"
+        anyTransitions.walk = {condition: "walkCond"}
+        graphCfg.controller.walkCond = "yesPath"
       }
 
+      // Happy-react happens whenever you touch a monster, even if in the other states.
+      // So we need to set up a separate animation controller.
       if (cfg.model.happyReact) {
         graphCfg.subController = <NodeConfig>{
           type: "animationController",
