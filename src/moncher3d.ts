@@ -21,7 +21,10 @@ import {Clock} from "tfw/core/clock"
 import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
 import {Mutable, Value} from "tfw/core/react"
-//import {log} from "tfw/core/util"
+import {
+  Remover,
+//  log,
+} from "tfw/core/util"
 import {Hand, Pointer} from "tfw/input/hand"
 import {Keyboard} from "tfw/input/keyboard"
 import {
@@ -40,7 +43,7 @@ import {
   GLTFConfig,
   HoverMap,
   SceneSystem,
-  loadGLTFAnimationClip
+  loadGLTFAnimationClip,
 } from "tfw/scene3/entity"
 import {Host3} from "tfw/ui/host3"
 
@@ -426,10 +429,14 @@ export class RanchMode extends Mode
       // let's go ahead and pre-load the model of what we're going to spawn.
       // Loading the animations is the only way
       const runLater = () => {
-        // TODO: is this safe? If it never loads, we'll never unlisten. :(
-        loadGLTFAnimationClip(cfg.spawn!.model.model + "#").once(v => {})
+        // TODO: is there a more straightforward way to do this?
+        let remover :Remover
+        remover = loadGLTFAnimationClip(cfg.spawn!.model.model + "#").once(v => {
+            this.onDispose.remove(remover)
+          })
+        this.onDispose.add(remover)
       }
-      setTimeout(runLater, 0)
+      setTimeout(runLater, 0) // but, what if we're already disposed when this runs?
     }
 
     const graphCfg :GraphConfig = {}
