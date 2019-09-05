@@ -497,7 +497,7 @@ export class RanchMode extends Mode
 
     // set up animations
     const anyTransitions :PMap<TransitionConfig> = {
-//      default: {},
+      //default: {},
     }
     const animStates :PMap<StateConfig> = {
       default: <StateConfig>{},
@@ -565,13 +565,25 @@ export class RanchMode extends Mode
           type: "not",
           input: "noPath",
         }
-
         animStates.walk = {
           url: cfg.model.walk,
         }
         anyTransitions.walk = {condition: "walkCond"}
         graphCfg.controller.walkCond = "yesPath"
-      }
+      } // end: walk
+
+      if (cfg.model.eat) {
+        graphCfg.isEating = <NodeConfig>{
+          type: "equals",
+          x: "action",
+          y: ActorAction.Eating,
+        }
+        animStates.eat = {
+          url: cfg.model.eat,
+        }
+        anyTransitions.eat = {condition: "eatCond"}
+        graphCfg.controller.eatCond = "isEating"
+      } // end: eat
 
       // Happy-react happens whenever you touch a monster, even if in the other states.
       // So we need to set up a separate animation controller.
