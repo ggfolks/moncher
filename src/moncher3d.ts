@@ -92,6 +92,7 @@ class PathSystem extends System
     domain :Domain,
     readonly trans :TransformComponent,
     readonly paths :Component<PathRec|undefined>,
+		readonly getY :(x :number, z :number) => number,
   ) {
     super(domain, Matcher.hasAllC(trans.id, paths.id))
   }
@@ -132,6 +133,7 @@ class PathSystem extends System
         } else {
           // otherwise, there's time left and we should update the position
           scratch.lerpVectors(path.dest, path.src, timeLeft / path.duration)
+          scratch.y = this.getY(scratch.x, scratch.z)
           this.trans.updatePosition(id, scratch)
           path = undefined
         }
@@ -232,7 +234,7 @@ export class RanchMode extends Mode
 
     const domain = this._domain = new Domain({},
         {trans, obj, mixer, body, state, paths, hovers, graph})
-    this._pathsys = new PathSystem(domain, trans, paths)
+    this._pathsys = new PathSystem(domain, trans, paths, this.getY.bind(this))
     const scenesys = this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
     /*const graphsys =*/ this._graphsys = new GraphSystem(nodeCtx, domain, graph)
@@ -745,6 +747,30 @@ export class RanchMode extends Mode
         : new ActorConfig(ActorKind.FOOD, <ActorModel>{ model: "monsters/Acorn.glb" })
     this._ranch.addActor(actorConfig, pos)
     this.setUiState(UiState.Default)
+  }
+
+  protected getY (x :number, z :number) :number
+  {
+    // Try to use the navmesh first, but if we get no hits we'll circle back to the terrain anyway
+    let terrain = this._navMesh || this._terrain
+    if (terrain) {
+      const HAWK_HEIGHT = 10
+      const caster = new Raycaster(new Vector3(x, HAWK_HEIGHT, z), new Vector3(0, -1, 0))
+
+      while (true) {
+        const results = caster.intersectObject(terrain, true)
+        for (const result of results) {
+          return HAWK_HEIGHT - result.distance
+        }
+        if (terrain === this._navMesh) {
+          terrain = this._terrain!
+        } else {
+          break
+        }
+      }
+    }
+    //log.warn("Didn't find decent height")
+    return 2.5 // bogus fallback height
   }
 
   protected swapTerrain () :void
