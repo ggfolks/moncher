@@ -147,24 +147,6 @@ const enum UiState
   PlacingFood,
 }
 
-/**
- * Look for a descendant with the specified name; remove and return it. */
-function spliceNamedChild (obj :Object3D, name :string) :Object3D|undefined {
-  let result :Object3D|undefined = undefined
-  for (let ii = 0; ii < obj.children.length; ii++) {
-    const child = obj.children[ii]
-    if (child.name === name) {
-      obj.children.splice(ii, 1)
-      return child
-    }
-    result = spliceNamedChild(child, name)
-    if (result !== undefined) {
-      return result
-    }
-  }
-  return undefined
-}
-
 export class RanchMode extends Mode
 {
   constructor (
@@ -343,8 +325,9 @@ export class RanchMode extends Mode
 
   protected ranchLoaded (scene :Object3D) :Object3D|undefined {
     this._terrain = scene
-    const navMesh = spliceNamedChild(scene, "NavMesh")
+    const navMesh = scene.getObjectByName("NavMesh")
     if (navMesh instanceof Mesh) {
+      navMesh.parent!.remove(navMesh)
       this._navMesh = navMesh
 
 //      // compute the boundaries of the ranch (TEMP?)
@@ -357,8 +340,8 @@ export class RanchMode extends Mode
       this._ranch.setNavMesh(navMesh)
 
       this.configurePathFinding(navMesh)
-      this.setReady()
     }
+    this.setReady()
 
     return undefined // don't replace the ranch
   }
