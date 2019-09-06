@@ -497,7 +497,7 @@ export class RanchMode extends Mode
 
     // set up animations
     const anyTransitions :PMap<TransitionConfig> = {
-      //default: {},
+//      default: {},
     }
     const animStates :PMap<StateConfig> = {
       default: <StateConfig>{},
@@ -588,7 +588,7 @@ export class RanchMode extends Mode
       // Happy-react happens whenever you touch a monster, even if in the other states.
       // So we need to set up a separate animation controller.
       if (cfg.model.happyReact) {
-        graphCfg.subController = <NodeConfig>{
+        graphCfg.happyReactAuxController = <NodeConfig>{
           type: "animationController",
           component: "mixer",
           config: <AnimationControllerConfig>{
