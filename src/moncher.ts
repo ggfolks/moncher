@@ -281,7 +281,7 @@ class Monster extends Actor
         }
         break
 
-      default: // Idle
+      case ActorAction.Idle:
         if (++this._hunger > 100 / MONSTER_ACCELERANT) {
           const food = model.getNearestActor(this.pos,
               actor => (actor.config.kind === ActorKind.FOOD))
@@ -303,6 +303,10 @@ class Monster extends Actor
             this.walkTo(model, newpos)
           }
         }
+        break
+
+      default:
+        log.warn("Unhandled action in Monster.tick")
         break
     }
   }
