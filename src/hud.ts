@@ -59,30 +59,27 @@ export class Hud
     }
     const makeButtonConfig = (name :string) => {
       return {
-        type: "box",
+        type: "button",
+        visible: name + ".visible",
+        enabled: name + ".enabled",
+        onClick: name + ".clicked",
         contents: {
-          type: "button",
-          visible: name + ".visible",
-          enabled: name + ".enabled",
-          onClick: name + ".clicked",
+          type: "box",
           contents: {
-            type: "box",
-            contents: {
-              type: "row",
-              contents: [{
-                type: "label",
-                visible: name + ".labelVis",
-                text: name + ".text",
-                style: {
-                  font: {size: 128},
-                },
-              }, {
-                type: "image",
-                visible: name + ".imageVis",
-                image: name + ".image",
-                width: 100,
-              }],
-            },
+            type: "row",
+            contents: [{
+              type: "label",
+              visible: name + ".labelVis",
+              text: name + ".text",
+              style: {
+                font: {size: 128},
+              },
+            }, {
+              type: "image",
+              visible: name + ".imageVis",
+              image: name + ".image",
+              width: 100,
+            }],
           },
         },
       }
