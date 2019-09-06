@@ -93,6 +93,7 @@ export const enum ActorAction {
   Idle,
   ReadyToHatch,
   Hatching,
+  Waiting,
   Walking,
   Eating,
   Sleeping,
@@ -223,10 +224,14 @@ class Monster extends Actor
     this._touched = false
 
     switch (this.action) {
-      case ActorAction.Hatching:
-        if (++this._counter >= 20 / MONSTER_ACCELERANT) {
+      case ActorAction.Waiting:
+        if (++this._counter >= 100 / MONSTER_ACCELERANT) {
           this.setAction(ActorAction.Idle)
         }
+        break
+
+      case ActorAction.Hatching:
+        this.setAction(ActorAction.Waiting, 80 / MONSTER_ACCELERANT)
         break
 
       case ActorAction.Walking:
@@ -262,7 +267,7 @@ class Monster extends Actor
 
       case ActorAction.Sleeping:
         if (++this._counter >= 100 / MONSTER_ACCELERANT) {
-          this.setAction(ActorAction.Waking, Math.random() * 10)
+          this.setAction(ActorAction.Waking, Math.random() * 10 / MONSTER_ACCELERANT)
         }
         break
 

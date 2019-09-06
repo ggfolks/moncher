@@ -497,7 +497,6 @@ export class RanchMode extends Mode
 
     // set up animations
     const anyTransitions :PMap<TransitionConfig> = {
-//      default: {},
     }
     const animStates :PMap<StateConfig> = {
       default: <StateConfig>{},
@@ -529,7 +528,11 @@ export class RanchMode extends Mode
       animStates.hatch = {
         url: cfg.model.hatch,
         repetitions: 1,
-        clampWhenFinished: isEgg,
+        finishBeforeTransition: true,
+        clampWhenFinished: isEgg, // stop the egg hatch on the last frame
+      }
+      if (!isEgg) {
+        animStates.hatch.transitions = { default: {} }
       }
       anyTransitions.hatch = {condition: "hatchCond"}
       graphCfg.controller.hatchCond = "isHatching"
@@ -567,6 +570,9 @@ export class RanchMode extends Mode
         }
         animStates.walk = {
           url: cfg.model.walk,
+          transitions: {
+            default: {condition: "!walkCond"},
+          }
         }
         anyTransitions.walk = {condition: "walkCond"}
         graphCfg.controller.walkCond = "yesPath"
@@ -580,6 +586,9 @@ export class RanchMode extends Mode
         }
         animStates.eat = {
           url: cfg.model.eat,
+          transitions: {
+            default: {condition: "!eatCond"},
+          }
         }
         anyTransitions.eat = {condition: "eatCond"}
         graphCfg.controller.eatCond = "isEating"
