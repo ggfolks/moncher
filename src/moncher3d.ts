@@ -22,7 +22,7 @@ import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
 import {Mutable, Value} from "tfw/core/react"
 import {
-  PMap,
+//  PMap,
   Remover,
 //  log,
 } from "tfw/core/util"
@@ -39,7 +39,7 @@ import {
   System,
 } from "tfw/entity/entity"
 import {TransformComponent} from "tfw/space/entity"
-import {AnimationControllerConfig, StateConfig, TransitionConfig} from "tfw/scene3/animation"
+//import {AnimationControllerConfig, StateConfig, TransitionConfig} from "tfw/scene3/animation"
 import {
   AnimationSystem,
   GLTFConfig,
@@ -495,45 +495,7 @@ export class RanchMode extends Mode
       name: "action",
     }
 
-    // set up animations
-    const anyTransitions :PMap<TransitionConfig> = {
-//      default: {},
-    }
-    const animStates :PMap<StateConfig> = {
-      default: <StateConfig>{},
-      any: <StateConfig>{
-        transitions: anyTransitions,
-      },
-    }
-    graphCfg.controller = <NodeConfig>{
-      type: "animationController",
-      component: "mixer",
-      config: <AnimationControllerConfig>{
-        states: animStates,
-      },
-    }
-
-    // set up our "Idle" animation as the default state
-    if (cfg.model.idle) {
-      animStates.default.url = cfg.model.idle
-    }
-
     const isEgg = (cfg.kind === ActorKind.EGG)
-    if (cfg.model.hatch) {
-      // set up hatching (nearly the same between eggs and monsters)
-      graphCfg.isHatching = <NodeConfig>{
-        type: "equals",
-        x: "action",
-        y: ActorAction.Hatching,
-      }
-      animStates.hatch = {
-        url: cfg.model.hatch,
-        repetitions: 1,
-        clampWhenFinished: isEgg,
-      }
-      anyTransitions.hatch = {condition: "hatchCond"}
-      graphCfg.controller.hatchCond = "isHatching"
-    }
 
     if (isEgg) {
       graphCfg.isReadyToHatch = <NodeConfig>{
@@ -541,49 +503,98 @@ export class RanchMode extends Mode
         x: "action",
         y: ActorAction.ReadyToHatch,
       }
-      // set up the ready-to-hatch state
-      animStates.readyToHatch = {
-        // TODO: a url!
+      graphCfg.isHatching = <NodeConfig>{
+        type: "equals",
+        x: "action",
+        y: ActorAction.Hatching,
       }
-      anyTransitions.readyToHatch = {condition: "readyHatchCond"}
-      graphCfg.controller.readyHatchCond = "isReadyToHatch"
+      graphCfg.controller = <NodeConfig>{
+        type: "animationController",
+        component: "mixer",
+        config: {
+          states: {
+            default: {
+              url: cfg.model.idle,
+            },
+            hatch: {
+              url: cfg.model.hatch,
+              repetitions: 1,
+              clampWhenFinished: true,
+            },
+            readyToHatch: {
+              // TODO: URL!
+            },
+            any: {
+              transitions: {
+                default: {},
+                hatch: {condition: "hatchCond"},
+                readyToHatch: {condition: "readyHatchCond"},
+              },
+            },
+          },
+        },
+        hatchCond: "isHatching",
+        readyHatchCond: "isReadyToHatch",
+      }
 
     } else {
-      // regular monster
-      if (cfg.model.walk) {
-        graphCfg.readPath = <NodeConfig>{
-          type: "property",
-          input: "state",
-          name: "path",
-        }
-        graphCfg.noPath = <NodeConfig>{
-          type: "equals",
-          x: "readPath",
-          y: undefined,
-        }
-        graphCfg.yesPath = <NodeConfig>{
-          type: "not",
-          input: "noPath",
-        }
-        animStates.walk = {
-          url: cfg.model.walk,
-        }
-        anyTransitions.walk = {condition: "walkCond"}
-        graphCfg.controller.walkCond = "yesPath"
-      } // end: walk
+      graphCfg.isHatching = <NodeConfig>{
+        type: "equals",
+        x: "action",
+        y: ActorAction.Hatching,
+      }
+      graphCfg.readPath = <NodeConfig>{
+        type: "property",
+        input: "state",
+        name: "path",
+      }
+      graphCfg.noPath = <NodeConfig>{
+        type: "equals",
+        x: "readPath",
+        y: undefined,
+      }
+      graphCfg.yesPath = <NodeConfig>{
+        type: "not",
+        input: "noPath",
+      }
+      graphCfg.isEating = <NodeConfig>{
+        type: "equals",
+        x: "action",
+        y: ActorAction.Eating,
+      }
 
-      if (cfg.model.eat) {
-        graphCfg.isEating = <NodeConfig>{
-          type: "equals",
-          x: "action",
-          y: ActorAction.Eating,
-        }
-        animStates.eat = {
-          url: cfg.model.eat,
-        }
-        anyTransitions.eat = {condition: "eatCond"}
-        graphCfg.controller.eatCond = "isEating"
-      } // end: eat
+      graphCfg.controller = <NodeConfig>{
+        type: "animationController",
+        component: "mixer",
+        config: {
+          states: {
+            default: {
+              url: cfg.model.idle,
+            },
+            hatch: {
+              url: cfg.model.hatch,
+              repetitions: 1,
+            },
+            walk: {
+              url: cfg.model.walk,
+            },
+            eat: {
+              url: cfg.model.eat,
+            },
+            any: {
+              transitions: {
+                default: {},
+                hatch: {condition: "hatchCond"},
+                walk: {condition: "walkCond"},
+                eat: {condition: "eatCond"},
+              },
+            },
+          },
+        },
+        hatchCond: "isHatching",
+        walkCond: "yesPath",
+        eatCond: "isEating",
+      }
 
       // Happy-react happens whenever you touch a monster, even if in the other states.
       // So we need to set up a separate animation controller.
@@ -596,7 +607,7 @@ export class RanchMode extends Mode
         graphCfg.happyReactAuxController = <NodeConfig>{
           type: "animationController",
           component: "mixer",
-          config: <AnimationControllerConfig>{
+          config: {
             states: {
               default: {},
               touched: {
