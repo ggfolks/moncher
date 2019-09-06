@@ -267,14 +267,12 @@ class Monster extends Actor
 
       case ActorAction.Sleeping:
         if (++this._counter >= 100 / MONSTER_ACCELERANT) {
-          this.setAction(ActorAction.Waking, Math.random() * 10 / MONSTER_ACCELERANT)
+          this.setAction(ActorAction.Waking)
         }
         break
 
       case ActorAction.Waking:
-        if (++this._counter >= 10 / MONSTER_ACCELERANT) {
-          this.setAction(ActorAction.Idle) // just giving time to wake up fully
-        }
+        this.setAction(ActorAction.Waiting, 90 / MONSTER_ACCELERANT)
         break
 
       case ActorAction.Unknown: // Do nothing for a little while
