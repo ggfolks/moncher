@@ -693,7 +693,7 @@ export class RanchMode extends Mode
         action: () => this.setUiState(UiState.PlacingEgg),
       })
       this._hud.button2.update({
-        label: "🌰",
+        image: "ui/AcornIcon.png",
         action: () => this.setUiState(UiState.PlacingFood),
       })
       this._hud.statusLabel.update("Hold SPACE to see the navmesh")

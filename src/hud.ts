@@ -11,7 +11,9 @@ import {moncherStyles, moncherTheme} from "./uistyles"
 // TODO: actually, UIs are wholly recreated when something changes, it would seem
 export interface Action {
   /** Button text. */
-  label :string
+  label? :string
+  /** Button paint style, maybe instead of image. */
+  image? :string
   /** Called on button press. */
   action :Function
   /** Is the button disabled? */
@@ -39,31 +41,40 @@ export class Hud
 
     // a bunch of helper bits to ease creation of standard buttons
     const getActionVisible = (v :ActionOpt) => (v !== undefined)
-    const getActionText = (v :ActionOpt) => v ? v.label : ""
+    const getActionText = (v :ActionOpt) => v && (v.label !== undefined) ? v.label : ""
+    const getActionImage = (v :ActionOpt) => v ? v.image : undefined
     const getActionEnabled = (v :ActionOpt) => v && !v.disabled
     const makeButtonModel = (v :Value<ActionOpt>) => {
       return {
         visible: v.map(getActionVisible),
         text: v.map(getActionText),
+        image: v.map(getActionImage),
         enabled: v.map(getActionEnabled),
         clicked: () => this.buttonClicked(v),
       }
     }
     const makeButtonConfig = (name :string) => {
       return {
-        type: "button",
-        visible: name + ".visible",
-        enabled: name + ".enabled",
-        onClick: name + ".clicked",
+        type: "box",
         contents: {
-          type: "box",
+          type: "button",
+          visible: name + ".visible",
+          enabled: name + ".enabled",
+          onClick: name + ".clicked",
           contents: {
-            type: "label",
-            text: name + ".text",
-            style: {
-              font: {size: 128},
+            type: "box",
+            contents: {
+              type: "label",
+              text: name + ".text",
+              style: {
+                font: {size: 128},
+              },
             },
           },
+        },
+        style: {
+          background: {image: "ui/AcornIcon.png"},
+          //background: "$imgAcorn",
         },
       }
     }

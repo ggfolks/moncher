@@ -29,6 +29,7 @@ export const moncherStyles :StyleDefs = {
     },
     buttonPressed: {fill: {type: "color", color: "#77AADD"}, cornerRadius: buttonCorner},
     buttonDisabled: {fill: {type: "color", color: "$transWhite"}, cornerRadius: buttonCorner},
+    imgAcorn: {image: {source: "ui/AcornIcon.png"}},
   },
 }
 
