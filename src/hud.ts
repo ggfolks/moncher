@@ -8,7 +8,10 @@ import {ImageResolver} from "tfw/ui/style"
 import {UI} from "tfw/ui/ui"
 import {moncherStyles, moncherTheme} from "./uistyles"
 
-// TODO: actually, UIs are wholly recreated when something changes, it would seem
+// TODO:
+// Rethink this whole thing and just throw-up a complete, custom UI for each mode in the game.
+// That will be simpler.
+// TODO
 export interface Action {
   /** Button text. */
   label? :string
@@ -30,6 +33,7 @@ export class Hud
   /** The status label text, or "" to hide it. */
   readonly statusLabel :Mutable<string> = Mutable.local("")
 
+  // TODO: see TODO above. All this should change.
   readonly button1 :Mutable<ActionOpt> = Mutable.local<ActionOpt>(undefined)
   readonly button2 :Mutable<ActionOpt> = Mutable.local<ActionOpt>(undefined)
 
