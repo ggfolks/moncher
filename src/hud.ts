@@ -46,7 +46,7 @@ export class Hud
     // a bunch of helper bits to ease creation of standard buttons
     const getActionVisible = (v :ActionOpt) => (v !== undefined)
     const getActionText = (v :ActionOpt) => v && (v.label !== undefined) ? v.label : ""
-    const getActionImage = (v :ActionOpt) => v ? v.image : undefined
+    const getActionImage = (v :ActionOpt) => v && v.image ? v.image : "blank.png"
     const getActionEnabled = (v :ActionOpt) => v && !v.disabled
     const getLabelVisible = (v :ActionOpt) => v && (v.label !== undefined)
     const getImageVisible = (v :ActionOpt) => v && (v.image !== undefined)
