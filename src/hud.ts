@@ -44,6 +44,8 @@ export class Hud
     const getActionText = (v :ActionOpt) => v && (v.label !== undefined) ? v.label : ""
     const getActionImage = (v :ActionOpt) => v ? v.image : undefined
     const getActionEnabled = (v :ActionOpt) => v && !v.disabled
+    const getLabelVisible = (v :ActionOpt) => v && (v.label !== undefined)
+    const getImageVisible = (v :ActionOpt) => v && (v.image !== undefined)
     const makeButtonModel = (v :Value<ActionOpt>) => {
       return {
         visible: v.map(getActionVisible),
@@ -51,6 +53,8 @@ export class Hud
         image: v.map(getActionImage),
         enabled: v.map(getActionEnabled),
         clicked: () => this.buttonClicked(v),
+        labelVis: v.map(getLabelVisible),
+        imageVis: v.map(getImageVisible),
       }
     }
     const makeButtonConfig = (name :string) => {
@@ -64,21 +68,22 @@ export class Hud
           contents: {
             type: "box",
             contents: {
-              type: "label",
-              text: name + ".text",
-              style: {
-                font: {size: 128},
-                //background: name + ".image",
-                //background: {image: {source: "ui/AcornIcon.png"}},
-                //background: "$imgAcorn",
-              },
+              type: "row",
+              contents: [{
+                type: "label",
+                visible: name + ".labelVis",
+                text: name + ".text",
+                style: {
+                  font: {size: 128},
+                },
+              }, {
+                type: "image",
+                visible: name + ".imageVis",
+                image: name + ".image",
+                width: 100,
+              }],
             },
           },
-        },
-        style: {
-          //background: name + ".image",
-          //background: {image: {source: "ui/AcornIcon.png"}},
-          //background: "$imgAcorn",
         },
       }
     }
