@@ -91,17 +91,15 @@ class PathSystem extends System
   constructor (
     domain :Domain,
     readonly trans :TransformComponent,
-    readonly state :Component<ActorState>,
+    readonly paths :Component<PathRec|undefined>,
   ) {
-    super(domain, Matcher.hasAllC(trans.id, state.id))
+    super(domain, Matcher.hasAllC(trans.id, paths.id))
   }
 
   update (clock :Clock) {
     const scratch :Vector3 = new Vector3()
     this.onEntities(id => {
-      // TODO: Put paths back into a separate component, so that we can strip off earlier segments?
-      const state = this.state.read(id)
-      let path :PathRec|undefined = state.path
+      let path = this.paths.read(id)
       // TODO: handle "facing" directions somewhere, either here or the model
       // maybe here since we handle advancing along segments that the model hasn't yet!
       let overtime = 0
@@ -125,6 +123,8 @@ class PathSystem extends System
         if (timeLeft <= 0) {
           overtime = -timeLeft
           path = path.next
+          // update our component
+          this.paths.update(id, path)
           if (!path) {
             // rotate back forward
             this.trans.updateQuaternion(id, new Quaternion()) // face forward
@@ -245,12 +245,12 @@ export class RanchMode extends Mode
         new DenseValueComponent<ActorState>("state",
           new ActorState(new Vector3(), 1, ActorAction.Idle))
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
- //   const paths = this._paths = new SparseValueComponent<PathRec|undefined>("paths", undefined)
+    const paths = this._paths = new SparseValueComponent<PathRec|undefined>("paths", undefined)
     const graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
 
     const domain = this._domain = new Domain({},
-        {trans, obj, mixer, body, state, /*paths,*/ hovers, graph})
-    this._pathsys = new PathSystem(domain, trans, state)
+        {trans, obj, mixer, body, state, paths, hovers, graph})
+    this._pathsys = new PathSystem(domain, trans, paths)
     const scenesys = this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
     /*const graphsys =*/ this._graphsys = new GraphSystem(nodeCtx, domain, graph)
@@ -415,6 +415,7 @@ export class RanchMode extends Mode
   protected updateActorSprite (actorInfo :ActorInfo, state :ActorState) :void {
     // store their state in the entity system...
     this._state.update(actorInfo.entityId, state)
+    this._paths.update(actorInfo.entityId, state.path)
     this._trans.updateScale(actorInfo.entityId, new Vector3(state.scale, state.scale, state.scale))
   }
 
@@ -559,9 +560,8 @@ export class RanchMode extends Mode
       // regular monster
       if (cfg.model.walk) {
         graphCfg.readPath = <NodeConfig>{
-          type: "property",
-          input: "state",
-          name: "path",
+          type: "readComponent",
+          component: "paths",
         }
         graphCfg.noPath = <NodeConfig>{
           type: "equals",
@@ -677,6 +677,7 @@ export class RanchMode extends Mode
             [state.pos.x, state.pos.y, state.pos.z, 0, 0, 0, 1, 1, 1, 1])},
         obj: objDef,
         state: {initial: state},
+        paths: {},
         hovers: {},
         mixer: {},
         graph: graphCfg,
@@ -793,7 +794,7 @@ export class RanchMode extends Mode
   protected _trans! :TransformComponent
   protected _obj! :Component<Object3D>
   protected _state! :Component<ActorState>
-  //protected _paths! :Component<PathRec|undefined>
+  protected _paths! :Component<PathRec|undefined>
   protected _graphsys! :GraphSystem
   protected _pathsys! :PathSystem
   protected _scenesys! :SceneSystem
