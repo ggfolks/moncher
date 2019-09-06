@@ -521,29 +521,29 @@ export class RanchMode extends Mode
     const isEgg = (cfg.kind === ActorKind.EGG)
     if (cfg.model.hatch) {
       // set up hatching (nearly the same between eggs and monsters)
-      animStates.hatch = {
-        url: cfg.model.hatch,
-        repetitions: 1,
-        clampWhenFinished: isEgg,
-      }
       graphCfg.isHatching = <NodeConfig>{
         type: "equals",
         x: "action",
         y: ActorAction.Hatching,
+      }
+      animStates.hatch = {
+        url: cfg.model.hatch,
+        repetitions: 1,
+        clampWhenFinished: isEgg,
       }
       anyTransitions.hatch = {condition: "hatchCond"}
       graphCfg.controller.hatchCond = "isHatching"
     }
 
     if (isEgg) {
-      // set up the ready-to-hatch state
-      animStates.readyToHatch = {
-        // TODO: a url!
-      }
       graphCfg.isReadyToHatch = <NodeConfig>{
         type: "equals",
         x: "action",
         y: ActorAction.ReadyToHatch,
+      }
+      // set up the ready-to-hatch state
+      animStates.readyToHatch = {
+        // TODO: a url!
       }
       anyTransitions.readyToHatch = {condition: "readyHatchCond"}
       graphCfg.controller.readyHatchCond = "isReadyToHatch"
@@ -588,6 +588,11 @@ export class RanchMode extends Mode
       // Happy-react happens whenever you touch a monster, even if in the other states.
       // So we need to set up a separate animation controller.
       if (cfg.model.happyReact) {
+        graphCfg.touched = <NodeConfig>{
+          type: "property",
+          input: "state",
+          name: "touched",
+        }
         graphCfg.happyReactAuxController = <NodeConfig>{
           type: "animationController",
           component: "mixer",
@@ -608,11 +613,6 @@ export class RanchMode extends Mode
             },
           },
           touchCond: "touched",
-        }
-        graphCfg.touched = <NodeConfig>{
-          type: "property",
-          input: "state",
-          name: "touched",
         }
       }
     }
