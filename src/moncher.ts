@@ -52,6 +52,8 @@ export class PathRec
     readonly src :Vector3,
     /** The destination location. */
     readonly dest :Vector3,
+    /** The orientation while traversing this segment. */
+    readonly orient :number,
     /** The duration. */
     readonly duration :number,
     /** Any next segment. */
@@ -111,6 +113,8 @@ export class ActorState
     readonly pos :Vector3,
     /** The actor's scale. */
     readonly scale :number,
+    /** The actor's orientation. */
+    readonly orient :number,
     /** The current activity of the actor. */
     readonly action :ActorAction,
     /** Any path segments the actor is following. */
@@ -118,6 +122,10 @@ export class ActorState
     /** Are we being touched by a user? */
     readonly touched? :boolean,
   ) {}
+
+  static createDummy () :ActorState {
+    return new ActorState(new Vector3(), 1, 0, ActorAction.Unknown)
+  }
 }
 
 /**
@@ -161,11 +169,16 @@ abstract class Actor
   toState () :ActorState
   {
     return new ActorState(
-        this.pos.clone(), this.getScale(), this.action, this.getPath(), this.isTouched())
+        this.pos.clone(), this.getScale(), this.getOrient(),
+        this.action, this.getPath(), this.isTouched())
   }
 
   getScale () :number {
     return 1
+  }
+
+  getOrient () :number {
+    return 0
   }
 
   getPath () :PathRec|undefined {
@@ -321,10 +334,21 @@ class Monster extends Actor
         this._touched = true
         break
     }
+
+    switch (this.action) {
+      case ActorAction.Waiting:
+      case ActorAction.Idle:
+        this._orient = 0 // rotate forward
+        break
+    }
   }
 
   getScale () :number {
     return this._scale
+  }
+
+  getOrient () :number {
+    return this._orient
   }
 
   /** Get the actor's speed specified in distance per second. */
@@ -354,10 +378,13 @@ class Monster extends Actor
       const dest = path.pop()!
       const src = path[path.length - 1]
       const duration = src.distanceTo(dest) * speed
-      rec = new PathRec(src, dest, duration, rec)
+      const orient = Math.atan2(dest.x - src.x, dest.z - src.z)
+      rec = new PathRec(src, dest, orient, duration, rec)
     }
     this._path = rec
     this.setAction(ActorAction.Walking)
+    // set our final angle to something wacky
+    this._orient = Math.random() * Math.PI * 2
   }
 
   protected setAction (action :ActorAction, counterInit :number = 0) :void
@@ -370,6 +397,7 @@ class Monster extends Actor
   protected _hunger :number = 0
   protected _scale :number = 1
   protected _path? :PathRec
+  protected _orient :number = 0
 
   protected _touched :boolean = false
   protected _hit :boolean = false

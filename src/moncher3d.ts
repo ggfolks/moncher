@@ -86,12 +86,16 @@ class ActorInfo
   ) {}
 }
 
+const unitY = new Vector3(0, 1, 0)
+const scratchQ = new Quaternion()
+
 class PathSystem extends System
 {
   constructor (
     domain :Domain,
     readonly trans :TransformComponent,
     readonly paths :Component<PathRec|undefined>,
+    readonly state :Component<ActorState>,
 		readonly getY :(x :number, z :number) => number,
   ) {
     super(domain, Matcher.hasAllC(trans.id, paths.id))
@@ -107,18 +111,7 @@ class PathSystem extends System
       while (path) {
         if (!path.stamp) {
           path.stamp = clock.time + path.duration - overtime
-
-          // calculate the direction
-          // TODO: animate turning? Affect walking speed / direction during turn?
-          // Have "turning" be a step in path following, where the monster pauses forward
-          // movement while it adjusts rotation?
-          // Perhaps near the end of the old path / start of new path it interpolates between
-          // their two angles?
-          // Right now we instantly rotate.
-          scratch.subVectors(path.dest, path.src)
-          scratch.y = 0
-          this.trans.updateQuaternion(id,
-              new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), scratch.normalize()))
+          this.updateOrient(id, path.orient)
         }
         const timeLeft = path.stamp - clock.time
         if (timeLeft <= 0) {
@@ -127,8 +120,8 @@ class PathSystem extends System
           // update our component
           this.paths.update(id, path)
           if (!path) {
-            // rotate back forward
-            this.trans.updateQuaternion(id, new Quaternion()) // face forward
+            // if at the end of the paths, update the orient to the state orient
+            this.updateOrient(id, this.state.read(id).orient)
           }
         } else {
           // otherwise, there's time left and we should update the position
@@ -139,6 +132,10 @@ class PathSystem extends System
         }
       }
     })
+  }
+
+  updateOrient (id :ID, orient :number) {
+    this.trans.updateQuaternion(id, scratchQ.setFromAxisAngle(unitY, orient))
   }
 }
 
@@ -226,15 +223,14 @@ export class RanchMode extends Mode
         new AnimationMixer(new Object3D()))
     const body = new DenseValueComponent<Body>("body", new Body())
     const state = this._state =
-        new DenseValueComponent<ActorState>("state",
-          new ActorState(new Vector3(), 1, ActorAction.Idle))
+        new DenseValueComponent<ActorState>("state", ActorState.createDummy())
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
     const paths = this._paths = new SparseValueComponent<PathRec|undefined>("paths", undefined)
     const graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
 
     const domain = this._domain = new Domain({},
         {trans, obj, mixer, body, state, paths, hovers, graph})
-    this._pathsys = new PathSystem(domain, trans, paths, this.getY.bind(this))
+    this._pathsys = new PathSystem(domain, trans, paths, state, this.getY.bind(this))
     const scenesys = this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
     /*const graphsys =*/ this._graphsys = new GraphSystem(nodeCtx, domain, graph)
@@ -401,6 +397,10 @@ export class RanchMode extends Mode
     // store their state in the entity system...
     this._state.update(actorInfo.entityId, state)
     this._paths.update(actorInfo.entityId, state.path)
+    if (!state.path) {
+      this._trans.updateQuaternion(actorInfo.entityId,
+          scratchQ.setFromAxisAngle(unitY, state.orient))
+    }
     this._trans.updateScale(actorInfo.entityId, new Vector3(state.scale, state.scale, state.scale))
   }
 
