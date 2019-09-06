@@ -88,6 +88,7 @@ class ActorInfo
 
 const unitY = new Vector3(0, 1, 0)
 const scratchQ = new Quaternion()
+const scratchV :Vector3 = new Vector3()
 
 class PathSystem extends System
 {
@@ -102,7 +103,6 @@ class PathSystem extends System
   }
 
   update (clock :Clock) {
-    const scratch :Vector3 = new Vector3()
     this.onEntities(id => {
       let path = this.paths.read(id)
       // TODO: handle "facing" directions somewhere, either here or the model
@@ -125,9 +125,9 @@ class PathSystem extends System
           }
         } else {
           // otherwise, there's time left and we should update the position
-          scratch.lerpVectors(path.dest, path.src, timeLeft / path.duration)
-          scratch.y = this.getY(scratch.x, scratch.z)
-          this.trans.updatePosition(id, scratch)
+          scratchV.lerpVectors(path.dest, path.src, timeLeft / path.duration)
+          scratchV.y = this.getY(scratchV.x, scratchV.z)
+          this.trans.updatePosition(id, scratchV)
           path = undefined
         }
       }
@@ -401,7 +401,7 @@ export class RanchMode extends Mode
       this._trans.updateQuaternion(actorInfo.entityId,
           scratchQ.setFromAxisAngle(unitY, state.orient))
     }
-    this._trans.updateScale(actorInfo.entityId, new Vector3(state.scale, state.scale, state.scale))
+    this._trans.updateScale(actorInfo.entityId, scratchV.set(state.scale, state.scale, state.scale))
   }
 
   protected addActor (id :number, state :ActorState) :ActorInfo
