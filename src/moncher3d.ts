@@ -498,8 +498,12 @@ export class RanchMode extends Mode
     // set up animations
     const anyTransitions :PMap<TransitionConfig> = {
     }
+    const defaultTransitions :PMap<TransitionConfig> = {
+    }
     const animStates :PMap<StateConfig> = {
-      default: <StateConfig>{},
+      default: <StateConfig>{
+        transitions: defaultTransitions,
+      },
       any: <StateConfig>{
         transitions: anyTransitions,
       },
@@ -593,6 +597,27 @@ export class RanchMode extends Mode
         anyTransitions.eat = {condition: "eatCond"}
         graphCfg.controller.eatCond = "isEating"
       } // end: eat
+
+      if (cfg.model.sleep && cfg.model.faint) {
+        graphCfg.isSleeping = <NodeConfig>{
+          type: "equals",
+          x: "action",
+          y: ActorAction.Sleeping,
+        }
+        animStates.faint = {
+          url: cfg.model.faint,
+          repetitions: 1,
+          finishBeforeTransition: true,
+          transitions: {sleep: {}},
+        }
+        // only transition to faint from default
+        defaultTransitions.faint = {condition: "sleepCond"}
+        graphCfg.controller.sleepCond = "isSleeping"
+        animStates.sleep = {
+          url: cfg.model.sleep,
+          transitions: {default: {condition: "!sleepCond"}}
+        }
+      }
 
       // Happy-react happens whenever you touch a monster, even if in the other states.
       // So we need to set up a separate animation controller.
