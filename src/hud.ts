@@ -68,12 +68,16 @@ export class Hud
               text: name + ".text",
               style: {
                 font: {size: 128},
+                //background: name + ".image",
+                //background: {image: {source: "ui/AcornIcon.png"}},
+                //background: "$imgAcorn",
               },
             },
           },
         },
         style: {
-          background: {image: "ui/AcornIcon.png"},
+          //background: name + ".image",
+          //background: {image: {source: "ui/AcornIcon.png"}},
           //background: "$imgAcorn",
         },
       }
