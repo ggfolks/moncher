@@ -775,7 +775,7 @@ export class RanchMode extends Mode {
     this._trans.updateQuaternion(this._cameraId, scratchQ)
   }
 
-  protected _cameraDistance :number = 5
+  protected _cameraDistance :number = 10
   protected _cameraFocus :Vector3 = new Vector3(0, 0, 0)
   protected _cameraFocusBounds :Box3 = new Box3() // Infinities
 
@@ -847,9 +847,9 @@ export class RanchMode extends Mode {
 
   // New constants for camera control
   private static readonly MAX_CAMERA_DISTANCE = 50
-  private static readonly MIN_CAMERA_DISTANCE = 2.5
+  private static readonly MIN_CAMERA_DISTANCE = 5
   private static readonly CAMERA_ANGLE_AT_MAXIMUM = -Math.PI / 2
-  private static readonly CAMERA_ANGLE_AT_MINIMUM = RanchMode.CAMERA_ANGLE_AT_MAXIMUM / 50
+  private static readonly CAMERA_ANGLE_AT_MINIMUM = RanchMode.CAMERA_ANGLE_AT_MAXIMUM / 9
 
   private static readonly RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
 }
