@@ -1,6 +1,6 @@
 import {loadImage} from "tfw/core/assets"
 import {Mutable, Value} from "tfw/core/react"
-import {log, Disposable, Disposer} from "tfw/core/util"
+import {Disposable, Disposer} from "tfw/core/util"
 import {Renderer} from "tfw/scene2/gl"
 import {Host, RootConfig} from "tfw/ui/element"
 import {Model, ModelData} from "tfw/ui/model"
@@ -41,8 +41,6 @@ export class Hud
     host :Host,
     renderer :Renderer,
   ) {
-    log.debug("Compiler anal about unused imports")
-
     // a bunch of helper bits to ease creation of standard buttons
     const getActionVisible = (v :ActionOpt) => (v !== undefined)
     const getActionText = (v :ActionOpt) => v && (v.label !== undefined) ? v.label : ""
