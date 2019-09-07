@@ -318,7 +318,7 @@ class Monster extends Actor {
 
         // Wander randomly!
         if (Math.random() < (.075 * MONSTER_ACCELERANT)) {
-          const newpos = model.randomPositionFrom(this.pos)
+          const newpos = model.randomPositionFrom(this.pos, 10)
           if (newpos) {
             this.walkTo(model, newpos)
           }
