@@ -91,7 +91,7 @@ export class ActorConfig {
 }
 
 export const enum ActorAction {
-  Idle,
+  Idle = 1,
   ReadyToHatch,
   Hatching,
   Waiting,

@@ -1,7 +1,7 @@
 import {GridTileSceneConfig, GridTileSceneModel, PropPlacement} from "./gridtiles"
 
 const enum Direction {
-  North,
+  North = 1,
   East,
   West,
   South

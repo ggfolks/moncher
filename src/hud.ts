@@ -10,7 +10,7 @@ import {moncherStyles, moncherTheme} from "./uistyles"
 import {RanchMode} from "./moncher3d"
 
 export const enum UiState {
-  Default,
+  Default = 1,
   PlacingEgg,
   PlacingFood,
 }
