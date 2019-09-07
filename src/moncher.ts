@@ -98,6 +98,7 @@ export const enum ActorAction {
   Waiting,
   Walking,
   Eating,
+  Sleepy,
   Sleeping,
   Waking,
   Unknown,
@@ -263,7 +264,7 @@ class Monster extends Actor
           } else {
             // otherwise we have finished!
             this.pos.copy(path.dest)
-            this.setAction(ActorAction.Idle)
+            this.setAction(this.popState())
             // proceed to assign path to undefined, and we'll fall out of the while.
           }
           path = this._path = path.next
@@ -274,7 +275,17 @@ class Monster extends Actor
         if (++this._counter >= 20 / MONSTER_ACCELERANT) {
           this._hunger = 0
           this._scale *= 1.2
-          this.setAction(ActorAction.Sleeping)
+          this.setAction(ActorAction.Sleepy)
+        }
+        break
+
+      case ActorAction.Sleepy:
+        this.pushState(ActorAction.Sleeping)
+        const newpos = model.randomPositionFrom(this.pos, 2)
+        if (newpos) {
+          this.walkTo(model, newpos, .5)
+        } else {
+          this.setAction(ActorAction.Unknown)
         }
         break
 
@@ -290,7 +301,7 @@ class Monster extends Actor
 
       case ActorAction.Unknown: // Do nothing for a little while
         if (++this._counter >= 20 / MONSTER_ACCELERANT) {
-          this.setAction(ActorAction.Idle)
+          this.setAction(this.popState())
         }
         break
 
@@ -364,6 +375,14 @@ class Monster extends Actor
     return this._touched
   }
 
+  protected pushState (state :ActorAction) :void {
+    this._stateStack.push(state)
+  }
+
+  protected popState () :ActorAction {
+    return this._stateStack.pop() || ActorAction.Idle
+  }
+
   protected walkTo (model :RanchModel, newPos :Vector3, speedFactor = 1) :void
   {
     const path = model.findPath(new Vector3().copy(this.pos), newPos)
@@ -401,6 +420,8 @@ class Monster extends Actor
 
   protected _touched :boolean = false
   protected _hit :boolean = false
+
+  protected _stateStack :ActorAction[] = []
 }
 
 class Food extends Actor
@@ -515,7 +536,7 @@ export class RanchModel
 
   /**
    * Find a new random location reachable from the specified location. */
-  randomPositionFrom (pos :Vector3) :Vector3|undefined {
+  randomPositionFrom (pos :Vector3, maxDist = Infinity) :Vector3|undefined {
     if (!this._pathFinder) {
       log.warn("Pathfinder unknown. Movement limited.")
       return pos
@@ -524,7 +545,7 @@ export class RanchModel
     const groupId = this._pathFinder.getGroup(RanchModel.RANCH_ZONE, pos)
     const node = (groupId === null)
         ? new Vector3()
-        : this._pathFinder.getRandomNode(RanchModel.RANCH_ZONE, groupId, pos, Infinity)
+        : this._pathFinder.getRandomNode(RanchModel.RANCH_ZONE, groupId, pos, maxDist)
     return node
   }
 
