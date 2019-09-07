@@ -76,8 +76,8 @@ import {MonsterDb} from "./monsterdb"
 import {Hud, UiState} from "./hud"
 import {graphStyles, graphTheme} from "./graphstyles"
 
-class ActorInfo
-{
+class ActorInfo {
+
   constructor (
     /** The id from the RanchModel. */
     readonly id :number,
@@ -92,8 +92,8 @@ const downY = new Vector3(0, -1, 0)
 const scratchQ = new Quaternion()
 const scratchV :Vector3 = new Vector3()
 
-class PathSystem extends System
-{
+class PathSystem extends System {
+
   constructor (
     domain :Domain,
     readonly trans :TransformComponent,
@@ -141,8 +141,8 @@ class PathSystem extends System
   }
 }
 
-export class RanchMode extends Mode
-{
+export class RanchMode extends Mode {
+
   constructor (
     protected _app :App,
     protected _ranch :RanchModel,
@@ -346,8 +346,7 @@ export class RanchMode extends Mode
 
   /**
    * Attempt to colorize the object and all its children.  */
-  protected colorize (obj :Object3D, color :Color) :void
-  {
+  protected colorize (obj :Object3D, color :Color) :void {
     if ((obj instanceof Mesh) && (obj.material instanceof MeshStandardMaterial)) {
       // clone the material so that we don't change all instances of this object
       const newMat = new MeshStandardMaterial(obj.material as object)
@@ -361,16 +360,14 @@ export class RanchMode extends Mode
 
   /**
    * Configure pathfinding once we have the navmesh. */
-  protected configurePathFinding (navMesh :Mesh) :void
-  {
+  protected configurePathFinding (navMesh :Mesh) :void {
     this._pathFinder = new Pathfinding()
     this._pathFinder.setZoneData(RanchMode.RANCH_ZONE, Pathfinding.createZone(navMesh.geometry))
   }
 
   /**
    * Called once we know enough to start adding actors. */
-  protected setReady () :void
-  {
+  protected setReady () :void {
     if (this._ready) return
     this._ready = true
 
@@ -379,8 +376,7 @@ export class RanchMode extends Mode
   }
 
   /**
-   * React to a actor being updated in the ranch model.
-   */
+   * React to a actor being updated in the ranch model. */
   protected updateActor (id :number, state :ActorState) :void {
     // see if we've given this monster an entity ID yet
     let actorInfo = this._actors.get(id)
@@ -391,8 +387,7 @@ export class RanchMode extends Mode
   }
 
   /**
-   * Effect updates received from the RanchModel.
-   */
+   * Effect updates received from the RanchModel. */
   protected updateActorSprite (actorInfo :ActorInfo, state :ActorState) :void {
     // store their state in the entity system...
     this._state.update(actorInfo.entityId, state)
@@ -405,8 +400,7 @@ export class RanchMode extends Mode
         scratchV.set(state.scale, state.scale, state.scale))
   }
 
-  protected addActor (id :number, state :ActorState) :ActorInfo
-  {
+  protected addActor (id :number, state :ActorState) :ActorInfo {
     const cfg = this._ranch.actorConfig.get(id)
     if (!cfg) {
       // this isn't supposed to happen
@@ -483,10 +477,8 @@ export class RanchMode extends Mode
     }
 
     // set up animations
-    const anyTransitions :PMap<TransitionConfig> = {
-    }
-    const defaultTransitions :PMap<TransitionConfig> = {
-    }
+    const anyTransitions :PMap<TransitionConfig> = {}
+    const defaultTransitions :PMap<TransitionConfig> = {}
     const animStates :PMap<StateConfig> = {
       default: <StateConfig>{
         transitions: defaultTransitions,
@@ -684,8 +676,7 @@ export class RanchMode extends Mode
     this._domain.delete(actorInfo.entityId)
   }
 
-  protected mouseToLocation (pos :vec2) :Vector3|undefined
-  {
+  protected mouseToLocation (pos :vec2) :Vector3|undefined {
     const obj = this._navMesh || this._terrain
     if (obj) {
       const caster = new Raycaster()
@@ -700,15 +691,13 @@ export class RanchMode extends Mode
     return undefined
   }
 
-  protected actorTouched (id :number) :void
-  {
+  protected actorTouched (id :number) :void {
     this._ranch.actorTouched(id)
   }
 
   /**
    * Place an egg or food. */
-  protected doPlacement (pos :Vector3) :void
-  {
+  protected doPlacement (pos :Vector3) :void {
     const actorConfig :ActorConfig = (this._uiState === UiState.PlacingEgg)
         ? MonsterDb.getRandomEgg()
         : new ActorConfig(ActorKind.FOOD, <ActorModel>{ model: "monsters/Acorn.glb" })
@@ -732,8 +721,7 @@ export class RanchMode extends Mode
     }
   }
 
-  protected swapTerrain () :void
-  {
+  protected swapTerrain () :void {
     if (!this._terrain || !this._navMesh) return
     const obj = this._obj.read(this._terrainId)
     if (obj === this._terrain) {

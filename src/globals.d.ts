@@ -16,8 +16,8 @@ declare module "three-pathfinding" {
 
   export type Group = {}
 
-  export class Pathfinding
-  {
+  export class Pathfinding {
+
     constructor()
 
     static createZone (geometry :BufferGeometry|Geometry) :Zone
@@ -46,8 +46,8 @@ declare module "three-pathfinding" {
         endTarget :Vector3) :Node
   }
 
-  export class PathfindingHelper extends Object3D
-  {
+  export class PathfindingHelper extends Object3D {
+
     constructor()
 
     setPath (path :Vector3[]) :this

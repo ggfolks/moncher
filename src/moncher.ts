@@ -8,8 +8,7 @@ import {MONSTER_ACCELERANT} from "./debug"
 /**
  * The kind of actor.
  */
-export class ActorKind
-{
+export class ActorKind {
   // Big fat TODO...
   static readonly EGG :ActorKind = new ActorKind(false, false, false, 0)
   static readonly FOOD :ActorKind = new ActorKind(false, false, false, 0)
@@ -45,8 +44,8 @@ export interface ActorModel {
   happyReact? :string
 }
 
-export class PathRec
-{
+export class PathRec {
+
   constructor (
     /** The source location. */
     readonly src :Vector3,
@@ -74,8 +73,8 @@ export class PathRec
 /**
  * Configuration of an actor.
  */
-export class ActorConfig
-{
+export class ActorConfig {
+
   constructor (
     readonly kind :ActorKind = ActorKind.TESTER,
     readonly model :ActorModel,
@@ -107,8 +106,8 @@ export const enum ActorAction {
 /**
  * Runtime information about an actor's state.
  */
-export class ActorState
-{
+export class ActorState {
+
   constructor (
     /** The position of this actor. */
     readonly pos :Vector3,
@@ -133,8 +132,7 @@ export class ActorState
  * An actor.
  */
 type ConstructableActorClass = { new (...args :any[]) :Actor }
-abstract class Actor
-{
+abstract class Actor {
   /** Location. */
   pos :Vector3
 
@@ -154,8 +152,7 @@ abstract class Actor
 
   /**
    * Additional constructor logic for subclasses without having to reimpl the constructor. */
-  protected postConstruct () :void
-  {
+  protected postConstruct () :void {
   }
 
   abstract tick (model :RanchModel, dt :number) :void
@@ -167,8 +164,7 @@ abstract class Actor
     // by default do nothing
   }
 
-  toState () :ActorState
-  {
+  toState () :ActorState {
     return new ActorState(
         this.pos.clone(), this.getScale(), this.getOrient(),
         this.action, this.getPath(), this.isTouched())
@@ -191,8 +187,8 @@ abstract class Actor
   }
 }
 
-class Egg extends Actor
-{
+class Egg extends Actor {
+
   protected postConstruct () :void {
     // force health because we're going to do modify it in tick
     this.health = 50
@@ -231,8 +227,8 @@ class Egg extends Actor
   }
 }
 
-class Monster extends Actor
-{
+class Monster extends Actor {
+
   tick (model :RanchModel, dt :number) :void {
     // clear flags
     this._touched = false
@@ -383,8 +379,7 @@ class Monster extends Actor
     return this._stateStack.pop() || ActorAction.Idle
   }
 
-  protected walkTo (model :RanchModel, newPos :Vector3, speedFactor = 1) :void
-  {
+  protected walkTo (model :RanchModel, newPos :Vector3, speedFactor = 1) :void {
     const path = model.findPath(new Vector3().copy(this.pos), newPos)
     if (!path) {
       this.setAction(ActorAction.Unknown)
@@ -406,8 +401,7 @@ class Monster extends Actor
     this._orient = Math.random() * Math.PI * 2
   }
 
-  protected setAction (action :ActorAction, counterInit :number = 0) :void
-  {
+  protected setAction (action :ActorAction, counterInit :number = 0) :void {
     this.action = action
     this._counter = Math.trunc(counterInit)
   }
@@ -424,15 +418,15 @@ class Monster extends Actor
   protected _stateStack :ActorAction[] = []
 }
 
-class Food extends Actor
-{
+class Food extends Actor {
+
   tick (model :RanchModel) :void {
     this.health -= .01 // food decays
   }
 }
 
-export class RanchModel
-{
+export class RanchModel {
+
   /** The public view of actor state. */
   get actors () :RMap<number, ActorState> {
     return this._actors
@@ -461,8 +455,7 @@ export class RanchModel
 
   /**
    * Called from client. */
-  actorTouched (id :number) :void
-  {
+  actorTouched (id :number) :void {
     const actor = this._actorData.get(id)
     if (actor) {
       actor.setTouched(this)
@@ -473,8 +466,7 @@ export class RanchModel
 
   /**
    * Called from client. */
-  addActor (config :ActorConfig, pos :Vector3, action = ActorAction.Idle) :void
-  {
+  addActor (config :ActorConfig, pos :Vector3, action = ActorAction.Idle) :void {
     this.validateConfig(config)
     // TODO: validate location? // We could pathfind from a known good location on the ranch
     // and then take the final position of the path.
@@ -488,8 +480,7 @@ export class RanchModel
     this._actors.set(data.id, data.toState())
   }
 
-  protected validateConfig (config :ActorConfig)
-  {
+  protected validateConfig (config :ActorConfig) {
     switch (config.kind) {
       case ActorKind.EGG:
         if (!config.spawn) {
@@ -501,8 +492,7 @@ export class RanchModel
     }
   }
 
-  protected pickActorClass (config :ActorConfig) :ConstructableActorClass
-  {
+  protected pickActorClass (config :ActorConfig) :ConstructableActorClass {
     switch (config.kind) {
       case ActorKind.EGG: return Egg
       case ActorKind.FOOD: return Food
@@ -541,7 +531,6 @@ export class RanchModel
       log.warn("Pathfinder unknown. Movement limited.")
       return pos
     }
-
     const groupId = this._pathFinder.getGroup(RanchModel.RANCH_ZONE, pos)
     const node = (groupId === null)
         ? new Vector3()
@@ -554,12 +543,10 @@ export class RanchModel
       log.warn("Pathfinder unknown. Can't path.")
       return undefined
     }
-
     const groupId = this._pathFinder.getGroup(RanchModel.RANCH_ZONE, src)
     if (groupId === null) return undefined
     const foundPath = this._pathFinder.findPath(src, dest, RanchModel.RANCH_ZONE, groupId)
     if (!foundPath) return undefined
-
     // put the damn src back on the start of the list
     foundPath.unshift(src)
     return foundPath
@@ -567,10 +554,8 @@ export class RanchModel
 
   /**
    * Advance the simulation.
-   * @param dt delta time, in milliseconds.
-   */
-  tick (dt :number) :void
-  {
+   * @param dt delta time, in milliseconds.  */
+  tick (dt :number) :void {
     for (const actor of this._actorData.values()) {
       actor.tick(this, dt)
     }

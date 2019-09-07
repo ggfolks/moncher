@@ -16,8 +16,8 @@ export const enum UiState {
 }
 
 export class Hud
-  implements Disposable
-{
+  implements Disposable {
+
   constructor (
     readonly host :Host,
     readonly renderer :Renderer,
@@ -45,8 +45,7 @@ export class Hud
   /**
    * Create the root for the specified ui state.
    */
-  protected createRoot (uiState :UiState) :Root|undefined
-  {
+  protected createRoot (uiState :UiState) :Root|undefined {
     let contents :ElementConfig
     const model :ModelData = {}
 

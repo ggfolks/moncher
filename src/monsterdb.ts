@@ -1,7 +1,7 @@
 import {ActorConfig, ActorKind, ActorModel} from "./moncher"
 
-export class MonsterDb
-{
+export class MonsterDb {
+
   static getRandomMonster () :ActorConfig {
     if (!MonsterDb._monsters) MonsterDb._initMonsters()
     return MonsterDb._monsters![Math.trunc(Math.random() * MonsterDb._monsters!.length)]
