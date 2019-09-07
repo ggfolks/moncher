@@ -499,7 +499,7 @@ export class RanchModel
   getNearestActor (
       pos :Vector3,
       predicate :(actor :Actor) => boolean,
-      maxDist :number = Number.POSITIVE_INFINITY) :Actor|undefined {
+      maxDist :number = Infinity) :Actor|undefined {
     let nearest = undefined
     for (const actor of this._actorData.values()) {
       if (predicate(actor)) {
@@ -524,8 +524,7 @@ export class RanchModel
     const groupId = this._pathFinder.getGroup(RanchModel.RANCH_ZONE, pos)
     const node = (groupId === null)
         ? new Vector3()
-        : this._pathFinder.getRandomNode(
-            RanchModel.RANCH_ZONE, groupId, pos, Number.POSITIVE_INFINITY)
+        : this._pathFinder.getRandomNode(RanchModel.RANCH_ZONE, groupId, pos, Infinity)
     return node
   }
 
