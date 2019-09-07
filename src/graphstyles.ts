@@ -16,7 +16,35 @@ export const graphStyles = {
     mediumGray: {type: "color", color: "#808080"},
     black: {type: "color", color: "#000000"},
   },
-  borders: {},
+  borders: {
+    graphViewSelect: {
+      stroke: {type: "color", color: "#808080"},
+    },
+    nodeHeader: {
+      stroke: {type: "color", color: "#000000"},
+      cornerRadius: [5, 5, 0, 0],
+    },
+    nodeHeaderHovered: {
+      stroke: {type: "color", color: "#303030"},
+      cornerRadius: [5, 5, 0, 0],
+    },
+    nodeHeaderSelected: {
+      stroke: {type: "color", color: "#808080"},
+      cornerRadius: [5, 5, 0, 0],
+    },
+    nodeBody: {
+      stroke: {type: "color", color: "#000000"},
+      cornerRadius: [0, 0, 5, 5],
+    },
+    nodeBodyHovered: {
+      stroke: {type: "color", color: "#303030"},
+      cornerRadius: [0, 0, 5, 5],
+    },
+    nodeBodySelected: {
+      stroke: {type: "color", color: "#808080"},
+      cornerRadius: [0, 0, 5, 5],
+    },
+  },
   backgrounds: {
     root: {
       fill: {type: "color", color: "rgba(48, 48, 48, 0.5)"},
@@ -48,6 +76,9 @@ export const graphStyles = {
     graphViewerHeader: {
       fill: {type: "color", color: "#303030"},
       cornerRadius: [5, 5, 0, 0],
+    },
+    graphViewSelect: {
+      fill: {type: "color", color: "rgba(64, 64, 64, 0.25)"},
     },
     nodeHeader: {
       fill: {type: "color", color: "#404040"},
@@ -92,6 +123,10 @@ export const graphTheme = {
     },
     menuitem: {minWidth: 150},
     shortcut: {font: "$menu", fill: "$mediumGray"},
+    graphview: {
+      selectBackground: "$graphViewSelect",
+      selectBorder: "$graphViewSelect",
+    },
     edgeview: {
       lineWidth: 3,
       hovered: {outlineWidth: 5, outlineAlpha: 0.5, cursor: "pointer"},
@@ -140,10 +175,22 @@ export const graphTheme = {
   },
   nodeHeader: {
     label: {font: "$nodeTitle"},
-    box: {padding: 5, background: "$nodeHeader"},
+    box: {
+      padding: 5,
+      background: "$nodeHeader",
+      border: "$nodeHeader",
+      hovered: {border: "$nodeHeaderHovered"},
+      selected: {border: "$nodeHeaderSelected"},
+    },
   },
   nodeBody: {
-    box: {padding: 5, background: "$nodeBody"},
+    box: {
+      padding: 5,
+      background: "$nodeBody",
+      border: "$nodeBody",
+      hovered: {border: "$nodeBodyHovered"},
+      selected: {border: "$nodeBodySelected"},
+    },
   },
   nodeButton: {
     box: {
