@@ -24,7 +24,7 @@ import {Mutable, Value} from "tfw/core/react"
 import {
   PMap,
   Remover,
-//  log,
+  log,
 } from "tfw/core/util"
 import {Hand, Pointer} from "tfw/input/hand"
 import {Keyboard} from "tfw/input/keyboard"
@@ -88,6 +88,7 @@ class ActorInfo
 }
 
 const unitY = new Vector3(0, 1, 0)
+const downY = new Vector3(0, -1, 0)
 const scratchQ = new Quaternion()
 const scratchV :Vector3 = new Vector3()
 
@@ -98,7 +99,7 @@ class PathSystem extends System
     readonly trans :TransformComponent,
     readonly paths :Component<PathRec|undefined>,
     readonly state :Component<ActorState>,
-		readonly getY :(x :number, z :number) => number,
+		readonly setY :(into :Vector3) => void,
   ) {
     super(domain, Matcher.hasAllC(trans.id, paths.id))
   }
@@ -127,7 +128,7 @@ class PathSystem extends System
         } else {
           // otherwise, there's time left and we should update the position
           scratchV.lerpVectors(path.dest, path.src, timeLeft / path.duration)
-          scratchV.y = this.getY(scratchV.x, scratchV.z)
+          this.setY(scratchV)
           this.trans.updatePosition(id, scratchV)
           path = undefined
         }
@@ -225,10 +226,10 @@ export class RanchMode extends Mode
 
     const domain = this._domain = new Domain({},
         {trans, obj, mixer, body, state, paths, hovers, graph})
-    this._pathsys = new PathSystem(domain, trans, paths, state, this.getY.bind(this))
-    /*const scenesys =*/ this._scenesys = new SceneSystem(
+    this._pathsys = new PathSystem(domain, trans, paths, state, this.setY.bind(this))
+    this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
-    /*const graphsys =*/ this._graphsys = new GraphSystem(nodeCtx, domain, graph)
+    this._graphsys = new GraphSystem(nodeCtx, domain, graph)
     this._scenesys.scene.add(host.group)
 
     /*const animsys =*/ this._animsys = new AnimationSystem(domain, obj, mixer)
@@ -236,10 +237,11 @@ export class RanchMode extends Mode
     // add lights and camera
     const CAMERA_MOVEMENT_FACTOR = 20 // Hacky multiplication factor so we get noticeable movement
     const cameraHeight = Mutable.local(RanchMode.CAMERA_HEIGHT)
-    const cameraId = this._cameraId = domain.add({
+    this._cameraId = domain.add({
       components: {
         trans: {initial: new Float32Array(
-            [0, RanchMode.CAMERA_HEIGHT, RanchMode.CAMERA_SETBACK, 0, 0, 0, 1, 1, 1, 1])},
+            [-.825, 1.2, 6.882, -.05, 0, 0, 1, 1, 1, 1]
+            )},
         obj: {type: "perspectiveCamera"},
         hovers: {},
         graph: {
@@ -258,8 +260,6 @@ export class RanchMode extends Mode
         },
       },
     })
-    trans.updateQuaternion(cameraId, new Quaternion().setFromAxisAngle(
-        new Vector3(1, 0, 0), -Math.PI/5))
 
     // TEMP: set up mouse wheel to do a little camera Y adjustment
     const MIN_CAMERA = RanchMode.CAMERA_HEIGHT / 5
@@ -401,7 +401,8 @@ export class RanchMode extends Mode
       this._trans.updateQuaternion(actorInfo.entityId,
           scratchQ.setFromAxisAngle(unitY, state.orient))
     }
-    this._trans.updateScale(actorInfo.entityId, scratchV.set(state.scale, state.scale, state.scale))
+    this._trans.updateScale(actorInfo.entityId,
+        scratchV.set(state.scale, state.scale, state.scale))
   }
 
   protected addActor (id :number, state :ActorState) :ActorInfo
@@ -715,28 +716,20 @@ export class RanchMode extends Mode
     this.setUiState(UiState.Default)
   }
 
-  protected getY (x :number, z :number) :number
-  {
-    // Try to use the navmesh first, but if we get no hits we'll circle back to the terrain anyway
-    let terrain = this._navMesh || this._terrain
-    if (terrain) {
-      const HAWK_HEIGHT = 10
-      const caster = new Raycaster(new Vector3(x, HAWK_HEIGHT, z), new Vector3(0, -1, 0))
-
-      while (true) {
-        const results = caster.intersectObject(terrain, true)
-        for (const result of results) {
-          return HAWK_HEIGHT - result.distance
-        }
-        if (terrain === this._navMesh) {
-          terrain = this._terrain!
-        } else {
-          break
-        }
+  /**
+   * Override the Y coordinate with a sample from the navmesh, if possible. */
+  protected setY (into :Vector3) :void {
+    const obj = this._navMesh || this._terrain // Use the navmesh if we have it
+    if (obj) {
+      const oldY = into.y
+      into.y = RanchMode.MAX_CAMERA_DISTANCE + 1
+      const caster = new Raycaster(into, downY)
+      for (const result of caster.intersectObject(obj, true)) {
+        into.y = result.point.y
+        return
       }
+      into.y = oldY
     }
-    //log.warn("Didn't find decent height")
-    return 2.5 // bogus fallback height
   }
 
   protected swapTerrain () :void
@@ -752,6 +745,8 @@ export class RanchMode extends Mode
       this._scenesys.scene.add(this._terrain)
       this._scenesys.scene.remove(this._navMesh)
     }
+
+    log.debug("Camera", "arr", this._trans.read(this._cameraId))
   }
 
   /** Our heads-up-display: global UI. */
@@ -809,8 +804,11 @@ export class RanchMode extends Mode
     }
   }
 
-  private static CAMERA_HEIGHT = 7 // starting y coordinate of camera
-  private static CAMERA_SETBACK = 14 // starting z coordinate of camera
+  // New constants for camera control
+  private static MAX_CAMERA_DISTANCE = 10
+
+  private static CAMERA_HEIGHT = 2 // starting y coordinate of camera
+  private static CAMERA_SETBACK = 5 // starting z coordinate of camera
 
   private static RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
 }
