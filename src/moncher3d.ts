@@ -1,5 +1,6 @@
 import {
   AnimationMixer,
+  Box3,
   Camera,
   Color,
   Object3D,
@@ -330,6 +331,18 @@ export class RanchMode extends Mode {
       this._ranch.setNavMesh(navMesh)
 
       this.configurePathFinding(navMesh)
+
+      navMesh.geometry.computeBoundingBox()
+      const min = navMesh.geometry.boundingBox.min
+      const max = navMesh.geometry.boundingBox.max
+      const xshave = (max.x - min.x) / 10
+      const zshave = (max.z - min.z) / 10
+      const box = this._cameraFocusBounds
+      box.min.x = min.x + xshave
+      box.min.z = min.z + zshave
+      box.max.x = max.x - xshave
+      box.max.z = max.z - zshave
+      this.updateCamera()
     }
     this.setReady()
 
@@ -744,9 +757,12 @@ export class RanchMode extends Mode {
           this._cameraDistance + distanceDelta))
     }
     if (deltaX || deltaZ) {
-      if (deltaX) this._cameraFocus.x += deltaX
-      if (deltaZ) this._cameraFocus.z += deltaZ
-      this.setY(this._cameraFocus, true) // get Y from navmesh or terrain
+      const p = this._cameraFocus
+      const box = this._cameraFocusBounds
+      if (deltaX) p.x = Math.max(box.min.x, Math.min(box.max.x, p.x + deltaX))
+      if (deltaZ) p.z = Math.max(box.min.z, Math.min(box.max.z, p.z + deltaZ))
+      this.setY(p, true) // get Y from navmesh or terrain
+      //p.y = Math.max(box.min.y, Math.min(box.max.y, p.y))
     }
     const zoom = (this._cameraDistance - RanchMode.MIN_CAMERA_DISTANCE) /
         (RanchMode.MAX_CAMERA_DISTANCE - RanchMode.MIN_CAMERA_DISTANCE)
@@ -761,6 +777,7 @@ export class RanchMode extends Mode {
 
   protected _cameraDistance :number = 5
   protected _cameraFocus :Vector3 = new Vector3(0, 0, 0)
+  protected _cameraFocusBounds :Box3 = new Box3() // Infinities
 
   /** Our heads-up-display: global UI. */
   protected _hud :Hud
