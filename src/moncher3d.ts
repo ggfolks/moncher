@@ -321,12 +321,6 @@ export class RanchMode extends Mode {
       navMesh.parent!.remove(navMesh)
       this._navMesh = navMesh
 
-//      // compute the boundaries of the ranch (TEMP?)
-//      navMesh.geometry.computeBoundingBox()
-//      const box = navMesh.geometry.boundingBox
-//      log.info("Got the navmesh", "box", box)
-      // TODO: constrain scrolling based on the extents of the navmesh
-
       // update the ranch model TODO: this will be a serverside thing, can't update it from here!
       this._ranch.setNavMesh(navMesh)
 
@@ -762,6 +756,7 @@ export class RanchMode extends Mode {
       if (deltaX) p.x = Math.max(box.min.x, Math.min(box.max.x, p.x + deltaX))
       if (deltaZ) p.z = Math.max(box.min.z, Math.min(box.max.z, p.z + deltaZ))
       this.setY(p, true) // get Y from navmesh or terrain
+      // we don't actually set box y bounds yet
       //p.y = Math.max(box.min.y, Math.min(box.max.y, p.y))
     }
     const zoom = (this._cameraDistance - RanchMode.MIN_CAMERA_DISTANCE) /
@@ -777,7 +772,8 @@ export class RanchMode extends Mode {
 
   protected _cameraDistance :number = 10
   protected _cameraFocus :Vector3 = new Vector3(0, 0, 0)
-  protected _cameraFocusBounds :Box3 = new Box3() // Infinities
+  protected _cameraFocusBounds :Box3 = new Box3( // default box constructor does them the other way
+      new Vector3(-Infinity, -Infinity, -Infinity), new Vector3(Infinity, Infinity, Infinity))
 
   /** Our heads-up-display: global UI. */
   protected _hud :Hud
