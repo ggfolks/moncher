@@ -145,6 +145,11 @@ export class Hud
 
   // from Disposable
   public dispose () :void {
+    if (this._stateRoot) {
+      this.host.removeRoot(this._stateRoot)
+      this._stateRoot = undefined
+    }
+
     this._disposer.dispose()
   }
 
