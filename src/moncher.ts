@@ -97,7 +97,6 @@ export const enum ActorAction {
   Hatching,
   Waiting,
   Walking,
-  FindingFood, // we never stay in this state, it is a marker for our speed
   Eating,
   Sleeping,
   Waking,
@@ -303,8 +302,7 @@ class Monster extends Actor
             if (this.pos.distanceTo(food.pos) < .1) {
               this.setAction(ActorAction.Eating)
             } else {
-              this.setAction(ActorAction.FindingFood)
-              this.walkTo(model, food.pos)
+              this.walkTo(model, food.pos, 1.5)
             }
             break
           }
@@ -355,7 +353,7 @@ class Monster extends Actor
 
   /** Get the actor's speed specified in distance per second. */
   getSpeed () :number {
-    return this.config.baseWalkSpeed * this._scale * this.stateSpeedFactor()
+    return this.config.baseWalkSpeed * this._scale
   }
 
   getPath () :PathRec|undefined {
@@ -366,14 +364,7 @@ class Monster extends Actor
     return this._touched
   }
 
-  protected stateSpeedFactor () :number {
-    switch (this.action) {
-      default: return 1
-      case ActorAction.FindingFood: return 1.5
-    }
-  }
-
-  protected walkTo (model :RanchModel, newPos :Vector3) :void
+  protected walkTo (model :RanchModel, newPos :Vector3, speedFactor = 1) :void
   {
     const path = model.findPath(new Vector3().copy(this.pos), newPos)
     if (!path) {
@@ -382,7 +373,7 @@ class Monster extends Actor
     }
 
     let rec :PathRec|undefined = undefined
-    const speed = 1000 / this.getSpeed()
+    const speed = 1000 / (this.getSpeed() * speedFactor)
     while (path.length > 1) {
       const dest = path.pop()!
       const src = path[path.length - 1]
