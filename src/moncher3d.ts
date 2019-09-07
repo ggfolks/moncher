@@ -73,7 +73,7 @@ import {
   RanchModel,
 } from "./moncher"
 import {MonsterDb} from "./monsterdb"
-import {Hud} from "./hud"
+import {Hud, UiState} from "./hud"
 import {graphStyles, graphTheme} from "./graphstyles"
 
 class ActorInfo
@@ -140,13 +140,6 @@ class PathSystem extends System
   }
 }
 
-const enum UiState
-{
-  Default,
-  PlacingEgg,
-  PlacingFood,
-}
-
 export class RanchMode extends Mode
 {
   constructor (
@@ -163,7 +156,7 @@ export class RanchMode extends Mode
     handle = setTimeout(() => { this.onDispose.remove(cancelTimeout); this.setReady() }, 2000)
     this.onDispose.add(cancelTimeout)
 
-    this.onDispose.add(this._hud = new Hud(this._host, _app.renderer))
+    this.onDispose.add(this._hud = new Hud(this._host, _app.renderer, this))
     this.setUiState(UiState.Default)
 
     this.onDispose.add(Keyboard.instance.getKeyState(32).onChange((ov, nv) => this.swapTerrain()))
@@ -321,6 +314,11 @@ export class RanchMode extends Mode
     this._animsys.update(clock)
     this._scenesys.update()
     this._scenesys.render(this._webGlRenderer)
+  }
+
+  setUiState (uiState :UiState) :void {
+    this._uiState = uiState
+    this._hud.updateUiState(uiState)
   }
 
   protected ranchLoaded (scene :Object3D) :Object3D|undefined {
@@ -683,39 +681,6 @@ export class RanchMode extends Mode
     if (!actorInfo) return
     this._actors.delete(id)
     this._domain.delete(actorInfo.entityId)
-  }
-
-  protected setUiState (uiState :UiState) :void
-  {
-//    log.debug("Updating UI state: " + uiState)
-    // probably some of this logic could move into the hud?
-    this._uiState = uiState
-    switch (uiState) {
-    case UiState.Default:
-      this._hud.button1.update({
-        label: "🥚",
-        action: () => this.setUiState(UiState.PlacingEgg),
-      })
-      this._hud.button2.update({
-        image: "ui/AcornIcon.png",
-        action: () => this.setUiState(UiState.PlacingFood),
-      })
-      this._hud.statusLabel.update("Hold SPACE to see the navmesh")
-      break
-
-    case UiState.PlacingEgg:
-    case UiState.PlacingFood:
-      this._hud.button1.update({
-        label: "Cancel",
-        action: () => this.setUiState(UiState.Default),
-      })
-      this._hud.button2.update(undefined)
-      this._hud.statusLabel.update((uiState == UiState.PlacingEgg) ? "Place the egg" : "Drop Food")
-      // TODO: stop normal scene panning? Or maybe you can pan and it always puts the egg
-      // on your last touch and then there's a "hatch" button to confirm the placement.
-      // For now, we unforgivingly hatch it on their first touch.
-      break
-    }
   }
 
   protected mouseToLocation (pos :vec2) :Vector3|undefined
