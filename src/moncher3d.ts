@@ -20,7 +20,7 @@ import {Body} from "cannon"
 import {Clock} from "tfw/core/clock"
 import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
-import {Mutable, Value} from "tfw/core/react"
+import {Value} from "tfw/core/react"
 import {
   PMap,
   Remover,
@@ -160,7 +160,7 @@ export class RanchMode extends Mode {
     this.onDispose.add(this._hud = new Hud(this._host, _app.renderer, this))
     this.setUiState(UiState.Default)
 
-    this.onDispose.add(Keyboard.instance.getKeyState(32).onChange((ov, nv) => this.swapTerrain()))
+    this.onDispose.add(Keyboard.instance.getKeyState(32).onEmit(_ => this.swapTerrain()))
   }
 
   protected configureScene (app :App) :void {
@@ -235,43 +235,35 @@ export class RanchMode extends Mode {
     /*const animsys =*/ this._animsys = new AnimationSystem(domain, obj, mixer)
 
     // add lights and camera
-    const CAMERA_MOVEMENT_FACTOR = 20 // Hacky multiplication factor so we get noticeable movement
-    const cameraHeight = Mutable.local(RanchMode.CAMERA_HEIGHT)
     this._cameraId = domain.add({
       components: {
-        trans: {initial: new Float32Array(
-            [-.825, 1.2, 6.882, -.05, 0, 0, 1, 1, 1, 1]
-            )},
+        trans: {},
         obj: {type: "perspectiveCamera"},
-        hovers: {},
-        graph: {
-          hover: {type: "hover", component: "hovers"},
-          viewMovement: {type: "Vector3.split", input: ["hover", "viewMovement"]},
-          xDelta: {type: "multiply",
-              inputs: [["hover", "pressed"], ["viewMovement", "x"], -CAMERA_MOVEMENT_FACTOR]},
-          yDelta: {type: "multiply",
-              inputs: [["hover", "pressed"], ["viewMovement", "y"], CAMERA_MOVEMENT_FACTOR]},
-          leftRight: {type: "accumulate", input: "xDelta"},
-          upDown: {type: "accumulate", input: "yDelta"},
-          upDownSetback: {type: "add", inputs: ["upDown", RanchMode.CAMERA_SETBACK]},
-          panning: {type: "Vector3",
-              x: "leftRight", y: cameraHeight, z: "upDownSetback"},
-          updatePosition: {type: "updatePosition", component: "trans", input: "panning"}
-        },
       },
     })
+    // TODO: target matrix for the camera that we nicely transition to
+    this.updateCamera()
 
-    // TEMP: set up mouse wheel to do a little camera Y adjustment
-    const MIN_CAMERA = RanchMode.CAMERA_HEIGHT / 5
-    const MAX_CAMERA = RanchMode.CAMERA_HEIGHT * 5
+    // mouse wheel zooms
     const WHEEL_FACTOR = .05
     const wheelHandler = (event :WheelEvent) => {
-      cameraHeight.update(Math.max(MIN_CAMERA, Math.min(MAX_CAMERA,
-            cameraHeight.current + (event.deltaY * WHEEL_FACTOR))))
-      // Possibly TODO: keep same point centered!
+      this.updateCamera(event.deltaY * WHEEL_FACTOR)
     }
     root.addEventListener("wheel", wheelHandler)
     this.onDispose.add(() => root.removeEventListener("wheel", wheelHandler))
+
+    // set up arrow keys to change focus
+    const kb = Keyboard.instance
+    const enum ArrowKey { Left = 37, Up, Right, Down }
+    const ARROW_KEY_FACTOR = .5
+    this.onDispose.add(kb.getKeyState(ArrowKey.Left).onEmit(
+        p => { if (p) this.updateCamera(0, -ARROW_KEY_FACTOR, 0) } ))
+    this.onDispose.add(kb.getKeyState(ArrowKey.Right).onEmit(
+        p => { if (p) this.updateCamera(0, ARROW_KEY_FACTOR, 0) } ))
+    this.onDispose.add(kb.getKeyState(ArrowKey.Up).onEmit(
+        p => { if (p) this.updateCamera(0, 0, -ARROW_KEY_FACTOR) } ))
+    this.onDispose.add(kb.getKeyState(ArrowKey.Down).onEmit(
+        p => { if (p) this.updateCamera(0, 0, ARROW_KEY_FACTOR) } ))
 
     domain.add({
       components: {
@@ -667,8 +659,7 @@ export class RanchMode extends Mode {
   }
 
   /**
-   * React to an actor being removed from the ranch model.
-   */
+   * React to an actor being removed from the ranch model. */
   protected deleteActor (id :number) :void {
     const actorInfo = this._actors.get(id)
     if (!actorInfo) return
@@ -707,15 +698,21 @@ export class RanchMode extends Mode {
 
   /**
    * Override the Y coordinate with a sample from the navmesh, if possible. */
-  protected setY (into :Vector3) :void {
-    const obj = this._navMesh || this._terrain // Use the navmesh if we have it
+  protected setY (into :Vector3, terrainFallback? :boolean) :void {
+    let obj = this._navMesh || this._terrain // Use the navmesh if we have it
     if (obj) {
       const oldY = into.y
       into.y = RanchMode.MAX_CAMERA_DISTANCE + 1
       const caster = new Raycaster(into, downY)
-      for (const result of caster.intersectObject(obj, true)) {
-        into.y = result.point.y
-        return
+      while (obj) {
+        for (const result of caster.intersectObject(obj, true)) {
+          into.y = result.point.y
+          return
+        }
+        if (terrainFallback && (obj === this._navMesh)) {
+          obj = this._terrain
+        }
+        else break
       }
       into.y = oldY
     }
@@ -734,8 +731,36 @@ export class RanchMode extends Mode {
       this._scenesys.scene.remove(this._navMesh)
     }
 
-    log.debug("Camera", "arr", this._trans.read(this._cameraId))
+    log.debug("Camera",
+      "arr", this._trans.read(this._cameraId),
+      "dist", this._cameraDistance,
+      "focus", this._cameraFocus)
   }
+
+  protected updateCamera (distanceDelta? :number, deltaX? :number, deltaZ? :number) :void {
+    if (distanceDelta) {
+      this._cameraDistance = Math.max(RanchMode.MIN_CAMERA_DISTANCE,
+          Math.min(RanchMode.MAX_CAMERA_DISTANCE,
+          this._cameraDistance + distanceDelta))
+    }
+    if (deltaX || deltaZ) {
+      if (deltaX) this._cameraFocus.x += deltaX
+      if (deltaZ) this._cameraFocus.z += deltaZ
+      this.setY(this._cameraFocus, true) // get Y from navmesh or terrain
+    }
+    const zoom = (this._cameraDistance - RanchMode.MIN_CAMERA_DISTANCE) /
+        (RanchMode.MAX_CAMERA_DISTANCE - RanchMode.MIN_CAMERA_DISTANCE)
+    const angle = RanchMode.CAMERA_ANGLE_AT_MINIMUM +
+        (zoom * (RanchMode.CAMERA_ANGLE_AT_MAXIMUM - RanchMode.CAMERA_ANGLE_AT_MINIMUM))
+    scratchQ.setFromAxisAngle(new Vector3(1, 0, 0), angle)
+    this._trans.updatePosition(this._cameraId,
+        new Vector3(0, 0, 1).multiplyScalar(this._cameraDistance)
+        .applyQuaternion(scratchQ).add(this._cameraFocus))
+    this._trans.updateQuaternion(this._cameraId, scratchQ)
+  }
+
+  protected _cameraDistance :number = 5
+  protected _cameraFocus :Vector3 = new Vector3(0, 0, 0)
 
   /** Our heads-up-display: global UI. */
   protected _hud :Hud
@@ -788,15 +813,26 @@ export class RanchMode extends Mode {
         }
         break
 
+      case UiState.Default:
+        // mouse panning
+        if (change.type === "set" && change.value.pressed &&
+            (change.value.movement[0] || change.value.movement[1])) {
+          const MOUSE_FACTOR = -.05
+          this.updateCamera(0,
+              change.value.movement[0] * MOUSE_FACTOR,
+              change.value.movement[1] * MOUSE_FACTOR)
+        }
+        break
+
       default: break
     }
   }
 
   // New constants for camera control
-  private static MAX_CAMERA_DISTANCE = 10
+  private static readonly MAX_CAMERA_DISTANCE = 50
+  private static readonly MIN_CAMERA_DISTANCE = 2.5
+  private static readonly CAMERA_ANGLE_AT_MAXIMUM = -Math.PI / 2
+  private static readonly CAMERA_ANGLE_AT_MINIMUM = RanchMode.CAMERA_ANGLE_AT_MAXIMUM / 50
 
-  private static CAMERA_HEIGHT = 2 // starting y coordinate of camera
-  private static CAMERA_SETBACK = 5 // starting z coordinate of camera
-
-  private static RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
+  private static readonly RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
 }
