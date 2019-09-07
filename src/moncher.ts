@@ -307,6 +307,7 @@ class Monster extends Actor {
               actor => (actor.config.kind === ActorKind.FOOD))
           if (food) {
             if (this.pos.distanceTo(food.pos) < .1) {
+              food.health -= 10
               this.setAction(ActorAction.Eating)
             } else {
               this.walkTo(model, food.pos, 1.5)
