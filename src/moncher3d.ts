@@ -101,6 +101,7 @@ class PathSystem extends System {
     readonly paths :Component<PathRec|undefined>,
     readonly state :Component<ActorState>,
 		readonly setY :(into :Vector3) => void,
+    readonly actorWasPlaced :(id :number, pos :Vector3) => void,
   ) {
     super(domain, Matcher.hasAllC(trans.id, paths.id))
   }
@@ -131,6 +132,7 @@ class PathSystem extends System {
           scratchV.lerpVectors(path.dest, path.src, timeLeft / path.duration)
           this.setY(scratchV)
           this.trans.updatePosition(id, scratchV)
+          this.actorWasPlaced(id, scratchV)
           path = undefined
         }
       }
@@ -227,7 +229,8 @@ export class RanchMode extends Mode {
 
     const domain = this._domain = new Domain({},
         {trans, obj, mixer, body, state, paths, hovers, graph})
-    this._pathsys = new PathSystem(domain, trans, paths, state, this.setY.bind(this))
+    this._pathsys = new PathSystem(domain, trans, paths, state,
+        this.setY.bind(this), this.actorWasPlaced.bind(this))
     this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
     this._graphsys = new GraphSystem(nodeCtx, domain, graph)
@@ -672,6 +675,9 @@ export class RanchMode extends Mode {
     if (!actorInfo) return
     this._actors.delete(id)
     this._domain.delete(actorInfo.entityId)
+    if (actorInfo.entityId === this._trackedEntityId) {
+      this._trackedEntityId = -1
+    }
   }
 
   protected mouseToLocation (pos :vec2) :Vector3|undefined {
@@ -691,6 +697,12 @@ export class RanchMode extends Mode {
 
   protected actorTouched (id :number) :void {
     this._ranch.actorTouched(id)
+    const actorInfo = this._actors.get(id)
+    if (actorInfo) {
+      this._trackedEntityId = actorInfo.entityId
+      this._trans.readPosition(actorInfo.entityId, this._cameraFocus)
+      this.updateCamera()
+    }
   }
 
   /**
@@ -725,6 +737,13 @@ export class RanchMode extends Mode {
     }
   }
 
+  protected actorWasPlaced (entityId :number, pos :Vector3) :void {
+    if (entityId === this._trackedEntityId) {
+      this._cameraFocus.copy(pos)
+      this.updateCamera()
+    }
+  }
+
   protected swapTerrain () :void {
     if (!this._terrain || !this._navMesh) return
     const obj = this._obj.read(this._terrainId)
@@ -744,13 +763,15 @@ export class RanchMode extends Mode {
       "focus", this._cameraFocus)
   }
 
-  protected updateCamera (distanceDelta? :number, deltaX? :number, deltaZ? :number) :void {
-    if (distanceDelta) {
+  protected updateCamera (deltaDistance? :number, deltaX? :number, deltaZ? :number) :void {
+    if (deltaDistance) {
       this._cameraDistance = Math.max(RanchMode.MIN_CAMERA_DISTANCE,
           Math.min(RanchMode.MAX_CAMERA_DISTANCE,
-          this._cameraDistance + distanceDelta))
+          this._cameraDistance + deltaDistance))
     }
     if (deltaX || deltaZ) {
+      // if we do this, also stop tracking any entities
+      this._trackedEntityId = -1
       const p = this._cameraFocus
       const box = this._cameraFocusBounds
       if (deltaX) p.x = Math.max(box.min.x, Math.min(box.max.x, p.x + deltaX))
@@ -769,6 +790,9 @@ export class RanchMode extends Mode {
         .applyQuaternion(scratchQ).add(this._cameraFocus))
     this._trans.updateQuaternion(this._cameraId, scratchQ)
   }
+
+  /** Camera will follow this id. */
+  protected _trackedEntityId :number = -1
 
   protected _cameraDistance :number = 10
   protected _cameraFocus :Vector3 = new Vector3(0, 0, 0)
