@@ -868,20 +868,18 @@ export class RanchMode extends Mode {
             break
 
           case 2: // pinchy zoomy
-            const pointers = this._hand.pointers
-            const itr = pointers.keys()
-            let key1 = itr.next().value
-            let key2 = itr.next().value
-            if (key1 > key2) [key1, key2] = [key2, key1]
-            const dist = vec2.distance(pointers.get(key1)!.position, pointers.get(key2)!.position)
-            if (this._pinch1 === key1 && this._pinch2 === key2) {
-              const PINCH_FACTOR = .1
-              this.updateCamera((this._pinchDist - dist) * PINCH_FACTOR)
-              this._pinchDist = dist
-            } else {
-              this._pinch1 = key1
-              this._pinch2 = key2
-              this._pinchDist = dist
+            if (change.value.movement[0] || change.value.movement[1]) {
+              for (const pp of this._hand.pointers.values()) {
+                if (pp.position !== change.value.position) {
+                  const newDist = vec2.distance(pp.position, change.value.position)
+                  const oldDist = vec2.distance(pp.position,
+                      [ change.value.position[0] - change.value.movement[0],
+                        change.value.position[1] - change.value.movement[1] ])
+                  const PINCH_FACTOR = .1
+                  this.updateCamera((oldDist - newDist) * PINCH_FACTOR)
+                  break
+                }
+              }
             }
             break
 
@@ -900,11 +898,6 @@ export class RanchMode extends Mode {
       default: break
     }
   }
-
-  // pinch controls
-  protected _pinch1 :number = 0
-  protected _pinch2 :number = 0
-  protected _pinchDist :number = 0
 
   // New constants for camera control
   private static readonly MAX_CAMERA_DISTANCE = 50
