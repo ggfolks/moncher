@@ -15,6 +15,7 @@ export class MonsterDb {
     const eggModel :ActorModel = {
       model: "monsters/Egg.glb",
       idle: "monsters/Egg.glb#Idle",
+      readyToHatch: "monsters/Egg.glb#Ready",
       hatch: "monsters/Egg.glb#Hatch",
     }
     const color = MonsterDb._colors[Math.trunc(Math.random() * MonsterDb._colors.length)]

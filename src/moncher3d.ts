@@ -531,7 +531,7 @@ export class RanchMode extends Mode {
       }
       // set up the ready-to-hatch state
       animStates.readyToHatch = {
-        // TODO: a url!
+        url: cfg.model.readyToHatch
       }
       anyTransitions.readyToHatch = {condition: "readyHatchCond"}
       graphCfg.controller.readyHatchCond = "isReadyToHatch"

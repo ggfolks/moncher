@@ -32,6 +32,7 @@ export interface ActorModel {
   model :string
   /** Idle animation. */
   idle? :string
+  readyToHatch? :string
   /** Eggs use the hatch animation at the end of their lives, other actors at the beginning. */
   hatch? :string
   walk? :string
