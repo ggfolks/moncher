@@ -277,8 +277,11 @@ export class RanchMode extends Mode {
     })
     domain.add({
       components: {
-        trans: {initial: new Float32Array([1, 1, 1, 0, 0, 0, 1, 1, 1, 1])},
-        obj: {type: "directionalLight"},
+        // Light details from Jon
+        trans: {
+          initial: new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,-40.335134,10.264535,-46.887602,1]),
+        },
+        obj: {type: "directionalLight", color: 0xFFCE84, intensity: 1},
 //        graph: {
 //          clock: {type: "clock"},
 //          spin: {type: "multiply", inputs: [.1, "clock"]},
