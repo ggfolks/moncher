@@ -843,30 +843,68 @@ export class RanchMode extends Mode {
     }
   }
 
+  // TODO: move into new gesture handler class
   protected readonly _handChanged = (change :MapChange<number, Pointer>) => {
+
+    if (change.type === "deleted") return
+    if (!change.value.pressed) return
     switch (this._uiState) {
       case UiState.PlacingEgg:
       case UiState.PlacingFood:
-        if (change.type === "set" && change.value.pressed) {
-          const loc = this.mouseToLocation(change.value.position)
-          if (loc) this.doPlacement(loc)
-        }
+        const loc = this.mouseToLocation(change.value.position)
+        if (loc) this.doPlacement(loc)
         break
 
       case UiState.Default:
-        // mouse panning
-        if (change.type === "set" && change.value.pressed &&
-            (change.value.movement[0] || change.value.movement[1])) {
-          const MOUSE_FACTOR = -.05
-          this.updateCamera(0,
-              change.value.movement[0] * MOUSE_FACTOR,
-              change.value.movement[1] * MOUSE_FACTOR)
+        // do panning an zooming
+        switch (this._hand.pointers.size) {
+          case 1: // mouse panning
+            if (change.value.movement[0] || change.value.movement[1]) {
+              const MOUSE_FACTOR = -.05
+              this.updateCamera(0,
+                  change.value.movement[0] * MOUSE_FACTOR,
+                  change.value.movement[1] * MOUSE_FACTOR)
+            }
+            break
+
+          case 2: // pinchy zoomy
+            const pointers = this._hand.pointers
+            const itr = pointers.keys()
+            let key1 = itr.next().value
+            let key2 = itr.next().value
+            if (key1 > key2) [key1, key2] = [key2, key1]
+            const dist = vec2.distance(pointers.get(key1)!.position, pointers.get(key2)!.position)
+            if (this._pinch1 === key1 && this._pinch2 === key2) {
+              const PINCH_FACTOR = .1
+              this.updateCamera((this._pinchDist - dist) * PINCH_FACTOR)
+              this._pinchDist = dist
+            } else {
+              this._pinch1 = key1
+              this._pinch2 = key2
+              this._pinchDist = dist
+            }
+            break
+
+          case 3: // three finger zoom: Y movement zooms; all 3 for fast; hold 2 and fine tune index
+            if (change.value.movement[1]) {
+              const THREE_FINGER_FACTOR = -.02
+              this.updateCamera(change.value.movement[1] * THREE_FINGER_FACTOR)
+            }
+            break
+
+          default: // do nothing
+            break
         }
         break
 
       default: break
     }
   }
+
+  // pinch controls
+  protected _pinch1 :number = 0
+  protected _pinch2 :number = 0
+  protected _pinchDist :number = 0
 
   // New constants for camera control
   private static readonly MAX_CAMERA_DISTANCE = 50
