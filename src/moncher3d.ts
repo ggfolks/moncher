@@ -868,13 +868,13 @@ export class RanchMode extends Mode {
             break
 
           case 2: // pinchy zoomy
-            if (change.value.movement[0] || change.value.movement[1]) {
-              for (const pp of this._hand.pointers.values()) {
-                if (pp.position !== change.value.position) {
-                  const newDist = vec2.distance(pp.position, change.value.position)
-                  const oldDist = vec2.distance(pp.position,
-                      [ change.value.position[0] - change.value.movement[0],
-                        change.value.position[1] - change.value.movement[1] ])
+            const pp = change.value
+            if (pp.movement[0] || pp.movement[1]) {
+              for (const op of this._hand.pointers.values()) {
+                if (op !== pp) {
+                  const newDist = vec2.distance(op.position, pp.position)
+                  const oldDist = vec2.distance(op.position,
+                      [ pp.position[0] - pp.movement[0], pp.position[1] - pp.movement[1] ])
                   const PINCH_FACTOR = .1
                   this.updateCamera((oldDist - newDist) * PINCH_FACTOR)
                   break
