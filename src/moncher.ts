@@ -105,6 +105,14 @@ export const enum ActorAction {
 }
 
 /**
+ * Represents 1 "instant action" that an actor can have. */
+export const enum ActorInstant {
+  None = 0,
+  Touched,
+  Hit,
+}
+
+/**
  * Runtime information about an actor's state.
  */
 export class ActorState {
@@ -121,7 +129,7 @@ export class ActorState {
     /** Any path segments the actor is following. */
     readonly path? :PathRec,
     /** Are we being touched by a user? */
-    readonly touched? :boolean,
+    readonly instant :ActorInstant = ActorInstant.None,
   ) {}
 
   static createDummy () :ActorState {
@@ -168,7 +176,7 @@ abstract class Actor {
   toState () :ActorState {
     return new ActorState(
         this.pos.clone(), this.getScale(), this.getOrient(),
-        this.action, this.getPath(), this.isTouched())
+        this.action, this.getPath(), this.getInstant())
   }
 
   getScale () :number {
@@ -183,8 +191,8 @@ abstract class Actor {
     return undefined
   }
 
-  isTouched () :boolean {
-    return false
+  getInstant () :ActorInstant {
+    return ActorInstant.None
   }
 }
 
@@ -231,8 +239,8 @@ class Egg extends Actor {
 class Monster extends Actor {
 
   tick (model :RanchModel, dt :number) :void {
-    // clear flags
-    this._touched = false
+    // clear the "instant"
+    this._instant = ActorInstant.None
 
     switch (this.action) {
       case ActorAction.Waiting:
@@ -356,7 +364,7 @@ class Monster extends Actor {
         break
 
       default:
-        this._touched = true
+        this._instant = (Math.random() < .8) ? ActorInstant.Touched : ActorInstant.Hit
         break
     }
 
@@ -385,8 +393,8 @@ class Monster extends Actor {
     return this._path
   }
 
-  isTouched () :boolean {
-    return this._touched
+  getInstant () :ActorInstant {
+    return this._instant
   }
 
   protected pushState (state :ActorAction) :void {
@@ -430,7 +438,7 @@ class Monster extends Actor {
   protected _path? :PathRec
   protected _orient :number = 0
 
-  protected _touched :boolean = false
+  protected _instant :ActorInstant = ActorInstant.None
   protected _hit :boolean = false
 
   protected _stateStack :ActorAction[] = []

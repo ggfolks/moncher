@@ -67,6 +67,7 @@ import {App, Mode} from "./app"
 import {
   ActorAction,
   ActorConfig,
+  ActorInstant,
   ActorKind,
   ActorModel,
   ActorState,
@@ -672,11 +673,18 @@ export class RanchMode extends Mode {
 
       // Happy-react happens whenever you touch a monster, even if in the other states.
       // So we need to set up a separate animation controller.
-      if (cfg.model.happyReact) {
-        graphCfg.touched = <NodeConfig>{
+      if (cfg.model.happyReact || cfg.model.hitReact) {
+        graphCfg.getInstant = <NodeConfig>{
           type: "property",
           input: "state",
-          name: "touched",
+          name: "instant",
+        }
+      }
+      if (cfg.model.happyReact) {
+        graphCfg.isInstantTouched = <NodeConfig>{
+          type: "equals",
+          x: "getInstant",
+          y: ActorInstant.Touched,
         }
         graphCfg.happyReactAuxController = <NodeConfig>{
           type: "animationController",
@@ -697,7 +705,35 @@ export class RanchMode extends Mode {
               },
             },
           },
-          touchCond: "touched",
+          touchCond: "isInstantTouched",
+        }
+      }
+      if (cfg.model.hitReact) {
+        graphCfg.isInstantHit = <NodeConfig>{
+          type: "equals",
+          x: "getInstant",
+          y: ActorInstant.Hit,
+        }
+        graphCfg.hitReactAuxController = <NodeConfig>{
+          type: "animationController",
+          component: "mixer",
+          config: <AnimationControllerConfig>{
+            states: {
+              default: {},
+              hit: {
+                url: cfg.model.hitReact,
+                repetitions: 1,
+                finishBeforeTransition: true,
+              },
+              any: {
+                transitions: {
+                  hit: {condition: "hitCond"},
+                  default: {}
+                },
+              },
+            },
+          },
+          hitCond: "isInstantHit",
         }
       }
     }
