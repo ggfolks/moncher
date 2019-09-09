@@ -679,14 +679,17 @@ export class RanchMode extends Mode {
           input: "state",
           name: "instant",
         }
-      }
-      if (cfg.model.happyReact) {
         graphCfg.isInstantTouched = <NodeConfig>{
           type: "equals",
           x: "getInstant",
           y: ActorInstant.Touched,
         }
-        graphCfg.happyReactAuxController = <NodeConfig>{
+        graphCfg.isInstantHit = <NodeConfig>{
+          type: "equals",
+          x: "getInstant",
+          y: ActorInstant.Hit,
+        }
+        graphCfg.auxController = <NodeConfig>{
           type: "animationController",
           component: "mixer",
           config: <AnimationControllerConfig>{
@@ -697,29 +700,6 @@ export class RanchMode extends Mode {
                 repetitions: 1,
                 finishBeforeTransition: true,
               },
-              any: {
-                transitions: {
-                  touched: {condition: "touchCond"},
-                  default: {}
-                },
-              },
-            },
-          },
-          touchCond: "isInstantTouched",
-        }
-      }
-      if (cfg.model.hitReact) {
-        graphCfg.isInstantHit = <NodeConfig>{
-          type: "equals",
-          x: "getInstant",
-          y: ActorInstant.Hit,
-        }
-        graphCfg.hitReactAuxController = <NodeConfig>{
-          type: "animationController",
-          component: "mixer",
-          config: <AnimationControllerConfig>{
-            states: {
-              default: {},
               hit: {
                 url: cfg.model.hitReact,
                 repetitions: 1,
@@ -727,12 +707,14 @@ export class RanchMode extends Mode {
               },
               any: {
                 transitions: {
+                  touched: {condition: "touchCond"},
                   hit: {condition: "hitCond"},
                   default: {}
                 },
               },
             },
           },
+          touchCond: "isInstantTouched",
           hitCond: "isInstantHit",
         }
       }
