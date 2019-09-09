@@ -62,6 +62,7 @@ import {registerInputNodes} from "tfw/input/node"
 import {registerUINodes} from "tfw/ui/node"
 import {Graph, GraphConfig} from "tfw/graph/graph"
 import {NodeConfig, NodeContext, NodeTypeRegistry} from "tfw/graph/node"
+import {DefaultStyles, DefaultTheme} from "tfw/ui/theme"
 
 import {App, Mode} from "./app"
 import {
@@ -76,7 +77,6 @@ import {
 } from "./moncher"
 import {MonsterDb} from "./monsterdb"
 import {Hud, UiState} from "./hud"
-import {graphStyles, graphTheme} from "./graphstyles"
 
 class ActorInfo {
 
@@ -234,8 +234,8 @@ export class RanchMode extends Mode {
       ),
       hand,
       host,
-      theme: graphTheme,
-      styles: graphStyles,
+      theme: DefaultTheme,
+      styles: DefaultStyles,
 //      image: {resolve: loadImage},
       screen: app.renderer.size,
     }
