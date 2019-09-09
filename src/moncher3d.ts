@@ -820,7 +820,7 @@ export class RanchMode extends Mode {
       const box = this._cameraFocusBounds
       if (deltaX) p.x = Math.max(box.min.x, Math.min(box.max.x, p.x + deltaX))
       if (deltaZ) p.z = Math.max(box.min.z, Math.min(box.max.z, p.z + deltaZ))
-      this.setY(p, true) // get Y from navmesh or terrain
+      this.setY(p, false) // update Y from navmesh (skip terrain)
       // we don't actually set box y bounds yet
       //p.y = Math.max(box.min.y, Math.min(box.max.y, p.y))
     }
