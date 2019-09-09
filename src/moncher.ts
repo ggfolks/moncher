@@ -318,8 +318,24 @@ class Monster extends Actor {
           // no food? Fall back to wandering...
         }
 
+        // Maybe go visit a nice egg
+        if (Math.random() < .2) {
+          const isEgg = (actor :Actor) :boolean => (actor.config.kind === ActorKind.EGG)
+          const isReadyEgg = (actor :Actor) :boolean =>
+              (isEgg(actor) && (actor.action === ActorAction.ReadyToHatch))
+          const egg = model.getNearestActor(this.pos, isReadyEgg) ||
+              model.getNearestActor(this.pos, isEgg)
+          if (egg) {
+            const nearEgg = model.randomPositionFrom(egg.pos, 5)
+            if (nearEgg) {
+              this.walkTo(model, nearEgg, 1.2)
+            }
+          }
+          break
+        }
+
         // Wander randomly!
-        if (Math.random() < (.075 * MONSTER_ACCELERANT)) {
+        if (Math.random() < .075) {
           const newpos = model.randomPositionFrom(this.pos, 10)
           if (newpos) {
             this.walkTo(model, newpos)
