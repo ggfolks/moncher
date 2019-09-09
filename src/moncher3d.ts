@@ -193,6 +193,7 @@ export class RanchMode extends Mode {
 
     const hand = this._hand = new Hand(webGlRenderer.domElement)
     this.onDispose.add(hand)
+    this.onDispose.add(host.setHand(hand))
     this.onDispose.add(hand.pointers.onChange(this._handChanged))
 
     // TODO: what is the minimum we need?
