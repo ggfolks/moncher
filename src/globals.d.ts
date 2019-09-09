@@ -28,7 +28,7 @@ declare module "three-pathfinding" {
     // reveals that it returns a Vector3.
     /** Will return a blank Vector3 on various error conditions. */
     getRandomNode (
-        zoneID :string, groupID :number, nearPosition :Vector3, nearRange :number) :Vector3
+        zoneID :string, groupID :number, nearPosition :Vector3, maxDistSq :number) :Vector3
 
     getClosestNode (
         position :Vector3, zoneID :string, groupID :number, checkPolygon? :boolean) :Node
