@@ -11,20 +11,6 @@
 		"layers": 1,
 		"matrix": [1,0,0,0,0,1,0,0,0,0,1,0,-40.335134,10.264535,-46.887602,1],
 		"color": 16764548,
-		"intensity": 1,
-		"shadow": {
-			"camera": {
-				"uuid": "782BAE33-806D-4563-AA1F-AAE51A19650B",
-				"type": "OrthographicCamera",
-				"layers": 1,
-				"zoom": 1,
-				"left": -5,
-				"right": 5,
-				"top": 5,
-				"bottom": -5,
-				"near": 0.5,
-				"far": 500
-			}
-		}
+		"intensity": 1
 	}
 }
