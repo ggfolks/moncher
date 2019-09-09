@@ -392,16 +392,9 @@ export class RanchMode extends Mode {
 
       this.configurePathFinding(navMesh)
 
+      // use the bounding box of the navmesh geometry as the bounds of our camera focus
       navMesh.geometry.computeBoundingBox()
-      const min = navMesh.geometry.boundingBox.min
-      const max = navMesh.geometry.boundingBox.max
-      const xshave = (max.x - min.x) / 10
-      const zshave = (max.z - min.z) / 10
-      const box = this._cameraFocusBounds
-      box.min.x = min.x + xshave
-      box.min.z = min.z + zshave
-      box.max.x = max.x - xshave
-      box.max.z = max.z - zshave
+      this._cameraFocusBounds.copy(navMesh.geometry.boundingBox)
       this.updateCamera()
     }
     makeSceneShadowy(scene)
@@ -874,8 +867,7 @@ export class RanchMode extends Mode {
       if (deltaX) p.x = Math.max(box.min.x, Math.min(box.max.x, p.x + deltaX))
       if (deltaZ) p.z = Math.max(box.min.z, Math.min(box.max.z, p.z + deltaZ))
       this.setY(p, false) // update Y from navmesh (skip terrain)
-      // we don't actually set box y bounds yet
-      //p.y = Math.max(box.min.y, Math.min(box.max.y, p.y))
+      p.y = Math.max(box.min.y, Math.min(box.max.y, p.y))
     }
     const zoom = (this._cameraDistance - RanchMode.MIN_CAMERA_DISTANCE) /
         (RanchMode.MAX_CAMERA_DISTANCE - RanchMode.MIN_CAMERA_DISTANCE)
