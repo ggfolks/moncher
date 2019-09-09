@@ -1,7 +1,7 @@
 import {MutableMap, RMap} from "tfw/core/rcollect"
 import {log} from "tfw/core/util"
 
-import {Mesh, Vector3} from "three"
+import {Geometry, Mesh, Vector3} from "three"
 import {Pathfinding} from "three-pathfinding"
 import {MONSTER_ACCELERANT} from "./debug"
 
@@ -473,10 +473,19 @@ export class RanchModel {
   // TODO: this will be loaded some other way on the server
   setNavMesh (navmesh :Mesh) :void {
     this._navMesh = navmesh
+    this._navGeometry = (navmesh.geometry instanceof Geometry)
+        ? navmesh.geometry
+        : new Geometry().fromBufferGeometry(navmesh.geometry)
 
     // configure pathfinding
     this._pathFinder = new Pathfinding()
-    this._pathFinder.setZoneData(RanchModel.RANCH_ZONE, Pathfinding.createZone(navmesh.geometry))
+
+    // NOTE: The Pathfinding complains about how we should use a BufferGeometry and not a Geometry,
+    // but if you look at the implementation, it is actually wanting a *regular* Geometry
+    // and will create one if you pass-in a BufferedGeometry. So for now we accept the warning
+    // to get the actually less expensive code path.
+    this._pathFinder.setZoneData(RanchModel.RANCH_ZONE, Pathfinding.createZone(this._navGeometry))
+    // SEE NOTE
   }
 
   /**
@@ -553,16 +562,44 @@ export class RanchModel {
   /**
    * Find a new random location reachable from the specified location. */
   randomPositionFrom (pos :Vector3, maxDist = Infinity) :Vector3|undefined {
-    if (!this._pathFinder) {
+    const geom = this._navGeometry
+    if (!geom) {
       log.warn("Pathfinder unknown. Movement limited.")
       return pos
     }
-    const groupId = this._pathFinder.getGroup(RanchModel.RANCH_ZONE, pos)
-    const node = (groupId === null)
-        ? new Vector3()
-        : this._pathFinder.getRandomNode(RanchModel.RANCH_ZONE, groupId, pos, maxDist)
-    return node
+    // Let's just pick a random point on each face,
+    // if it's within the distance we add it to the candidates list,
+    // then we just pick one
+    const candidates :Vector3[] = []
+    for (const face of geom.faces) {
+      const vv = new Vector3()
+      const vwa = Math.random()
+      vv.addScaledVector(geom.vertices[face.a], vwa)
+      const vwb = Math.random()
+      vv.addScaledVector(geom.vertices[face.b], vwb)
+      const vwc = Math.random()
+      vv.addScaledVector(geom.vertices[face.c], vwc)
+      vv.divideScalar(vwa + vwb + vwc)
+      if (pos.distanceTo(vv) < maxDist) candidates.push(vv)
+    }
+    return (candidates.length)
+        ? candidates[Math.trunc(Math.random() * candidates.length)]
+        : undefined
   }
+
+//  /**
+//   * Find a new random location reachable from the specified location. */
+//  randomPositionFrom (pos :Vector3, maxDist = Infinity) :Vector3|undefined {
+//    if (!this._pathFinder) {
+//      log.warn("Pathfinder unknown. Movement limited.")
+//      return pos
+//    }
+//    const groupId = this._pathFinder.getGroup(RanchModel.RANCH_ZONE, pos)
+//    const node = (groupId === null)
+//        ? new Vector3()
+//        : this._pathFinder.getRandomNode(RanchModel.RANCH_ZONE, groupId, pos, maxDist)
+//    return node
+//  }
 
   findPath (src :Vector3, dest :Vector3) :Vector3[]|undefined {
     if (!this._pathFinder) {
@@ -597,6 +634,7 @@ export class RanchModel {
   }
 
   protected _navMesh? :Mesh
+  protected _navGeometry? :Geometry
   protected _pathFinder? :Pathfinding
 
   protected _nextActorId :number = 0
