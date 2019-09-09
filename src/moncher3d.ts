@@ -21,7 +21,7 @@ import {Body} from "cannon"
 import {Clock} from "tfw/core/clock"
 import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
-import {Mutable, Value} from "tfw/core/react"
+import {Value} from "tfw/core/react"
 import {
   PMap,
   Remover,
@@ -189,7 +189,7 @@ export class RanchMode extends Mode {
     this.onDispose.add(app.renderer.size.onValue(size => {
       webGlRenderer.setPixelRatio(window.devicePixelRatio)
       webGlRenderer.setSize(size[0], size[1])
-      dim2.set(this._uiSize, size[0], size[1])
+      dim2.set(this._inspectUiSize, size[0], size[1])
     }))
     // set up a dispose to restore the 2d canvas
     this.onDispose.add(() => {
@@ -469,19 +469,20 @@ export class RanchMode extends Mode {
     const graphCfg :GraphConfig = {}
 
     // make the graph inspectable
-    const triggerInspect = Mutable.local(false)
-    let touchTime :number = 0
+//0    const triggerInspect = Mutable.local(false)
+//0    let touchTime :number = 0
     graphCfg.inspectable = <NodeConfig>{
       type: "subgraph",
       graph: {
         doubleClick: {type: "doubleClick"},
         hover: {type: "hover", component: "hovers"},
         inspect: {type: "and", inputs: ["doubleClick", "hover"]},
-        // Hack-in a way that I can bring up the graph even on touch inputs
-        triggerInspect: {type: "or", inputs: ["inspect", triggerInspect ]},
+//0        // Hack-in a way that I can bring up the graph even on touch inputs
+//0        triggerInspect: {type: "or", inputs: ["inspect", triggerInspect ]},
         ui: {
           type: "ui",
-          input: "triggerInspect",
+//0          input: "triggerInspect",
+          input: "inspect",
           model: {
             editable: Value.constant(true),
             backButton: {text: Value.constant("←")},
@@ -496,7 +497,7 @@ export class RanchMode extends Mode {
               style: {halign: "stretch", valign: "stretch", background: "$root"},
             },
           },
-          size: this._uiSize,
+          size: this._inspectUiSize,
         },
       },
     }
@@ -509,15 +510,15 @@ export class RanchMode extends Mode {
       callback: (nv :boolean, ov :boolean) => {
         if (nv) {
           this.actorTouched(id)
-          const time = Date.now()
-          if (time - touchTime <= 1000) {
-            triggerInspect.update(true)
-          }
-          touchTime = time
-
-        } else {
-          triggerInspect.update(false)
-        }
+//0          const time = Date.now()
+//0          if (time - touchTime <= 1000) {
+//0            triggerInspect.update(true)
+//0          }
+//0          touchTime = time
+//0
+//0        } else {
+//0          triggerInspect.update(false)
+0        }
       },
     }
 
@@ -888,7 +889,7 @@ export class RanchMode extends Mode {
   protected _navMesh? :Mesh
   protected _terrain? :Object3D
 
-  protected readonly _uiSize :dim2 = dim2.fromValues(1024, 768)
+  protected readonly _inspectUiSize :dim2 = dim2.fromValues(1024, 768)
 
   protected readonly _actors :Map<number, ActorInfo> = new Map()
 
