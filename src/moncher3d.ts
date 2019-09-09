@@ -176,6 +176,8 @@ export class RanchMode extends Mode {
     const webGlRenderer = this._webGlRenderer = new WebGLRenderer()
     webGlRenderer.gammaOutput = true
     webGlRenderer.gammaFactor = 2.2
+
+    webGlRenderer.shadowMap.enabled = true
     this.onDispose.add(webGlRenderer)
 
     // replace the 2d canvas
