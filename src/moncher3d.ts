@@ -145,8 +145,10 @@ class PathSystem extends System {
 }
 
 function makeShadowy (obj :Object3D) :void {
-  obj.castShadow = true
-  obj.receiveShadow = true
+  if (obj instanceof Mesh) {
+    obj.castShadow = true
+    obj.receiveShadow = true
+  }
   obj.children.forEach(makeShadowy)
 }
 
@@ -301,7 +303,7 @@ export class RanchMode extends Mode {
           trans: {},
           obj: {type: "json", url: "ranch/RimLight.json", onLoad: (light :Object3D) => {
               log.debug("Eww, ugly", "obj", light)
-              makeShadowy(light)
+              light.castShadow = true
             },
           },
         },
@@ -313,7 +315,10 @@ export class RanchMode extends Mode {
           trans: {
             initial: new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,-40.335134,10.264535,-46.887602,1]),
           },
-          obj: {type: "directionalLight", color: 0xFFCE84, intensity: 1, onLoad: makeShadowy}
+          obj: {
+            type: "directionalLight",
+            color: 0xFFCE84, onLoad: (obj :Object3D) => {obj.castShadow = true},
+          },
   //        graph: {
   //          clock: {type: "clock"},
   //          spin: {type: "multiply", inputs: [.1, "clock"]},
@@ -355,7 +360,6 @@ export class RanchMode extends Mode {
 
   protected ranchLoaded (scene :Object3D) :void {
     this._terrain = scene
-    makeShadowy(scene)
     const navMesh = scene.getObjectByName("NavMesh")
     if (navMesh instanceof Mesh) {
       navMesh.parent!.remove(navMesh)
@@ -378,6 +382,7 @@ export class RanchMode extends Mode {
       box.max.z = max.z - zshave
       this.updateCamera()
     }
+    makeShadowy(scene)
     this.setReady()
   }
 
