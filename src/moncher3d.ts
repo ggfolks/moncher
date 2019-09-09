@@ -287,25 +287,39 @@ export class RanchMode extends Mode {
         obj: {type: "hemisphereLight", color: 0x00aaff, groundColor: 0xffaa00},
       },
     })
-    domain.add({
-      components: {
-        // Light details from Jon
-        trans: {
-          initial: new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,-40.335134,10.264535,-46.887602,1]),
+    if (false) {
+      domain.add({
+        components: {
+          trans: {},
+          obj: {type: "json", url: "ranch/RimLight.json", onLoad: (light :Object3D) => {
+              log.debug("Eww, ugly", "obj", light)
+              light.castShadow = true
+              light.receiveShadow = true
+            },
+          },
         },
-        obj: {type: "directionalLight", color: 0xFFCE84, intensity: 1,
-            onLoad: (dl :Object3D) => {dl.castShadow = true} }
-//        graph: {
-//          clock: {type: "clock"},
-//          spin: {type: "multiply", inputs: [.1, "clock"]},
-//          accumSpin: {type: "accumulate", input: "spin"},
-//          rotation: {type: "Euler", z: "accumSpin"},
-//          setVec: {type: "Vector3.applyEuler", vector: new Vector3(0, 1, 0), euler: "rotation"},
-//          update: {type: "updatePosition", component: "trans", input: "setVec"},
-//          //logRotation: {type: "log", message: "Accumulation rotation", input: "setVec"},
-//        },
-      },
-    })
+      })
+    } else {
+      domain.add({
+        components: {
+          // Light details from Jon
+          trans: {
+            initial: new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,-40.335134,10.264535,-46.887602,1]),
+          },
+          obj: {type: "directionalLight", color: 0xFFCE84, intensity: 1,
+              onLoad: (dl :Object3D) => {dl.castShadow = true; dl.receiveShadow = true} }
+  //        graph: {
+  //          clock: {type: "clock"},
+  //          spin: {type: "multiply", inputs: [.1, "clock"]},
+  //          accumSpin: {type: "accumulate", input: "spin"},
+  //          rotation: {type: "Euler", z: "accumSpin"},
+  //          setVec: {type: "Vector3.applyEuler", vector: new Vector3(0, 1, 0), euler: "rotation"},
+  //          update: {type: "updatePosition", component: "trans", input: "setVec"},
+  //          //logRotation: {type: "log", message: "Accumulation rotation", input: "setVec"},
+  //        },
+        },
+      })
+    }
 
     // add the ranch terrain
     /*const ranchTerrainId =*/ this._terrainId = domain.add({
@@ -335,6 +349,7 @@ export class RanchMode extends Mode {
 
   protected ranchLoaded (scene :Object3D) :void {
     this._terrain = scene
+    scene.receiveShadow = true
     const navMesh = scene.getObjectByName("NavMesh")
     if (navMesh instanceof Mesh) {
       navMesh.parent!.remove(navMesh)
@@ -667,6 +682,7 @@ export class RanchMode extends Mode {
       onLoad: obj => {
         if (cfg.color !== undefined) this.colorize(obj, new Color(cfg.color))
         obj.castShadow = true
+        obj.receiveShadow = true
       },
     }
     const entityId = this._domain.add({
