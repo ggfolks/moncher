@@ -281,7 +281,8 @@ export class RanchMode extends Mode {
         trans: {
           initial: new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,-40.335134,10.264535,-46.887602,1]),
         },
-        obj: {type: "directionalLight", color: 0xFFCE84, intensity: 1},
+        obj: {type: "directionalLight", color: 0xFFCE84, intensity: 1,
+            onLoad: (dl :Object3D) => {dl.castShadow = true} }
 //        graph: {
 //          clock: {type: "clock"},
 //          spin: {type: "multiply", inputs: [.1, "clock"]},
@@ -320,7 +321,7 @@ export class RanchMode extends Mode {
     this._hud.updateUiState(uiState)
   }
 
-  protected ranchLoaded (scene :Object3D) :Object3D|undefined {
+  protected ranchLoaded (scene :Object3D) :void {
     this._terrain = scene
     const navMesh = scene.getObjectByName("NavMesh")
     if (navMesh instanceof Mesh) {
@@ -345,8 +346,6 @@ export class RanchMode extends Mode {
       this.updateCamera()
     }
     this.setReady()
-
-    return undefined // don't replace the ranch
   }
 
   /**
@@ -650,9 +649,13 @@ export class RanchMode extends Mode {
       }
     }
 
-    const objDef = <GLTFConfig>{type: "gltf", url: cfg.model.model}
-    if (cfg.color !== undefined) {
-      objDef.onLoad = obj => { this.colorize(obj, new Color(cfg.color)); return undefined }
+    const objDef = <GLTFConfig>{
+      type: "gltf",
+      url: cfg.model.model,
+      onLoad: obj => {
+        if (cfg.color !== undefined) this.colorize(obj, new Color(cfg.color))
+        obj.castShadow = true
+      },
     }
     const entityId = this._domain.add({
       components: {
