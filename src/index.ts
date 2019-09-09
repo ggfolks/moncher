@@ -5,7 +5,8 @@ window["THREE"] = threejs
 import {App} from "./app"
 import {RanchModel} from "./moncher"
 import {RanchMode} from "./moncher3d"
-//import {MonsterDb} from "./monsterdb"
+import {Vector3} from "three"
+import {MonsterDb} from "./monsterdb"
 
 const root = document.getElementById("root")
 if (!root) throw new Error(`No root?`)
@@ -13,14 +14,11 @@ if (!root) throw new Error(`No root?`)
 const app = new App(root)
 app.start()
 
-let ranch :RanchModel = new RanchModel()
+const ranch :RanchModel = new RanchModel()
+const mode :RanchMode = new RanchMode(app, ranch)
+app.setMode(mode)
 
-// add sample monsters at the 4 corners
-//ranch.addActor(MonsterDb.getRandomEgg(), 0, 0)
-//ranch.addActor(MonsterDb.getRandomEgg(), 1, 0)
-//ranch.addActor(MonsterDb.getRandomEgg(), 0, 1)
-//ranch.addActor(MonsterDb.getRandomEgg(), 1, 1)
-
-app.setMode(new RanchMode(app, ranch))
+// add a sample monster
+ranch.addActor(MonsterDb.getRandomEgg(), new Vector3(2, -.25, 0)) // y is approximate
 
 setInterval(() => { ranch.tick(1000) }, 1000)
