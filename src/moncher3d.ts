@@ -943,8 +943,9 @@ export class RanchMode extends Mode {
   // New constants for camera control
   private static readonly MAX_CAMERA_DISTANCE = 50
   private static readonly MIN_CAMERA_DISTANCE = 5
-  private static readonly CAMERA_ANGLE_AT_MAXIMUM = -Math.PI / 2
-  private static readonly CAMERA_ANGLE_AT_MINIMUM = RanchMode.CAMERA_ANGLE_AT_MAXIMUM / 9
+  private static readonly TEN_DEGREES = Math.PI / 18
+  private static readonly CAMERA_ANGLE_AT_MAXIMUM = (-Math.PI / 2) + (RanchMode.TEN_DEGREES * 0)
+  private static readonly CAMERA_ANGLE_AT_MINIMUM = -RanchMode.TEN_DEGREES
 
   private static readonly RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
 }
