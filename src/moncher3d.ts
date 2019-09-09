@@ -4,7 +4,6 @@ import {
   Camera,
   Color,
   Object3D,
-  Matrix4,
   Mesh,
   MeshStandardMaterial,
   Quaternion,
@@ -146,12 +145,23 @@ class PathSystem extends System {
   }
 }
 
+/**
+ * Make a loaded actor object cast (and receive?) shadows. */
 function makeShadowy (obj :Object3D) :void {
   if (obj instanceof Mesh) {
     obj.castShadow = true
     obj.receiveShadow = true
   }
   obj.children.forEach(makeShadowy)
+}
+
+/**
+ * Make the loaded scene receive shadows. */
+function makeSceneShadowy (obj :Object3D) :void {
+  if (obj.name.startsWith("Terrain")) {
+    obj.receiveShadow = true
+  }
+  obj.children.forEach(makeSceneShadowy)
 }
 
 export class RanchMode extends Mode {
@@ -300,50 +310,49 @@ export class RanchMode extends Mode {
         obj: {type: "hemisphereLight", color: 0x00aaff, groundColor: 0xffaa00},
       },
     })
-    if (false) {
-      domain.add({
-        components: {
-          trans: {},
-          obj: {type: "json", url: "ranch/RimLight.json", onLoad: (light :Object3D) => {
-              log.debug("Eww, ugly", "obj", light)
-              light.castShadow = true
-            },
-          },
-        },
-      })
-    } else {
-      const lightId = domain.add({
-        components: {
-          // Light details from Jon
-          trans: {},
-          obj: {
-            type: "directionalLight",
-            color: 0xFFCE84,
-            onLoad: (obj :Object3D) => {obj.castShadow = true},
-          },
-  //        graph: {
-  //          clock: {type: "clock"},
-  //          spin: {type: "multiply", inputs: [.1, "clock"]},
-  //          accumSpin: {type: "accumulate", input: "spin"},
-  //          rotation: {type: "Euler", z: "accumSpin"},
-  //          setVec: {type: "Vector3.applyEuler", vector: new Vector3(0, 1, 0), euler: "rotation"},
-  //          update: {type: "updatePosition", component: "trans", input: "setVec"},
-  //          //logRotation: {type: "log", message: "Accumulation rotation", input: "setVec"},
-  //        },
-        },
-      })
-      // Work with this Matrix from Jon
-      const matrix :Matrix4 = new Matrix4().set(
-            1,0,0,0,0,1,0,0,0,0,1,0,-40.335134,10.264535,-46.887602,1).transpose()
-      const pos = new Vector3()
-      const rot = new Quaternion()
-      const scale = new Vector3()
-      obj.read(lightId).matrix = matrix
-      matrix.decompose(pos, rot, scale)
-      trans.updatePosition(lightId, pos)
-      trans.updateQuaternion(lightId, rot)
-      trans.updateScale(lightId, scale)
-    }
+    domain.add({
+      components: {
+        trans: {},
+        obj: {type: "json", url: "ranch/MainLight.json"},
+      }
+    })
+    domain.add({
+      components: {
+        trans: {},
+        obj: {type: "json", url: "ranch/RimLight.json"},
+      },
+    })
+//      const lightId = domain.add({
+//        components: {
+//          // Light details from Jon
+//          trans: {},
+//          obj: {
+//            type: "directionalLight",
+//            color: 0xFFCE84,
+//            onLoad: (obj :Object3D) => {obj.castShadow = true},
+//          },
+//  //        graph: {
+//  //          clock: {type: "clock"},
+//  //          spin: {type: "multiply", inputs: [.1, "clock"]},
+//  //          accumSpin: {type: "accumulate", input: "spin"},
+//  //          rotation: {type: "Euler", z: "accumSpin"},
+//  //          setVec: {type: "Vector3.applyEuler", vector: new Vector3(0, 1, 0), euler: "rotation"},
+//  //          update: {type: "updatePosition", component: "trans", input: "setVec"},
+//  //          //logRotation: {type: "log", message: "Accumulation rotation", input: "setVec"},
+//  //        },
+//        },
+//      })
+//      // Work with this Matrix from Jon
+//      const matrix :Matrix4 = new Matrix4().set(
+//            1,0,0,0,0,1,0,0,0,0,1,0,-40.335134,10.264535,-46.887602,1).transpose()
+//      const pos = new Vector3()
+//      const rot = new Quaternion()
+//      const scale = new Vector3()
+//      obj.read(lightId).matrix = matrix
+//      matrix.decompose(pos, rot, scale)
+//      trans.updatePosition(lightId, pos)
+//      trans.updateQuaternion(lightId, rot)
+//      trans.updateScale(lightId, scale)
 
     // add the ranch terrain
     /*const ranchTerrainId =*/ this._terrainId = domain.add({
@@ -395,7 +404,7 @@ export class RanchMode extends Mode {
       box.max.z = max.z - zshave
       this.updateCamera()
     }
-    makeShadowy(scene)
+    makeSceneShadowy(scene)
     this.setReady()
   }
 
