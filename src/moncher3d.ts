@@ -4,6 +4,7 @@ import {
   Camera,
   Color,
   Object3D,
+  Matrix4,
   Mesh,
   MeshStandardMaterial,
   Quaternion,
@@ -311,15 +312,14 @@ export class RanchMode extends Mode {
         },
       })
     } else {
-      domain.add({
+      const lightId = domain.add({
         components: {
           // Light details from Jon
-          trans: {
-            initial: new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,-40.335134,10.264535,-46.887602,1]),
-          },
+          trans: {},
           obj: {
             type: "directionalLight",
-            color: 0xFFCE84, onLoad: (obj :Object3D) => {obj.castShadow = true},
+            color: 0xFFCE84,
+            onLoad: (obj :Object3D) => {obj.castShadow = true},
           },
   //        graph: {
   //          clock: {type: "clock"},
@@ -332,6 +332,17 @@ export class RanchMode extends Mode {
   //        },
         },
       })
+      // Work with this Matrix from Jon
+      const matrix :Matrix4 = new Matrix4().set(
+            1,0,0,0,0,1,0,0,0,0,1,0,-40.335134,10.264535,-46.887602,1).transpose()
+      const pos = new Vector3()
+      const rot = new Quaternion()
+      const scale = new Vector3()
+      obj.read(lightId).matrix = matrix
+      matrix.decompose(pos, rot, scale)
+      trans.updatePosition(lightId, pos)
+      trans.updateQuaternion(lightId, rot)
+      trans.updateScale(lightId, scale)
     }
 
     // add the ranch terrain
