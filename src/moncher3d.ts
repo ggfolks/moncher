@@ -863,7 +863,7 @@ export class RanchMode extends Mode {
         switch (this._hand.pointers.size) {
           case 1: // mouse panning
             if (change.value.movement[0] || change.value.movement[1]) {
-              const MOUSE_FACTOR = -.05
+              const MOUSE_FACTOR = -.025
               this.updateCamera(0,
                   change.value.movement[0] * MOUSE_FACTOR,
                   change.value.movement[1] * MOUSE_FACTOR)
@@ -878,7 +878,7 @@ export class RanchMode extends Mode {
                   const newDist = vec2.distance(op.position, pp.position)
                   const oldDist = vec2.distance(op.position,
                       [ pp.position[0] - pp.movement[0], pp.position[1] - pp.movement[1] ])
-                  const PINCH_FACTOR = .1
+                  const PINCH_FACTOR = .05
                   this.updateCamera((oldDist - newDist) * PINCH_FACTOR)
                   break
                 }
