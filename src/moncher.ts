@@ -567,6 +567,13 @@ export class RanchModel {
       log.warn("Pathfinder unknown. Movement limited.")
       return pos
     }
+
+    // NOTE: the old randomPositionFrom() would only test faces that were pathable from
+    // the specified starting point.
+    // Perhaps we end up hacking the methods we want straight onto Pathfinding, so that it
+    // can do something like this random face checking.
+    // What I'm doing below should work ~fine~ if all points are reachable from each other.
+
     // Let's just pick a random point on each face,
     // if it's within the distance we add it to the candidates list,
     // then we just pick one
