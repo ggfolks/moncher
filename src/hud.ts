@@ -66,11 +66,13 @@ export class Hud
               contents: {
                 type: "box",
                 contents: {
-                  type: "label",
-                  text: "egg.text",
-                  style: {
-                    font: {size: 128},
-                  },
+                  type: "image",
+                  image: "egg.img",
+                  width: 128,
+                },
+                style: {
+                  background: "$clear",
+                  border: "$clear",
                 },
               },
             }, {
@@ -82,6 +84,10 @@ export class Hud
                   type: "image",
                   image: "food.img",
                   width: 128,
+                },
+                style: {
+                  background: "$clear",
+                  border: "$clear",
                 },
               },
             }],
@@ -98,11 +104,11 @@ export class Hud
           }],
         }
         model.egg = {
-          text: Value.constant("🥚"),
+          img: Value.constant("ui/EggButton.png"),
           clicked: () => this._ranchMode.setUiState(UiState.PlacingEgg),
         }
         model.food = {
-          img: Value.constant("ui/AcornIcon.png"),
+          img: Value.constant("ui/AcornButton.png"),
           clicked: () => this._ranchMode.setUiState(UiState.PlacingFood),
         }
         model.status = {
