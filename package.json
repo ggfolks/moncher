@@ -25,6 +25,7 @@
     }
   },
   "dependencies": {
+    "firebase": "^6.6.0",
     "tfw": "file:../platform/lib",
     "three-pathfinding": "^0.11.0"
   },
