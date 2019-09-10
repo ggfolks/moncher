@@ -82,6 +82,32 @@ export class MonsterDb {
       wakeUp:     "monsters/PonyBlue.glb#WakeUp",
       happyReact: "monsters/PonyBlue.glb#HappyReact",
     }))
+    monsters.push(new ActorConfig(ActorKind.RUNNER, <ActorModel>{
+      model:      "monsters/PonyGreen.glb",
+      idle:       "monsters/PonyGreen.glb#Idle",
+      hatch:      "monsters/PonyGreen.glb#Hatch",
+      walk:       "monsters/PonyGreen.glb#Walk",
+      attack:     "monsters/PonyGreen.glb#Attack",
+      hitReact:   "monsters/PonyGreen.glb#HitReact",
+      eat:        "monsters/PonyGreen.glb#Eat",
+      faint:      "monsters/PonyGreen.glb#Faint",
+      sleep:      "monsters/PonyGreen.glb#Sleep",
+      wakeUp:     "monsters/PonyGreen.glb#WakeUp",
+      happyReact: "monsters/PonyGreen.glb#HappyReact",
+    }))
+    monsters.push(new ActorConfig(ActorKind.RUNNER, <ActorModel>{
+      model:      "monsters/PonyRed.glb",
+      idle:       "monsters/PonyRed.glb#Idle",
+      hatch:      "monsters/PonyRed.glb#Hatch",
+      walk:       "monsters/PonyRed.glb#Walk",
+      attack:     "monsters/PonyRed.glb#Attack",
+      hitReact:   "monsters/PonyRed.glb#HitReact",
+      eat:        "monsters/PonyRed.glb#Eat",
+      faint:      "monsters/PonyRed.glb#Faint",
+      sleep:      "monsters/PonyRed.glb#Sleep",
+      wakeUp:     "monsters/PonyRed.glb#WakeUp",
+      happyReact: "monsters/PonyRed.glb#HappyReact",
+    }))
   }
 
   private static _monsters? :ActorConfig[]
