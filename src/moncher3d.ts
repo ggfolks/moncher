@@ -3,6 +3,7 @@ import {
   Box3,
   Camera,
   Color,
+  DirectionalLight,
   Object3D,
   Mesh,
   MeshStandardMaterial,
@@ -186,14 +187,28 @@ export class RanchMode extends Mode {
     this.onDispose.add(this._hud = new Hud(this._host, _app.renderer, this))
     this.setUiState(UiState.Default)
 
-    this.onDispose.add(Keyboard.instance.getKeyState(32).onEmit(v => this.showNavMesh(v)))
+    this.onDispose.add(Keyboard.instance.getKeyState(32 /* space */).onEmit(
+        v => this.showNavMesh(v)))
+    this.onDispose.add(Keyboard.instance.getKeyState(83 /* S key */).onEmit(v => {
+        if (v) {
+          const enabled = !this._webGlRenderer.shadowMap.enabled
+
+          // this doesn't seem to do anything
+          this._webGlRenderer.shadowMap.enabled = enabled
+          this._webGlRenderer.shadowMap.needsUpdate = true
+
+          // this does something
+          const dl = this._obj.read(this._mainLightId) as DirectionalLight
+          dl.castShadow = enabled
+        }
+      }))
   }
 
   protected configureScene (app :App) :void {
     const webGlRenderer = this._webGlRenderer = new WebGLRenderer()
     webGlRenderer.gammaOutput = true
     webGlRenderer.gammaFactor = 2.2
-    webGlRenderer.shadowMap.enabled = true //navigator.userAgent.toLowerCase().indexOf('android') === -1
+    webGlRenderer.shadowMap.enabled = navigator.userAgent.toLowerCase().indexOf('android') === -1
 
     this.onDispose.add(webGlRenderer)
 
@@ -313,7 +328,7 @@ export class RanchMode extends Mode {
         obj: {type: "hemisphereLight", color: 0x00aaff, groundColor: 0xffaa00},
       },
     })
-    domain.add({
+    this._mainLightId = domain.add({
       components: {
         trans: {},
         obj: {type: "json", url: "ranch/MainLight.json"},
@@ -946,6 +961,7 @@ export class RanchMode extends Mode {
 
   protected _cameraId! :ID
   protected _terrainId! :ID
+  protected _mainLightId! :ID
 
   /** Our navigation mesh, if loaded. */
   protected _navMesh? :Mesh
