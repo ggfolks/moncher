@@ -183,7 +183,7 @@ export class RanchMode extends Mode {
     this.onDispose.add(this._hud = new Hud(this._host, _app.renderer, this))
     this.setUiState(UiState.Default)
 
-    this.onDispose.add(Keyboard.instance.getKeyState(32).onEmit(_ => this.swapTerrain()))
+    this.onDispose.add(Keyboard.instance.getKeyState(32).onEmit(v => this.showNavMesh(v)))
   }
 
   protected configureScene (app :App) :void {
@@ -834,23 +834,32 @@ export class RanchMode extends Mode {
     }
   }
 
-  protected swapTerrain () :void {
+  protected showNavMesh (show :boolean) :void {
     if (!this._terrain || !this._navMesh) return
-    const obj = this._obj.read(this._terrainId)
-    if (obj === this._terrain) {
-      this._obj.update(this._terrainId, this._navMesh)
-      this._scenesys.scene.add(this._navMesh)
-      this._scenesys.scene.remove(this._terrain)
-    } else {
-      this._obj.update(this._terrainId, this._terrain)
-      this._scenesys.scene.add(this._terrain)
-      this._scenesys.scene.remove(this._navMesh)
+    const navMeshShowing = (this._navMesh === this._obj.read(this._terrainId))
+    if (show !== navMeshShowing) {
+      if (show) {
+        this._obj.update(this._terrainId, this._navMesh)
+        this._scenesys.scene.add(this._navMesh)
+        this._scenesys.scene.remove(this._terrain)
+      } else {
+        this._obj.update(this._terrainId, this._terrain)
+        this._scenesys.scene.add(this._terrain)
+        this._scenesys.scene.remove(this._navMesh)
+      }
     }
 
+    // Log camera details
+    const zoom = (this._cameraDistance - RanchMode.MIN_CAMERA_DISTANCE) /
+        (RanchMode.MAX_CAMERA_DISTANCE - RanchMode.MIN_CAMERA_DISTANCE)
+    const angle = RanchMode.CAMERA_ANGLE_AT_MINIMUM +
+        (zoom * (RanchMode.CAMERA_ANGLE_AT_MAXIMUM - RanchMode.CAMERA_ANGLE_AT_MINIMUM))
     log.debug("Camera",
       "arr", this._trans.read(this._cameraId),
       "dist", this._cameraDistance,
-      "focus", this._cameraFocus)
+      "focus", this._cameraFocus,
+      "zoom", zoom,
+      "angle", angle)
   }
 
   protected updateCamera (deltaDistance? :number, deltaX? :number, deltaZ? :number) :void {
@@ -988,11 +997,10 @@ export class RanchMode extends Mode {
   }
 
   // New constants for camera control
-  private static readonly MAX_CAMERA_DISTANCE = 50
+  private static readonly MAX_CAMERA_DISTANCE = 25
   private static readonly MIN_CAMERA_DISTANCE = 5
-  private static readonly TEN_DEGREES = Math.PI / 18
-  private static readonly CAMERA_ANGLE_AT_MAXIMUM = (-Math.PI / 2) + (RanchMode.TEN_DEGREES * 0)
-  private static readonly CAMERA_ANGLE_AT_MINIMUM = -RanchMode.TEN_DEGREES
+  private static readonly CAMERA_ANGLE_AT_MAXIMUM = Math.PI / -4 // 45 degrees above
+  private static readonly CAMERA_ANGLE_AT_MINIMUM = Math.PI / -18 // 10 degrees above
 
   private static readonly RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
 }
