@@ -8,6 +8,9 @@ import {
   MeshStandardMaterial,
   Quaternion,
   Raycaster,
+  Sprite,
+  SpriteMaterial,
+  TextureLoader,
   Vector2,
   Vector3,
   WebGLRenderer,
@@ -190,8 +193,8 @@ export class RanchMode extends Mode {
     const webGlRenderer = this._webGlRenderer = new WebGLRenderer()
     webGlRenderer.gammaOutput = true
     webGlRenderer.gammaFactor = 2.2
+    webGlRenderer.shadowMap.enabled = true //navigator.userAgent.toLowerCase().indexOf('android') === -1
 
-    webGlRenderer.shadowMap.enabled = true
     this.onDispose.add(webGlRenderer)
 
     // replace the 2d canvas
@@ -378,6 +381,25 @@ export class RanchMode extends Mode {
   setUiState (uiState :UiState) :void {
     this._uiState = uiState
     this._hud.updateUiState(uiState)
+  }
+
+  protected addMonsterBillboard (monst :Object3D) :void {
+    const tl = new TextureLoader()
+    const texture = tl.load("tiles/grass.png")
+    const t2 = tl.load("tiles/dirt.png")
+    const mat = new SpriteMaterial({map: texture, color: 0xFFFFFF})
+    const sprite = new Sprite(mat)
+
+    const mat2 = new SpriteMaterial({map: t2, color: 0xFFFFFF})
+    const sprite2 = new Sprite(mat2)
+    sprite2.scale.set(.5, .5, .5)
+    sprite.name = "emo"
+    sprite.position.y = 1.2
+    sprite.add(sprite2)
+    monst.add(sprite)
+    log.info("Oh look",
+      "b", Sprite,
+      "c", SpriteMaterial)
   }
 
   protected ranchLoaded (scene :Object3D) :void {
@@ -739,6 +761,7 @@ export class RanchMode extends Mode {
       onLoad: obj => {
         if (cfg.color !== undefined) this.colorize(obj, new Color(cfg.color))
         makeShadowy(obj)
+        //if (cfg.kind.isMonster()) this.addMonsterBillboard(obj)
       },
     }
     const entityId = this._domain.add({

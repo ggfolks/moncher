@@ -23,6 +23,13 @@ export class ActorKind {
     readonly canHeal :boolean,
     readonly maxSpeed :number = .025 // units per second
   ) {}
+
+  isMonster () :boolean {
+    switch (this) {
+      case ActorKind.EGG: case ActorKind.FOOD: return false
+      default: return true
+    }
+  }
 }
 
 /**
@@ -113,8 +120,7 @@ export const enum ActorInstant {
 }
 
 /**
- * Runtime information about an actor's state.
- */
+ * Runtime information about an actor's state. */
 export class ActorState {
 
   constructor (
@@ -138,8 +144,7 @@ export class ActorState {
 }
 
 /**
- * An actor.
- */
+ * An actor. */
 type ConstructableActorClass = { new (...args :any[]) :Actor }
 abstract class Actor {
   /** Location. */
@@ -220,7 +225,7 @@ class Egg extends Actor {
   tick (model :RanchModel, dt :number) :void {
     switch (this.action) {
       case ActorAction.Idle:
-        if (--this.health < 20) {
+        if (--this.health < 20 / MONSTER_ACCELERANT) {
           this.action = ActorAction.ReadyToHatch
         }
         break;
