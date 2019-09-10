@@ -340,37 +340,6 @@ export class RanchMode extends Mode {
         obj: {type: "json", url: "ranch/RimLight.json"},
       },
     })
-//      const lightId = domain.add({
-//        components: {
-//          // Light details from Jon
-//          trans: {},
-//          obj: {
-//            type: "directionalLight",
-//            color: 0xFFCE84,
-//            onLoad: (obj :Object3D) => {obj.castShadow = true},
-//          },
-//  //        graph: {
-//  //          clock: {type: "clock"},
-//  //          spin: {type: "multiply", inputs: [.1, "clock"]},
-//  //          accumSpin: {type: "accumulate", input: "spin"},
-//  //          rotation: {type: "Euler", z: "accumSpin"},
-//  //          setVec: {type: "Vector3.applyEuler", vector: new Vector3(0, 1, 0), euler: "rotation"},
-//  //          update: {type: "updatePosition", component: "trans", input: "setVec"},
-//  //          //logRotation: {type: "log", message: "Accumulation rotation", input: "setVec"},
-//  //        },
-//        },
-//      })
-//      // Work with this Matrix from Jon
-//      const matrix :Matrix4 = new Matrix4().set(
-//            1,0,0,0,0,1,0,0,0,0,1,0,-40.335134,10.264535,-46.887602,1).transpose()
-//      const pos = new Vector3()
-//      const rot = new Quaternion()
-//      const scale = new Vector3()
-//      obj.read(lightId).matrix = matrix
-//      matrix.decompose(pos, rot, scale)
-//      trans.updatePosition(lightId, pos)
-//      trans.updateQuaternion(lightId, rot)
-//      trans.updateScale(lightId, scale)
 
     // add the ranch terrain
     /*const ranchTerrainId =*/ this._terrainId = domain.add({
