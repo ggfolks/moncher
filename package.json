@@ -11,7 +11,7 @@
   "sideEffects": false,
   "scripts": {
     "start": "webpack-dev-server --config webpack.dev.js",
-    "pack": "webpack --config webpack.prod.js",
+    "webpack": "webpack --config webpack.prod.js",
     "build": "tsc -b",
     "server": "NODE_PATH=./node_modules node lib/server.js"
   },
