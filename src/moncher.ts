@@ -225,7 +225,7 @@ class Egg extends Actor {
   tick (model :RanchModel, dt :number) :void {
     switch (this.action) {
       case ActorAction.Idle:
-        if (--this.health < 20 / MONSTER_ACCELERANT) {
+        if (--this.health < 20 * MONSTER_ACCELERANT) {
           this.action = ActorAction.ReadyToHatch
         }
         break;
