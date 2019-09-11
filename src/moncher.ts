@@ -422,6 +422,17 @@ class Monster extends Actor {
       return
     }
 
+    // TEMP?
+    // make sure we would be able to find a path back!
+    const pathBack = model.findPath(newPos, path[0])
+    if (!pathBack) {
+      log.warn("Unable to find a path BACK from point. Skipping",
+          "point", newPos)
+      this.setAction(ActorAction.Unknown)
+      return
+    }
+    // END: TEMP
+
     let rec :PathRec|undefined = undefined
     const speed = 1000 / (this.getSpeed() * speedFactor)
     while (path.length > 1) {
