@@ -41,6 +41,7 @@ export class Hud
   protected createRoot (uiState :UiState) :Root|undefined {
     let contents :ElementConfig
     const model :ModelData = {}
+    const BUTTON_WIDTH = 100
 
     switch (uiState) {
       default:
@@ -61,7 +62,7 @@ export class Hud
                 contents: {
                   type: "image",
                   image: "egg.img",
-                  width: 128,
+                  width: BUTTON_WIDTH,
                 },
                 style: {
                   background: null,
@@ -76,7 +77,7 @@ export class Hud
                 contents: {
                   type: "image",
                   image: "food.img",
-                  width: 128,
+                  width: BUTTON_WIDTH,
                 },
                 style: {
                   background: null,
