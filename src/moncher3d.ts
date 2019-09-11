@@ -364,6 +364,12 @@ export class RanchMode extends Mode {
     this._pathsys.update(clock)
     this._animsys.update(clock)
     this._scenesys.update()
+
+    // TEMP: make things visible again after loading
+    while (this._makeVisible.length) {
+      this._makeVisible.pop()!.visible = true
+    }
+
     this._scenesys.render(this._webGlRenderer)
   }
 
@@ -767,6 +773,9 @@ export class RanchMode extends Mode {
       type: "gltf",
       url: cfg.model.model,
       onLoad: obj => {
+        // make all newly-loaded objects invisible
+        obj.visible = false
+        this._makeVisible.push(obj)
         if (cfg.color !== undefined) this.colorize(obj, new Color(cfg.color))
         makeShadowy(obj)
         if (cfg.kind.isMonster()) this.addBubble(obj, state)
@@ -966,6 +975,9 @@ export class RanchMode extends Mode {
   /** Our navigation mesh, if loaded. */
   protected _navMesh? :Mesh
   protected _terrain? :Object3D
+
+  /** Tracks objects we need to make visible on each tick. */
+  protected readonly _makeVisible :Object3D[] = []
 
   protected _bubbleMaterial! :SpriteMaterial
   protected readonly _emojis :Map<ActorAction, SpriteMaterial> = new Map()
