@@ -1,3 +1,4 @@
+import {dim2} from "tfw/core/math"
 import {Disposable, Disposer} from "tfw/core/util"
 import {Mutable, Value} from "tfw/core/react"
 import {Root} from "tfw/ui/element"
@@ -12,6 +13,7 @@ const sausageCorner = 12
 const chatUiConfig = {
   type: "box",
   style: {
+    halign: "stretch",
     valign: "bottom",
     padding: 10,
     // TODO: why does 'margin: 10' cause UI to disappear
@@ -82,6 +84,10 @@ const chatUiConfig = {
   }
 }
 
+function tail<A> (elems :A[], count :number) :A[] {
+  return (elems.length <= count) ? elems : elems.slice(elems.length-count, elems.length)
+}
+
 export class ChatView implements Disposable {
   private _onDispose = new Disposer()
   readonly root :Root
@@ -101,7 +107,7 @@ export class ChatView implements Disposable {
         speaker: msg.switchMap(m => app.profiles.profile(m.sender).name)
       })),
       // TODO: sort these by timestamp?
-      msgkeys: channel.msgs.map(msgs => Array.from(msgs.keys())),
+      msgkeys: channel.msgs.map(msgs => tail(Array.from(msgs.keys()), 6)),
       input: Mutable.local(""),
       sendChat: () => {
         const text = modelData.input.current.trim()
@@ -118,6 +124,7 @@ export class ChatView implements Disposable {
       scale: app.renderer.scale,
       autoSize: true,
       hintSize: app.renderer.size,
+      minSize: Value.constant(dim2.fromValues(300, 0)),
       contents: chatUiConfig,
     }, this.model)
   }
