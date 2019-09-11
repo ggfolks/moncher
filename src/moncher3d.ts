@@ -240,18 +240,6 @@ export class RanchMode extends Mode {
     this.onDispose.add(hand)
     this.onDispose.add(hand.pointers.onChange(this._handChanged))
 
-    // Add some cheeseball handling of touch events until UIs get them for reals
-    this.onDispose.add(hand.pointers.onChange(ch => {
-        if (ch.type === "deleted" && hand.pointers.size === 0 && ch.key !== 0) { // Hand.MOUSE
-          const dict = <MouseEventInit>{
-            clientX: ch.prev.position[0],
-            clientY: ch.prev.position[1]
-          }
-          host.handleMouseEvent(new MouseEvent("mousedown", dict))
-          host.handleMouseEvent(new MouseEvent("mouseup", dict))
-        }
-      }))
-
     // TODO: what is the minimum we need?
     const nodeCtx :NodeContext = {
       types: new NodeTypeRegistry(
