@@ -250,17 +250,18 @@ class Monster extends Actor {
 
     switch (this.action) {
       case ActorAction.Waiting:
-        if (++this._counter >= 100 / MONSTER_ACCELERANT) {
+        if (--this._counter <= 0) {
           this.setAction(ActorAction.Idle)
         }
         break
 
       case ActorAction.Hatching:
-        this.setAction(ActorAction.Waiting, 80 / MONSTER_ACCELERANT)
+        this.setAction(ActorAction.Waiting, 3)
         break
 
       case ActorAction.Walking:
       case ActorAction.Sleepy:
+      case ActorAction.SeekingFood:
         // advance along our path positions
         let path = this._path
         while (path) {
@@ -276,7 +277,7 @@ class Monster extends Actor {
           } else {
             // otherwise we have finished!
             this.pos.copy(path.dest)
-            this.setAction(this.popState())
+            this.setAction(this.popState(), this._counter)
             // proceed to assign path to undefined, and we'll fall out of the while.
           }
           path = this._path = path.next
@@ -284,32 +285,33 @@ class Monster extends Actor {
         break
 
       case ActorAction.Eating:
-        if (++this._counter >= 20 / MONSTER_ACCELERANT) {
+        if (--this._counter <= 0) {
           this._hunger = 0
           this._scale *= 1.2
           const newpos = model.randomPositionFrom(this.pos, 2)
           if (newpos) {
             this.setAction(ActorAction.Sleepy)
             this.pushState(ActorAction.Sleeping)
+            this._counter = 100 / MONSTER_ACCELERANT
             this.walkTo(model, newpos, .5)
           } else {
-            this.setAction(ActorAction.Sleeping)
+            this.setAction(ActorAction.Sleeping, 100 / MONSTER_ACCELERANT)
           }
         }
         break
 
       case ActorAction.Sleeping:
-        if (++this._counter >= 100 / MONSTER_ACCELERANT) {
+        if (--this._counter <= 0) {
           this.setAction(ActorAction.Waking)
         }
         break
 
       case ActorAction.Waking:
-        this.setAction(ActorAction.Waiting, 90 / MONSTER_ACCELERANT)
+        this.setAction(ActorAction.Waiting, 8 / MONSTER_ACCELERANT)
         break
 
       case ActorAction.Unknown: // Do nothing for a little while
-        if (++this._counter >= 20 / MONSTER_ACCELERANT) {
+        if (--this._counter <= 0) {
           this.setAction(this.popState())
         }
         break
@@ -321,7 +323,7 @@ class Monster extends Actor {
           if (food) {
             if (this.pos.distanceTo(food.pos) < .1) {
               food.health -= 10
-              this.setAction(ActorAction.Eating)
+              this.setAction(ActorAction.Eating, 10 / MONSTER_ACCELERANT)
             } else {
               this.setAction(ActorAction.SeekingFood)
               this.walkTo(model, food.pos, 1.5)
@@ -357,7 +359,7 @@ class Monster extends Actor {
         break
 
       default:
-        log.warn("Unhandled action in Monster.tick")
+        log.warn("Unhandled action in Monster.tick", "action", this.action)
         break
     }
   }
@@ -365,7 +367,7 @@ class Monster extends Actor {
   setTouched (model :RanchModel) :void {
     switch (this.action) {
       case ActorAction.Sleeping:
-        this.setAction(ActorAction.Waking, 10)
+        this.setAction(ActorAction.Waking)
         break
 
       default:
@@ -413,6 +415,9 @@ class Monster extends Actor {
   protected walkTo (model :RanchModel, newPos :Vector3, speedFactor = 1) :void {
     const path = model.findPath(new Vector3().copy(this.pos), newPos)
     if (!path) {
+      log.warn("Unable to find path",
+          "src", this.pos,
+          "dest", newPos)
       this.setAction(ActorAction.Unknown)
       return
     }
