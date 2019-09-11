@@ -102,8 +102,9 @@ export const enum ActorAction {
   Idle = 1,
   ReadyToHatch,
   Hatching,
-  Waiting,
   Walking,
+  Waiting,
+  SeekingFood,
   Eating,
   Sleepy,
   Sleeping,
@@ -259,6 +260,7 @@ class Monster extends Actor {
         break
 
       case ActorAction.Walking:
+      case ActorAction.Sleepy:
         // advance along our path positions
         let path = this._path
         while (path) {
@@ -285,17 +287,14 @@ class Monster extends Actor {
         if (++this._counter >= 20 / MONSTER_ACCELERANT) {
           this._hunger = 0
           this._scale *= 1.2
-          this.setAction(ActorAction.Sleepy)
-        }
-        break
-
-      case ActorAction.Sleepy:
-        this.pushState(ActorAction.Sleeping)
-        const newpos = model.randomPositionFrom(this.pos, 2)
-        if (newpos) {
-          this.walkTo(model, newpos, .5)
-        } else {
-          this.setAction(ActorAction.Unknown)
+          const newpos = model.randomPositionFrom(this.pos, 2)
+          if (newpos) {
+            this.setAction(ActorAction.Sleepy)
+            this.pushState(ActorAction.Sleeping)
+            this.walkTo(model, newpos, .5)
+          } else {
+            this.setAction(ActorAction.Sleeping)
+          }
         }
         break
 
@@ -324,6 +323,7 @@ class Monster extends Actor {
               food.health -= 10
               this.setAction(ActorAction.Eating)
             } else {
+              this.setAction(ActorAction.SeekingFood)
               this.walkTo(model, food.pos, 1.5)
             }
             break
@@ -427,9 +427,23 @@ class Monster extends Actor {
       rec = new PathRec(src, dest, orient, duration, rec)
     }
     this._path = rec
-    this.setAction(ActorAction.Walking)
+    if (!this.isWalkingState(this.action)) {
+      this.setAction(ActorAction.Walking)
+    }
     // set our final angle to something wacky
     this._orient = Math.random() * Math.PI * 2
+  }
+
+  protected isWalkingState (act :ActorAction) :boolean
+  {
+    switch (act) {
+      case ActorAction.Walking:
+      case ActorAction.Sleepy:
+      case ActorAction.SeekingFood:
+        return true
+
+      default: return false
+    }
   }
 
   protected setAction (action :ActorAction, counterInit :number = 0) :void {

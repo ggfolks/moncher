@@ -177,6 +177,7 @@ export class RanchMode extends Mode {
   ) {
     super()
     this.configureScene(_app)
+    this.loadExtras()
 
     // But, let's set things to be ready after a short delay even if there's *trouble at the mill*
     // Dispatches to setReady() unless we've been disposed already, but setReady is idempotent.
@@ -357,6 +358,18 @@ export class RanchMode extends Mode {
     })
   }
 
+  protected loadExtras () :void {
+    const tl = new TextureLoader()
+    this._bubbleMaterial = this.makeEmoji(tl, "ThoughtBubble.png")
+    //this._emojis.set(ActorAction.VisitingEgg, this.makeEmoji(tl, "EggIcon.png"))
+    this._emojis.set(ActorAction.SeekingFood, this.makeEmoji(tl, "AcornIcon.png"))
+    this._emojis.set(ActorAction.Sleepy, this.makeEmoji(tl, "SleepIcon.png"))
+  }
+
+  protected makeEmoji (tl :TextureLoader, url :string) :SpriteMaterial {
+    return new SpriteMaterial({map: tl.load("monsters/emoji/" + url), color: 0xFFFFFF})
+  }
+
   render (clock :Clock) :void {
     this._hand.update()
     this._graphsys.update(clock)
@@ -370,25 +383,6 @@ export class RanchMode extends Mode {
   setUiState (uiState :UiState) :void {
     this._uiState = uiState
     this._hud.updateUiState(uiState)
-  }
-
-  protected addMonsterBillboard (monst :Object3D) :void {
-    const tl = new TextureLoader()
-    const texture = tl.load("tiles/grass.png")
-    const t2 = tl.load("tiles/dirt.png")
-    const mat = new SpriteMaterial({map: texture, color: 0xFFFFFF})
-    const sprite = new Sprite(mat)
-
-    const mat2 = new SpriteMaterial({map: t2, color: 0xFFFFFF})
-    const sprite2 = new Sprite(mat2)
-    sprite2.scale.set(.5, .5, .5)
-    sprite.name = "emo"
-    sprite.position.y = 1.2
-    sprite.add(sprite2)
-    monst.add(sprite)
-    log.info("Oh look",
-      "b", Sprite,
-      "c", SpriteMaterial)
   }
 
   protected ranchLoaded (scene :Object3D) :void {
@@ -467,6 +461,33 @@ export class RanchMode extends Mode {
     }
     this._trans.updateScale(actorInfo.entityId,
         scratchV.set(state.scale, state.scale, state.scale))
+    this.updateBubble(actorInfo, state)
+  }
+
+  protected addBubble (monst :Object3D, state :ActorState) :void {
+    const bubble = new Sprite(this._bubbleMaterial)
+    bubble.name = "bubble"
+    const emoji = new Sprite()
+    emoji.name = "emo"
+    bubble.add(emoji)
+    bubble.position.y =  1.2
+    monst.add(bubble)
+    this.updateBubble2(monst, state)
+  }
+
+  protected updateBubble (actorInfo :ActorInfo, state :ActorState) :void {
+    const obj = this._obj.read(actorInfo.entityId)
+    this.updateBubble2(obj, state)
+  }
+
+  protected updateBubble2 (monst :Object3D, state :ActorState) :void {
+    const bub = monst.getObjectByName("bubble")
+    if (!bub) return
+    const material = this._emojis.get(state.action)
+    bub.visible = material !== undefined
+    if (material) {
+      (bub.children[0] as Sprite).material = material
+    }
   }
 
   protected addActor (id :number, state :ActorState) :ActorInfo {
@@ -750,7 +771,7 @@ export class RanchMode extends Mode {
       onLoad: obj => {
         if (cfg.color !== undefined) this.colorize(obj, new Color(cfg.color))
         makeShadowy(obj)
-        //if (cfg.kind.isMonster()) this.addMonsterBillboard(obj)
+        if (cfg.kind.isMonster()) this.addBubble(obj, state)
       },
     }
     const entityId = this._domain.add({
@@ -943,6 +964,9 @@ export class RanchMode extends Mode {
   /** Our navigation mesh, if loaded. */
   protected _navMesh? :Mesh
   protected _terrain? :Object3D
+
+  protected _bubbleMaterial! :SpriteMaterial
+  protected readonly _emojis :Map<ActorAction, SpriteMaterial> = new Map()
 
   protected readonly _inspectUiSize :dim2 = dim2.fromValues(1024, 768)
 
