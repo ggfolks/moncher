@@ -52,8 +52,7 @@ import {
   SceneSystem,
   loadGLTFAnimationClip,
 } from "tfw/scene3/entity"
-//import {HTMLHost} from "tfw/ui/element"
-import {Host3} from "tfw/ui/host3"
+import {HTMLHost} from "tfw/ui/element"
 
 import {registerLogicNodes} from "tfw/graph/logic"
 import {registerMathNodes} from "tfw/graph/math"
@@ -233,8 +232,7 @@ export class RanchMode extends Mode {
       root.appendChild(app.renderer.canvas)
     })
 
-//    const host = this._host = new HTMLHost(root)
-    const host = this._host = new Host3()
+    const host = this._host = new HTMLHost(root)
     this.onDispose.add(host.bind(webGlRenderer.domElement))
     this.onDispose.add(host)
 
@@ -293,7 +291,6 @@ export class RanchMode extends Mode {
     this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
     this._graphsys = new GraphSystem(nodeCtx, domain, graph)
-    this._scenesys.scene.add(host.group)
 
     /*const animsys =*/ this._animsys = new AnimationSystem(domain, obj, mixer)
 
@@ -943,8 +940,7 @@ export class RanchMode extends Mode {
   protected _ready :boolean = false
 
   // The properties below are all definitely initialized via the constructor
-  protected _host! :Host3
-  //protected _host! :HTMLHost
+  protected _host! :HTMLHost
   protected _webGlRenderer! :WebGLRenderer
   protected _hand! :Hand
   protected _trans! :TransformComponent
