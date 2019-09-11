@@ -192,7 +192,7 @@ export class RanchMode extends Mode {
     this._chat.root.bindOrigin(_app.renderer.size, "left", "bottom", "left", "bottom")
     this._host.addRoot(this._chat.root)
 
-    this.onDispose.add(Keyboard.instance.getKeyState(32 /* space */).onEmit(
+    this.onDispose.add(Keyboard.instance.getKeyState(112 /* F1 */).onEmit(
         v => this.showNavMesh(v)))
     this.onDispose.add(Keyboard.instance.getKeyState(83 /* S key */).onEmit(v => {
         if (v) {

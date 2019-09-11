@@ -30,7 +30,7 @@ export class Hud
     }
     this._stateRoot = this.createRoot(uiState)
     if (this._stateRoot) {
-      this._stateRoot.bindOrigin(this.renderer.size, "center", "bottom", "center", "bottom")
+      this._stateRoot.bindOrigin(this.renderer.size, "right", "bottom", "right", "bottom")
       this.host.addRoot(this._stateRoot)
     }
   }
@@ -105,7 +105,7 @@ export class Hud
           clicked: () => this._ranchMode.setUiState(UiState.PlacingFood),
         }
         model.status = {
-          text: Value.constant("Hold SPACE to see the navmesh"),
+          text: Value.constant("Hold F1 to see the navmesh"),
         }
         break // end: Default
 
