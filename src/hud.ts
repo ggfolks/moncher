@@ -71,8 +71,8 @@ export class Hud
                   width: 128,
                 },
                 style: {
-                  background: "$clear",
-                  border: "$clear",
+                  background: null,
+                  border: null,
                 },
               },
             }, {
@@ -86,8 +86,8 @@ export class Hud
                   width: 128,
                 },
                 style: {
-                  background: "$clear",
-                  border: "$clear",
+                  background: null,
+                  border: null,
                 },
               },
             }],

@@ -5,7 +5,6 @@ import {Theme} from "tfw/ui/ui"
 const buttonCorner = 5
 export const moncherStyles :StyleDefs = {
   colors: {
-    transparent: Color.fromARGB(0, 1, 1, 1),
     transWhite: Color.fromARGB(.3, 1, 1, 1),
   },
   shadows: {},
@@ -21,7 +20,6 @@ export const moncherStyles :StyleDefs = {
   borders: {
     button: {stroke: {type: "color", color: "#999999"}, cornerRadius: buttonCorner},
     buttonFocused: {stroke: {type: "color", color: "#FFFFFF"}, cornerRadius: buttonCorner},
-    clear: {stroke: {type: "color", color: "$transparent"}},
   },
   backgrounds: {
     buttonNormal: {
@@ -31,7 +29,6 @@ export const moncherStyles :StyleDefs = {
     },
     buttonPressed: {fill: {type: "color", color: "#77AADD"}, cornerRadius: buttonCorner},
     buttonDisabled: {fill: {type: "color", color: "$transWhite"}, cornerRadius: buttonCorner},
-    clear: {fill: {type: "color", color: "$transparent"}},
   },
 }
 
