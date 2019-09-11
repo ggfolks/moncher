@@ -168,6 +168,12 @@ function makeSceneShadowy (obj :Object3D) :void {
   obj.children.forEach(makeSceneShadowy)
 }
 
+/**
+ * Helper for loading a SpriteMaterial for monster emojional state. */
+function makeEmoji (tl :TextureLoader, url :string) :SpriteMaterial {
+  return new SpriteMaterial({map: tl.load("monsters/emoji/" + url), color: 0xFFFFFF})
+}
+
 export class RanchMode extends Mode {
 
   constructor (
@@ -345,14 +351,10 @@ export class RanchMode extends Mode {
 
   protected loadExtras () :void {
     const tl = new TextureLoader()
-    this._bubbleMaterial = this.makeEmoji(tl, "ThoughtBubble.png")
+    this._bubbleMaterial = makeEmoji(tl, "ThoughtBubble.png")
     //this._emojis.set(ActorAction.VisitingEgg, this.makeEmoji(tl, "EggIcon.png"))
-    this._emojis.set(ActorAction.SeekingFood, this.makeEmoji(tl, "AcornIcon.png"))
-    this._emojis.set(ActorAction.Sleepy, this.makeEmoji(tl, "SleepIcon.png"))
-  }
-
-  protected makeEmoji (tl :TextureLoader, url :string) :SpriteMaterial {
-    return new SpriteMaterial({map: tl.load("monsters/emoji/" + url), color: 0xFFFFFF})
+    this._emojis.set(ActorAction.SeekingFood, makeEmoji(tl, "AcornIcon.png"))
+    this._emojis.set(ActorAction.Sleepy, makeEmoji(tl, "SleepIcon.png"))
   }
 
   render (clock :Clock) :void {
@@ -535,12 +537,22 @@ export class RanchMode extends Mode {
 
     // set up nodes to capture touches on the actor and call our callback
     graphCfg.hover = {type: "hover", component: "hovers"}
+
+    let timeoutHandle :number|undefined
     graphCfg.detectTouch = {
       type: "onChange",
       input: ["hover", "pressed"],
       callback: (nv :boolean, ov :boolean) => {
+        if (timeoutHandle !== undefined) {
+          window.clearTimeout(timeoutHandle)
+          timeoutHandle = undefined
+        }
         if (nv) {
           this.actorTouched(id)
+          timeoutHandle = window.setTimeout(() => {
+              this.trackActor(id)
+              timeoutHandle = undefined
+            }, 800)
 //0          const time = Date.now()
 //0          if (time - touchTime <= 1000) {
 //0            triggerInspect.update(true)
@@ -805,6 +817,11 @@ export class RanchMode extends Mode {
 
   protected actorTouched (id :number) :void {
     this._ranch.actorTouched(id)
+  }
+
+  /**
+   * Have the camera follow the specified actor. */
+  protected trackActor (id :number) :void {
     const actorInfo = this._actors.get(id)
     if (actorInfo) {
       this._trackedEntityId = actorInfo.entityId
