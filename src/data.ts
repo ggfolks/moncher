@@ -69,7 +69,11 @@ export class ChannelObject extends DObject {
     const mid = uuidv1()
     this.msgs.set(mid, {sender, sent: Timestamp.now(), text})
   }
+
+  canSubscribe (auth :Auth) { return true /* TODO: ranch/channel membership */ }
 }
+
+export const channelQ = (id :UUID) => ChannelObject.queueAddr(["channels", id], "channelq")
 
 type ChannelReq = {type :"speak", text :string}
 
@@ -120,8 +124,14 @@ function handleMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth) {
 @dobject
 export class ServerObject extends DObject {
 
+  @dcollection(ProfileObject)
+  profiles = this.collection<ProfileObject>()
+
   @dcollection(UserObject)
   users = this.collection<UserObject>()
+
+  @dcollection(ChannelObject)
+  channels = this.collection<ChannelObject>()
 
   @dcollection(RanchObject)
   ranches = this.collection<RanchObject>()

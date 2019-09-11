@@ -1,13 +1,10 @@
-import {loadImage} from "tfw/core/assets"
 import {Value} from "tfw/core/react"
 import {Disposable, Disposer, log} from "tfw/core/util"
 import {Renderer} from "tfw/scene2/gl"
 import {ElementConfig, Host, Root, RootConfig} from "tfw/ui/element"
 import {Model, ModelData} from "tfw/ui/model"
-import {ImageResolver} from "tfw/ui/style"
-import {UI} from "tfw/ui/ui"
-import {moncherStyles, moncherTheme} from "./uistyles"
 import {RanchMode} from "./moncher3d"
+import {App} from "./app"
 
 export const enum UiState {
   Default = 1,
@@ -19,15 +16,11 @@ export class Hud
   implements Disposable {
 
   constructor (
+    readonly app :App,
     readonly host :Host,
     readonly renderer :Renderer,
     private readonly _ranchMode :RanchMode,
-  ) {
-    const resolver :ImageResolver = {
-      resolve: loadImage,
-    }
-    this._ui = new UI(moncherTheme, moncherStyles, resolver)
-  }
+  ) {}
 
   /**
    * Update to reflect our current UI state. */
@@ -145,7 +138,7 @@ export class Hud
       hintSize: this.renderer.size,
       contents: contents,
     }
-    return this._ui.createRoot(rootConfig, new Model(model))
+    return this.app.ui.createRoot(rootConfig, new Model(model))
   }
 
   // from Disposable
@@ -158,7 +151,6 @@ export class Hud
     this._disposer.dispose()
   }
 
-  protected _ui :UI
   protected _stateRoot? :Root
 
   protected readonly _disposer :Disposer = new Disposer()

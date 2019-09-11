@@ -12,6 +12,7 @@ const root = document.getElementById("root")
 if (!root) throw new Error(`No root?`)
 
 const app = new App(root)
+window.onunload = () => app.dispose()
 app.start()
 
 const ranch :RanchModel = new RanchModel()
@@ -21,16 +22,11 @@ app.setMode(mode)
 // add a sample monster
 //ranch.addActor(MonsterDb.getRandomEgg(), new Vector3(2, -.25, 0)) // y is approximate
 
-
-// Tick the ranch model. We could just use an interval but this will "Freeze" us when
-// we're offscreen
-let lastTime = 0
-const updateFrame = (time :number) => {
-  const delta = time - lastTime
-  if (delta > 1000) {
-    lastTime = time
+// Tick the ranch model. Using the app clock will "Freeze" the sim when we're offscreen
+let nextTime = 0
+app.loop.clock.onEmit(clock => {
+  while (clock.elapsed > nextTime) {
     ranch.tick(1000)
+    nextTime += 1 // elapsed is in seconds
   }
-  requestAnimationFrame(updateFrame)
-}
-requestAnimationFrame(updateFrame)
+})

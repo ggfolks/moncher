@@ -1,14 +1,38 @@
 import {Disposable, Disposer} from "tfw/core/util"
+import {dim2} from "tfw/core/math"
+import {UUID, uuidv1} from "tfw/core/uuid"
 import {Clock, Loop} from "tfw/core/clock"
+import {loadImage} from "tfw/core/assets"
+import {Mutable, Subject} from "tfw/core/react"
 import {Renderer, windowSize} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {UniformQuadBatch} from "tfw/scene2/batch"
-import {dim2} from "tfw/core/math"
+import {Client} from "tfw/data/client"
+import {UI} from "tfw/ui/ui"
 
-export class App {
+import {ProfileStore} from "./stores"
+import {moncherStyles, moncherTheme} from "./uistyles"
+
+// TODO: firebase auth stuff
+const auth = {id: uuidv1(), token: "guest"}
+const host = window.location.hostname
+const port = host === "localhost" ? 8080 : parseInt(window.location.port || "443")
+const addr = {host, port, path: "data"}
+
+export class App implements Disposable {
+  private mode :Mode
+
   readonly renderer :Renderer
   readonly loop  = new Loop()
-  private mode :Mode
+  readonly ui = new UI(moncherTheme, moncherStyles, {resolve: loadImage})
+  readonly client = new Client(p => Subject.constant(addr), auth)
+  readonly profiles :ProfileStore
+
+  // global app "state"
+  readonly state = {
+    // TODO: eventually we'll get the ranch id from the URL, but for now we just hardcode one
+    ranchId: Mutable.local<UUID>("5cXg8Tp5WwsuVeO7JflubY"),
+  }
 
   constructor (readonly root :HTMLElement) {
     this.renderer = new Renderer({
@@ -23,6 +47,7 @@ export class App {
     this.mode = new BlankMode(this)
     this.loop = new Loop()
     this.loop.clock.onEmit(clock => this.mode.render(clock))
+    this.profiles = new ProfileStore(this)
   }
 
   start () {
@@ -32,6 +57,10 @@ export class App {
   setMode (mode :Mode) {
     this.mode.dispose()
     this.mode = mode
+  }
+
+  dispose () {
+    this.client.dispose()
   }
 }
 

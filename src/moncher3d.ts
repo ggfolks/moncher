@@ -81,6 +81,7 @@ import {
 } from "./moncher"
 import {MonsterDb} from "./monsterdb"
 import {Hud, UiState} from "./hud"
+import {ChatView} from "./chat"
 
 class ActorInfo {
 
@@ -105,7 +106,7 @@ class PathSystem extends System {
     readonly trans :TransformComponent,
     readonly paths :Component<PathRec|undefined>,
     readonly state :Component<ActorState>,
-		readonly setY :(into :Vector3) => void,
+  readonly setY :(into :Vector3) => void,
     readonly actorWasPlaced :(id :number, pos :Vector3) => void,
   ) {
     super(domain, Matcher.hasAllC(trans.id, paths.id))
@@ -184,8 +185,12 @@ export class RanchMode extends Mode {
     handle = setTimeout(() => { this.onDispose.remove(cancelTimeout); this.setReady() }, 2000)
     this.onDispose.add(cancelTimeout)
 
-    this.onDispose.add(this._hud = new Hud(this._host, _app.renderer, this))
+    this.onDispose.add(this._hud = new Hud(_app, this._host, _app.renderer, this))
     this.setUiState(UiState.Default)
+
+    this.onDispose.add(this._chat = new ChatView(_app))
+    this._chat.root.bindOrigin(_app.renderer.size, "left", "bottom", "left", "bottom")
+    this._host.addRoot(this._chat.root)
 
     this.onDispose.add(Keyboard.instance.getKeyState(32 /* space */).onEmit(
         v => this.showNavMesh(v)))
@@ -906,6 +911,9 @@ export class RanchMode extends Mode {
 
   /** Our heads-up-display: global UI. */
   protected _hud :Hud
+
+  /** Displays the chat UI. */
+  protected _chat :ChatView
 
   protected _uiState :UiState = UiState.Default
 
