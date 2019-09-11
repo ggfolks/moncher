@@ -458,6 +458,7 @@ export class RanchMode extends Mode {
     emoji.name = "emo"
     bubble.add(emoji)
     bubble.position.y =  1.2
+    bubble.scale.set(.8, .8, .8)
     monst.add(bubble)
     this.updateBubble2(monst, state)
   }
