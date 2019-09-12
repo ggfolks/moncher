@@ -27,9 +27,8 @@ import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
 import {Value} from "tfw/core/react"
 import {
-  Disposer,
   PMap,
-  Remover,
+//  Remover,
   log,
 } from "tfw/core/util"
 import {Hand, Pointer} from "tfw/input/hand"
@@ -175,24 +174,6 @@ function makeEmoji (tl :TextureLoader, url :string) :SpriteMaterial {
   return new SpriteMaterial({map: tl.load("monsters/emoji/" + url), color: 0xFFFFFF})
 }
 
-function preloadObj (url :string, disposer :Disposer) :void {
-  // only way is to pretend it's got an animation named ""
-  preloadAnim(url + "#", disposer)
-}
-
-function preloadAnim (url :string, disposer :Disposer) :void {
-  const runLater = () => {
-    // TODO: is there a more straightforward way to do this?
-    let remover :Remover
-    remover = loadGLTFAnimationClip(url).once(_ => {
-        disposer.remove(remover)
-        log.debug("Loaded clip " + url)
-      })
-    disposer.add(remover)
-  }
-  setTimeout(runLater, 0) // but, what if we're already disposed when this runs?
-}
-
 export class RanchMode extends Mode {
 
   constructor (
@@ -232,6 +213,23 @@ export class RanchMode extends Mode {
           dl.castShadow = enabled
         }
       }))
+  }
+
+  protected preloadObj (url :string) :void {
+    this.preloadAnim(url + "#") // pretend it has an animation named ""
+  }
+
+  protected preloadAnim (url :string) :void {
+    let timeoutHandle :any
+    const cancelTimeout = () => { clearTimeout(timeoutHandle) }
+    const runLater = () => {
+        this.onDispose.remove(cancelTimeout)
+        // TODO: Right now, I just keep a hold on everything preloaded, forever.
+        // Otherwise if we release the Subject it's lost.
+        this.onDispose.add(loadGLTFAnimationClip(url).onEmit(_ => {}))
+      }
+    timeoutHandle = setTimeout(runLater, 0)
+    this.onDispose.add(cancelTimeout)
   }
 
   protected configureScene (app :App) :void {
@@ -515,12 +513,12 @@ export class RanchMode extends Mode {
     if (toSpawn) {
       // let's go ahead and pre-load the model of what we're going to spawn.
       // Loading the animations is the only way
-      preloadObj(toSpawn.model.model, this.onDispose)
+      this.preloadObj(toSpawn.model.model)
       // everything else is an animation, let's make no assumptions and f'n preload them all!
       for (const key in toSpawn.model) {
         if (key === "model") continue
         const anim = toSpawn.model[key]
-        if (anim) preloadAnim(anim, this.onDispose)
+        if (anim) this.preloadAnim(anim)
       }
     }
 
