@@ -28,7 +28,7 @@ import {MapChange} from "tfw/core/rcollect"
 import {Value} from "tfw/core/react"
 import {
   PMap,
-//  Remover,
+  Remover,
   log,
 } from "tfw/core/util"
 import {Hand, Pointer} from "tfw/input/hand"
@@ -215,21 +215,28 @@ export class RanchMode extends Mode {
       }))
   }
 
+  dispose () :void {
+    super.dispose()
+    for (const remover of this._preloads.values()) {
+      remover()
+    }
+    this._preloads.clear()
+  }
+
   protected preloadObj (url :string) :void {
     this.preloadAnim(url + "#") // pretend it has an animation named ""
   }
 
   protected preloadAnim (url :string) :void {
+    if (this._preloads.has(url)) return // we already got one!
     let timeoutHandle :any
-    const cancelTimeout = () => { clearTimeout(timeoutHandle) }
+    const cancelTimeout :Remover = () => { clearTimeout(timeoutHandle) }
     const runLater = () => {
-        this.onDispose.remove(cancelTimeout)
-        // TODO: Right now, I just keep a hold on everything preloaded, forever.
-        // Otherwise if we release the Subject it's lost.
-        this.onDispose.add(loadGLTFAnimationClip(url).onEmit(_ => {}))
+        // replace the timeout canceller with the Subject's remover
+        this._preloads.set(url, this.onDispose.add(loadGLTFAnimationClip(url).onEmit(_ => {})))
       }
     timeoutHandle = setTimeout(runLater, 0)
-    this.onDispose.add(cancelTimeout)
+    this._preloads.set(url, cancelTimeout)
   }
 
   protected configureScene (app :App) :void {
@@ -970,6 +977,9 @@ original -> actual -> target
 
   /** Camera will follow this id. */
   protected _trackedEntityId :number = -1
+
+  /** Tracks all the urls we've preloaded. */
+  protected _preloads :Map<string, Remover> = new Map()
 
   protected _cameraDistance :number = 10
   protected _cameraFocus :Vector3 = new Vector3(0, 0, 0)
