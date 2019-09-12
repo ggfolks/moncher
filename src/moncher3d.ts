@@ -683,7 +683,7 @@ export class RanchMode extends Mode {
         graphCfg.controller.eatCond = "isEating"
       } // end: eat
 
-      if (cfg.model.sleep && cfg.model.faint) {
+      if (cfg.model.sleep && cfg.model.faint && cfg.model.wakeUp) {
         graphCfg.isSleeping = <NodeConfig>{
           type: "equals",
           x: "action",
@@ -701,11 +701,9 @@ export class RanchMode extends Mode {
         graphCfg.controller.sleepCond = "isSleeping"
         animStates.sleep = {
           url: cfg.model.sleep,
-          transitions: {default: {condition: "!sleepCond"}}
+          transitions: {wake: {condition: "wakeCond"}}
         }
-      } // end: sleep
 
-      if (cfg.model.wakeUp) {
         graphCfg.isWaking = <NodeConfig>{
           type: "equals",
           x: "action",
@@ -717,9 +715,8 @@ export class RanchMode extends Mode {
           finishBeforeTransition: true,
           transitions: {default: {}},
         }
-        anyTransitions.wake = {condition: "wakeCond"}
         graphCfg.controller.wakeCond = "isWaking"
-      } // end: wakeup
+      } // end: faint / sleep / wakeUp
 
       // Happy-react happens whenever you touch a monster, even if in the other states.
       // So we need to set up a separate animation controller.
