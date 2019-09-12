@@ -27,6 +27,7 @@ import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
 import {Value} from "tfw/core/react"
 import {
+  Disposer,
   PMap,
   Remover,
   log,
@@ -172,6 +173,24 @@ function makeSceneShadowy (obj :Object3D) :void {
  * Helper for loading a SpriteMaterial for monster emojional state. */
 function makeEmoji (tl :TextureLoader, url :string) :SpriteMaterial {
   return new SpriteMaterial({map: tl.load("monsters/emoji/" + url), color: 0xFFFFFF})
+}
+
+function preloadObj (url :string, disposer :Disposer) :void {
+  // only way is to pretend it's got an animation named ""
+  preloadAnim(url + "#", disposer)
+}
+
+function preloadAnim (url :string, disposer :Disposer) :void {
+  const runLater = () => {
+    // TODO: is there a more straightforward way to do this?
+    let remover :Remover
+    remover = loadGLTFAnimationClip(url).once(_ => {
+        disposer.remove(remover)
+        log.debug("Loaded clip " + url)
+      })
+    disposer.add(remover)
+  }
+  setTimeout(runLater, 0) // but, what if we're already disposed when this runs?
 }
 
 export class RanchMode extends Mode {
@@ -492,18 +511,17 @@ export class RanchMode extends Mode {
     }
 
     // Preloading!
-    if (cfg.spawn) {
+    const toSpawn = cfg.spawn
+    if (toSpawn) {
       // let's go ahead and pre-load the model of what we're going to spawn.
       // Loading the animations is the only way
-      const runLater = () => {
-        // TODO: is there a more straightforward way to do this?
-        let remover :Remover
-        remover = loadGLTFAnimationClip(cfg.spawn!.model.model + "#").once(v => {
-            this.onDispose.remove(remover)
-          })
-        this.onDispose.add(remover)
+      preloadObj(toSpawn.model.model, this.onDispose)
+      // everything else is an animation, let's make no assumptions and f'n preload them all!
+      for (const key in toSpawn.model) {
+        if (key === "model") continue
+        const anim = toSpawn.model[key]
+        if (anim) preloadAnim(anim, this.onDispose)
       }
-      setTimeout(runLater, 0) // but, what if we're already disposed when this runs?
     }
 
     const graphCfg :GraphConfig = {}
