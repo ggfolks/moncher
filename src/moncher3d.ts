@@ -979,6 +979,7 @@ original -> actual -> target
   protected _trackedEntityId :number = -1
 
   /** Tracks all the urls we've preloaded. */
+  // TODO: call some removers when we might think we don't need something anymore
   protected _preloads :Map<string, Remover> = new Map()
 
   protected _cameraDistance :number = 10
