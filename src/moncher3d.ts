@@ -692,6 +692,7 @@ export class RanchMode extends Mode {
         animStates.faint = {
           url: cfg.model.faint,
           repetitions: 1,
+          clampWhenFinished: true,
           finishBeforeTransition: true,
           transitions: {sleep: {}},
         }
@@ -907,6 +908,26 @@ export class RanchMode extends Mode {
       "angle", angle)
   }
 
+  /**
+   * TODO: camera easing
+- We definitely want smooth easing if you track a new actor.
+  - if already easing, start a new ease from the actual
+  (prevent further zoom-out unless warranted?)
+
+original -> actual -> target
+
+- if the user drags or uses the arrow keys: do an instant adjust from
+  the current "actual"
+
+- if the user changes zoom:
+  - if on track, update target zoom and then apply the delta to actual and original too
+  - if not on track, adjust immediate
+
+- if the tracked actor moves:
+  - if on track, adjust the target position but update nothing else
+  - if not on track, adjust actual
+
+   */
   protected updateCamera (deltaDistance? :number, deltaX? :number, deltaZ? :number) :void {
     if (deltaDistance) {
       this._cameraDistance = Math.max(RanchMode.MIN_CAMERA_DISTANCE,
