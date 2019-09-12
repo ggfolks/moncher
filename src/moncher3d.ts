@@ -568,7 +568,7 @@ export class RanchMode extends Mode {
 //0
 //0        } else {
 //0          triggerInspect.update(false)
-0        }
+        }
       },
     }
 
