@@ -77,11 +77,11 @@ export class Lakitu
 
   update (clock :Clock) :void {
     if (this._dirty) {
-      const qq = this._quat
-      qq.setFromAxisAngle(new Vector3(-1, 0, 0), this.angle)
-      const loc = new Vector3(0, 0, 1)
-          .multiplyScalar(this._distance).applyQuaternion(qq).add(this._focus)
-      this.updateCamera(loc, qq)
+      const quat = this._quat
+      const loc = this._loc
+      quat.setFromAxisAngle(loc.set(-1, 0, 0), this.angle)
+      loc.set(0, 0, 1).multiplyScalar(this._distance).applyQuaternion(quat).add(this._focus)
+      this.updateCamera(loc, quat)
       this._dirty = false
     }
   }
@@ -113,6 +113,7 @@ original -> actual -> target
       new Vector3(-Infinity, -Infinity, -Infinity), new Vector3(Infinity, Infinity, Infinity))
   protected _dirty :boolean = true
   protected _quat :Quaternion = new Quaternion()
+  protected _loc :Vector3 = new Vector3()
 
   private static readonly MAX_DISTANCE = 25
   private static readonly DEFAULT_DISTANCE = 10
