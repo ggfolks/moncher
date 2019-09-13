@@ -1,10 +1,21 @@
 import {
   Box3,
-  //Math as ThreeMath,
+  Math as ThreeMath,
   Quaternion,
   Vector3,
 } from "three"
 import {Clock} from "tfw/core/clock"
+
+interface Easing {
+  /** Starting position of the ease. */
+  from :Vector3
+  /** The last computed position of the ease. */
+  current :Vector3
+  /** The duration of the ease. */
+  duration :number
+  /** Start stamp (to be filled). */
+  startStamp? :number
+}
 
 const scratchV = new Vector3()
 
@@ -12,6 +23,9 @@ const scratchV = new Vector3()
  * Camera controller!
  * A relatively simple camera easer that works by having a 'target' that the camera looks at
  * plus a 'distance'. The camera angle is computed from distance. */
+// TODO: possibly have the easing pull the camera back until halfway through the ease and
+// then forward again during the second half. But that's a bit more complicated to let
+// the user adjust distance as well as do the right thing if we start a new ease in the middle. TBD.
 export class Lakitu
 {
   constructor (
@@ -22,6 +36,8 @@ export class Lakitu
   ) {
     this._updateQuaternion()
   }
+
+  // TODO: really a lot of these accessors could go away if we just had a logCameraDetails()
 
   /** The current distance of the camera from its target. */
   get distance () :number {
@@ -57,9 +73,16 @@ export class Lakitu
   /**
    * Ease the camera over to a new target.  */
   setNewTarget (loc :Vector3) :void {
-    // TODO: EASING
-    // Right now:
+    // from is the current instantaneous target
+    const from = (this._easing !== undefined)
+        ? this._easing.current
+        : new Vector3().copy(this._target)
     this.updateTarget(loc)
+    this._easing = <Easing>{
+      from,
+      current: new Vector3().copy(from),
+      duration: this._target.distanceTo(from) / Lakitu.EASING_SPEED
+    }
   }
 
   /**
@@ -95,52 +118,62 @@ export class Lakitu
   /**
    * Update the position of the camera before rendering, if needed. */
   update (clock :Clock) :void {
+    let target :Vector3 = this._target
+    if (this._easing) {
+      this._dirty = true
+      const ease = this._easing
+      if (ease.startStamp === undefined) {
+        ease.startStamp = clock.time
+      }
+      const perc = ThreeMath.smootherstep(clock.time, // smooooooth!
+          ease.startStamp, ease.startStamp + ease.duration)
+      if (perc >= 1) {
+        this._easing = undefined
+      } else {
+        target = ease.current.copy(ease.from).lerp(target, perc)
+      }
+    }
+
     if (this._dirty) {
       const quat = this._quat
-      scratchV.set(0, 0, 1).multiplyScalar(this._distance).applyQuaternion(quat).add(this._target)
+      scratchV.set(0, 0, 1).multiplyScalar(this._distance).applyQuaternion(quat).add(target)
       this.updateCamera(scratchV, quat)
       this._dirty = false
     }
   }
 
+  /**
+   * Update our precomputed quaternion. */
   protected _updateQuaternion () :void {
     this._quat.setFromAxisAngle(scratchV.set(-1, 0, 0), this.angle)
     this._dirty = true
   }
 
-  /*
-   * TODO: camera easing
-- We definitely want smooth easing if you track a new actor.
-  - if already easing, start a new ease from the actual
-  (prevent further zoom-out unless warranted?)
-
-original -> actual -> target
-
-- if the user drags or uses the arrow keys: do an instant adjust from
-  the current "actual"
-
-- if the user changes zoom:
-  - if on track, update target zoom and then apply the delta to actual and original too
-  - if not on track, adjust immediate
-
-- if the tracked actor moves:
-  - if on track, adjust the target position but update nothing else
-  - if not on track, adjust actual
-   */
-
-
-  protected _distance :number = Lakitu.DEFAULT_DISTANCE
+  /** The current target of the camera. */
   protected _target :Vector3 = new Vector3(0, 0, 0)
+
+  /** A box that we'll use to bound-in any adjustments to the target. */
   protected _targetBounds :Box3 = new Box3( // default box constructor does them the other way
       new Vector3(-Infinity, -Infinity, -Infinity), new Vector3(Infinity, Infinity, Infinity))
+
+  /** Distance from the target to place the camera. */
+  protected _distance :number = Lakitu.DEFAULT_DISTANCE
+
+  /** Do we need to update the camera position on next update()? */
   protected _dirty :boolean = true
 
   /** Camera's current rotation. */
   protected _quat :Quaternion = new Quaternion()
 
+  /** Our current easing parameters, if any. */
+  protected _easing? :Easing
+
+  /** Camera constants. These are tuned for our Ranch but in the future we can make these
+   * configurable. */
   private static readonly MAX_DISTANCE = 25
   private static readonly DEFAULT_DISTANCE = 10
   private static readonly MIN_DISTANCE = 5
   private static readonly ANGLE_AT_MAX = Math.PI / 4 // 45 degrees above
   private static readonly ANGLE_AT_MIN = Math.PI / 18 // 10 degrees above
+  private static readonly EASING_SPEED = 8 / 1000 // distance per millisecond (average)
 }
