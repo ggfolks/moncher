@@ -383,6 +383,7 @@ export class RanchMode extends Mode {
 
   render (clock :Clock) :void {
     this._hand.update()
+    this._scenesys.updateHovers(this._webGlRenderer)
     this._graphsys.update(clock)
     this._host.update(clock)
     this._pathsys.update(clock)
