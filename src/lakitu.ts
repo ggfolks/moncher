@@ -6,9 +6,12 @@ import {
 } from "three"
 import {Clock} from "tfw/core/clock"
 
+const scratchV = new Vector3()
+
 /**
  * Camera controller!
- */
+ * A relatively simple camera easer that works by having a 'target' that the camera looks at
+ * plus a 'distance'. The camera angle is computed from distance. */
 export class Lakitu
 {
   constructor (
@@ -16,27 +19,8 @@ export class Lakitu
     protected readonly setY :(into :Vector3, terrainFallback? :boolean) => void,
     /** A Function to update the camera. */
     protected readonly updateCamera :(loc :Vector3, rot :Quaternion) => void,
-  ) {}
-
-  // TEMP?
-  get focusBounds () :Box3 {
-    return this._focusBounds
-  }
-
-  // TEMP?
-  updateFocusBounds (box :Box3) :void {
-    this._focusBounds.copy(box)
-    this._dirty = true
-  }
-
-  // TEMP
-  get focus () :Vector3 {
-    return this._focus
-  }
-
-  // TEMP?
-  set dirty (isDirty :boolean) {
-    this._dirty = this._dirty || isDirty
+  ) {
+    this._updateQuaternion()
   }
 
   /** The current distance of the camera from its target. */
@@ -45,45 +29,83 @@ export class Lakitu
   }
 
   /** The current distance expressed as a number between 0 and 1. */
-  get zoom () :number {
+  get normalizedDistance () :number {
     return (this._distance - Lakitu.MIN_DISTANCE) / (Lakitu.MAX_DISTANCE - Lakitu.MIN_DISTANCE)
   }
 
   /** The current camera angle. */
   get angle () :number {
-    return Lakitu.ANGLE_AT_MIN + (this.zoom * (Lakitu.ANGLE_AT_MAX - Lakitu.ANGLE_AT_MIN))
+    return Lakitu.ANGLE_AT_MIN +
+        (this.normalizedDistance * (Lakitu.ANGLE_AT_MAX - Lakitu.ANGLE_AT_MIN))
   }
 
+  /**
+   * Get a copy of the location we're currently targeting.
+   * Note: if the camera is currently moving, this is the target it's moving to. */
+  getTarget (into? :Vector3) :Vector3 {
+    return (into || new Vector3()).copy(this._target)
+  }
+
+  /**
+   * Update the valid boundaries of the target. */
+  updateTargetBounds (box :Box3) :void {
+    this._targetBounds.copy(box)
+    this.updateTarget(this._target)
+    this._dirty = true
+  }
+
+  /**
+   * Ease the camera over to a new target.  */
+  setNewTarget (loc :Vector3) :void {
+    // TODO: EASING
+    // Right now:
+    this.updateTarget(loc)
+  }
+
+  /**
+   * Update the camera target immediately, without easing to it.
+   * If we're already easing then this will be the new destination of the ease. */
+  updateTarget (pos :Vector3) :void {
+    this._target.copy(pos)
+    this._target.clamp(this._targetBounds.min, this._targetBounds.max)
+    this._dirty = true
+  }
+
+  /**
+   * Make a relative adjustment to the camera's distance from the target. */
   adjustDistance (deltaDistance :number) :void {
     const newValue = Math.max(Lakitu.MIN_DISTANCE, Math.min(Lakitu.MAX_DISTANCE,
         this._distance + deltaDistance))
     if (newValue !== this._distance) {
       this._distance = newValue
-      this._dirty = true
-      // TODO: just update the quat here?
+      this._updateQuaternion()
     }
   }
 
-  adjustPosition (deltaX :number, deltaZ :number) :void {
-    const p = this._focus
-    const box = this._focusBounds
-    // TODO: only dirty if necessary?
-    p.x = Math.max(box.min.x, Math.min(box.max.x, p.x + deltaX))
-    p.z = Math.max(box.min.z, Math.min(box.max.z, p.z + deltaZ))
-    this.setY(p, false)
-    p.y = Math.max(box.min.y, Math.min(box.max.y, p.y))
-    this._dirty = true
+  /**
+   * Do a relative adjustment on the current target.  */
+  adjustTarget (deltaX :number, deltaZ :number) :void {
+    const targ = this._target
+    targ.x += deltaX
+    targ.z += deltaZ
+    this.setY(targ, false)
+    this.updateTarget(targ)
   }
 
+  /**
+   * Update the position of the camera before rendering, if needed. */
   update (clock :Clock) :void {
     if (this._dirty) {
       const quat = this._quat
-      const loc = this._loc
-      quat.setFromAxisAngle(loc.set(-1, 0, 0), this.angle)
-      loc.set(0, 0, 1).multiplyScalar(this._distance).applyQuaternion(quat).add(this._focus)
-      this.updateCamera(loc, quat)
+      scratchV.set(0, 0, 1).multiplyScalar(this._distance).applyQuaternion(quat).add(this._target)
+      this.updateCamera(scratchV, quat)
       this._dirty = false
     }
+  }
+
+  protected _updateQuaternion () :void {
+    this._quat.setFromAxisAngle(scratchV.set(-1, 0, 0), this.angle)
+    this._dirty = true
   }
 
   /*
@@ -108,12 +130,13 @@ original -> actual -> target
 
 
   protected _distance :number = Lakitu.DEFAULT_DISTANCE
-  protected _focus :Vector3 = new Vector3(0, 0, 0)
-  protected _focusBounds :Box3 = new Box3( // default box constructor does them the other way
+  protected _target :Vector3 = new Vector3(0, 0, 0)
+  protected _targetBounds :Box3 = new Box3( // default box constructor does them the other way
       new Vector3(-Infinity, -Infinity, -Infinity), new Vector3(Infinity, Infinity, Infinity))
   protected _dirty :boolean = true
+
+  /** Camera's current rotation. */
   protected _quat :Quaternion = new Quaternion()
-  protected _loc :Vector3 = new Vector3()
 
   private static readonly MAX_DISTANCE = 25
   private static readonly DEFAULT_DISTANCE = 10

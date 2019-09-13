@@ -325,7 +325,7 @@ export class RanchMode extends Mode {
     }
     this._camControl = new Lakitu(this.setY.bind(this), updateCamera)
 
-    // mouse wheel zooms
+    // mouse wheel adjusts camera distance
     const WHEEL_FACTOR = .05
     const wheelHandler = (event :WheelEvent) => {
       this._camControl.adjustDistance(event.deltaY * WHEEL_FACTOR)
@@ -338,13 +338,13 @@ export class RanchMode extends Mode {
     const enum ArrowKey { Left = 37, Up, Right, Down }
     const ARROW_KEY_FACTOR = .5
     this.onDispose.add(kb.getKeyState(ArrowKey.Left).onEmit(
-        p => { if (p) this.adjustCamera(-ARROW_KEY_FACTOR, 0) } ))
+        p => { if (p) this.adjustCameraTarget(-ARROW_KEY_FACTOR, 0) } ))
     this.onDispose.add(kb.getKeyState(ArrowKey.Right).onEmit(
-        p => { if (p) this.adjustCamera(ARROW_KEY_FACTOR, 0) } ))
+        p => { if (p) this.adjustCameraTarget(ARROW_KEY_FACTOR, 0) } ))
     this.onDispose.add(kb.getKeyState(ArrowKey.Up).onEmit(
-        p => { if (p) this.adjustCamera(0, -ARROW_KEY_FACTOR) } ))
+        p => { if (p) this.adjustCameraTarget(0, -ARROW_KEY_FACTOR) } ))
     this.onDispose.add(kb.getKeyState(ArrowKey.Down).onEmit(
-        p => { if (p) this.adjustCamera(0, ARROW_KEY_FACTOR) } ))
+        p => { if (p) this.adjustCameraTarget(0, ARROW_KEY_FACTOR) } ))
 
     domain.add({
       components: {
@@ -415,7 +415,7 @@ export class RanchMode extends Mode {
 
       // use the bounding box of the navmesh geometry as the bounds of our camera focus
       navMesh.geometry.computeBoundingBox()
-      this._camControl.updateFocusBounds(navMesh.geometry.boundingBox)
+      this._camControl.updateTargetBounds(navMesh.geometry.boundingBox)
     }
     makeSceneShadowy(scene)
     this.setReady()
@@ -473,6 +473,7 @@ export class RanchMode extends Mode {
       this._trans.updatePosition(actorInfo.entityId, state.pos)
       this._trans.updateQuaternion(actorInfo.entityId,
           scratchQ.setFromAxisAngle(unitY, state.orient))
+      this.actorWasPlaced(actorInfo.entityId, state.pos)
     }
     this._trans.updateScale(actorInfo.entityId,
         scratchV.set(state.scale, state.scale, state.scale))
@@ -851,8 +852,8 @@ export class RanchMode extends Mode {
     const actorInfo = this._actors.get(id)
     if (actorInfo) {
       this._trackedEntityId = actorInfo.entityId
-      this._trans.readPosition(actorInfo.entityId, this._camControl.focus)
-      this._camControl.dirty = true
+      this._trans.readPosition(actorInfo.entityId, scratchV)
+      this._camControl.setNewTarget(scratchV)
     }
   }
 
@@ -891,14 +892,14 @@ export class RanchMode extends Mode {
 
   protected actorWasPlaced (entityId :number, pos :Vector3) :void {
     if (entityId === this._trackedEntityId) {
-      this._camControl.focus.copy(pos)
-      this._camControl.dirty = true
+      this._camControl.updateTarget(pos)
     }
   }
 
-  // TEMP?
-  protected adjustCamera (deltaX :number, deltaZ :number) :void {
-    this._camControl.adjustPosition(deltaX, deltaZ)
+  /**
+   * Make a relative adjustment to the camera and stop tracking any tracked entity. */
+  protected adjustCameraTarget (deltaX :number, deltaZ :number) :void {
+    this._camControl.adjustTarget(deltaX, deltaZ)
     this._trackedEntityId = -1
   }
 
@@ -919,10 +920,9 @@ export class RanchMode extends Mode {
 
     // Log camera details
     log.debug("Camera",
-      "dist", this._camControl.distance,
-//      "zoom", this._camControl.zoom,
-      "focus", this._camControl.focus,
-      "angle", this._camControl.angle)
+        "dist", this._camControl.distance,
+        "target", this._camControl.getTarget(),
+        "angle", this._camControl.angle)
   }
 
   /** Camera will follow this id. */
@@ -1002,7 +1002,7 @@ export class RanchMode extends Mode {
           case 1: // mouse panning
             if (change.value.movement[0] || change.value.movement[1]) {
               const MOUSE_FACTOR = -.025
-              this.adjustCamera(
+              this.adjustCameraTarget(
                   change.value.movement[0] * MOUSE_FACTOR,
                   change.value.movement[1] * MOUSE_FACTOR)
             }
