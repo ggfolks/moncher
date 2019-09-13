@@ -78,7 +78,7 @@ export class Lakitu
   update (clock :Clock) :void {
     if (this._dirty) {
       const qq = this._quat
-      qq.setFromAxisAngle(new Vector3(1, 0, 0), this.angle)
+      qq.setFromAxisAngle(new Vector3(-1, 0, 0), this.angle)
       const loc = new Vector3(0, 0, 1)
           .multiplyScalar(this._distance).applyQuaternion(qq).add(this._focus)
       this.updateCamera(loc, qq)
@@ -117,6 +117,6 @@ original -> actual -> target
   private static readonly MAX_DISTANCE = 25
   private static readonly DEFAULT_DISTANCE = 10
   private static readonly MIN_DISTANCE = 5
-  private static readonly ANGLE_AT_MAX = Math.PI / -4 // 45 degrees above
-  private static readonly ANGLE_AT_MIN = Math.PI / -18 // 10 degrees above
+  private static readonly ANGLE_AT_MAX = Math.PI / 4 // 45 degrees above
+  private static readonly ANGLE_AT_MIN = Math.PI / 18 // 10 degrees above
 }
