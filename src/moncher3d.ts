@@ -26,6 +26,7 @@ import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
 import {Value} from "tfw/core/react"
 import {
+  Noop,
   PMap,
   Remover,
   log,
@@ -231,7 +232,7 @@ export class RanchMode extends Mode {
     const cancelLater :Remover = () => { clearImmediate(handle) }
     const runLater = () => {
         // replace 'cancelLater' with the Subject's remover
-        this._preloads.set(url, this.onDispose.add(loadGLTFAnimationClip(url).onEmit(_ => {})))
+        this._preloads.set(url, this.onDispose.add(loadGLTFAnimationClip(url).onEmit(Noop)))
       }
     handle = setImmediate(runLater)
     this._preloads.set(url, cancelLater)
