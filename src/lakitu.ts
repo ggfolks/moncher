@@ -5,7 +5,7 @@ import {
   Vector3,
 } from "three"
 import {Clock} from "tfw/core/clock"
-import {ID} from "tfw/entity/entity"
+import {ID, Ref} from "tfw/entity/entity"
 import {TransformComponent} from "tfw/space/entity"
 
 interface Easing {
@@ -20,6 +20,9 @@ interface Easing {
 }
 
 const scratchV = new Vector3()
+
+/** I should probably rename this file. */
+export type CameraController = Lakitu
 
 /**
  * Camera controller!
@@ -76,24 +79,24 @@ export class Lakitu
 
   /**
    * Configure the camera to track the specified entity. */
-  setTrackedEntity (id :ID) :void {
-    if (id !== this._trackedId) {
-      this._trackedId = id
-      this._trans.readPosition(id, scratchV)
+  setTrackedEntity (ref :Ref) :void {
+    if (ref === this._tracked) return // otherwise we'll fuck-it-up
+    this.clearTrackedEntity()
+    if (ref.exists) {
+      this._trans.readPosition(ref.id, scratchV)
       this.setNewTarget(scratchV)
+      this._tracked = ref
     }
-  }
-
-  /**
-   * Christ on a pogo stick. */
-  noteEntityDeleted (id :ID) :void {
-    if (id === this._trackedId) this.clearTrackedEntity()
+    else ref.dispose() // yeah?
   }
 
   /**
    * Stop tracking an entity. */
   clearTrackedEntity () :void {
-    this._trackedId = undefined
+    if (this._tracked) {
+      this._tracked.dispose()
+      this._tracked = undefined
+    }
   }
 
   /**
@@ -144,12 +147,16 @@ export class Lakitu
   /**
    * Update the position of the camera before rendering, if needed. */
   update (clock :Clock) :void {
-    if (this._trackedId !== undefined) {
-      this._trans.readPosition(this._trackedId, scratchV)
-      if (!scratchV.equals(this._target)) {
-        // bleah. Should we clamp it?
-        this._target.copy(scratchV)
-        this._dirty = true
+    if (this._tracked) {
+      if (this._tracked.exists) {
+        this._trans.readPosition(this._tracked.id, scratchV)
+        if (!scratchV.equals(this._target)) {
+          // bleah. Should we clamp it?
+          this._target.copy(scratchV)
+          this._dirty = true
+        }
+      } else {
+        this.clearTrackedEntity()
       }
     }
     let target :Vector3 = this._target
@@ -184,7 +191,7 @@ export class Lakitu
   }
 
   /** The entity we're currently tracking, if any. */
-  protected _trackedId? :ID
+  protected _tracked? :Ref
 
   /** The current target of the camera. */
   protected _target :Vector3 = new Vector3(0, 0, 0)

@@ -814,7 +814,6 @@ export class RanchMode extends Mode {
     if (!actorInfo) return
     this._actors.delete(id)
     this._domain.delete(actorInfo.entityId)
-    this._camControl.noteEntityDeleted(actorInfo.entityId)
   }
 
   protected mouseToLocation (pos :vec2) :Vector3|undefined {
@@ -840,7 +839,7 @@ export class RanchMode extends Mode {
    * Have the camera follow the specified actor. */
   protected trackActor (id :number) :void {
     const actorInfo = this._actors.get(id)
-    if (actorInfo) this._camControl.setTrackedEntity(actorInfo.entityId)
+    if (actorInfo) this._camControl.setTrackedEntity(this._domain.ref(actorInfo.entityId))
   }
 
   /**
