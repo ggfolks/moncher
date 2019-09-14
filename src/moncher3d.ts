@@ -227,14 +227,14 @@ export class RanchMode extends Mode {
 
   protected preloadAnim (url :string) :void {
     if (this._preloads.has(url)) return // we already got one!
-    let timeoutHandle :any
-    const cancelTimeout :Remover = () => { clearTimeout(timeoutHandle) }
+    let handle :any
+    const cancelLater :Remover = () => { clearImmediate(handle) }
     const runLater = () => {
-        // replace the timeout canceller with the Subject's remover
+        // replace 'cancelLater' with the Subject's remover
         this._preloads.set(url, this.onDispose.add(loadGLTFAnimationClip(url).onEmit(_ => {})))
       }
-    timeoutHandle = setTimeout(runLater, 0)
-    this._preloads.set(url, cancelTimeout)
+    handle = setImmediate(runLater)
+    this._preloads.set(url, cancelLater)
   }
 
   protected configureScene (app :App) :void {
