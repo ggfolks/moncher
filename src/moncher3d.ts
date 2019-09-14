@@ -105,8 +105,7 @@ class PathSystem extends System {
     readonly trans :TransformComponent,
     readonly paths :Component<PathRec|undefined>,
     readonly state :Component<ActorState>,
-  readonly setY :(into :Vector3) => void,
-    readonly actorWasPlaced :(id :number, pos :Vector3) => void,
+    readonly setY :(into :Vector3) => void,
   ) {
     super(domain, Matcher.hasAllC(trans.id, paths.id))
   }
@@ -137,7 +136,6 @@ class PathSystem extends System {
           scratchV.lerpVectors(path.dest, path.src, timeLeft / path.duration)
           this.setY(scratchV)
           this.trans.updatePosition(id, scratchV)
-          this.actorWasPlaced(id, scratchV)
           path = undefined
         }
       }
@@ -304,8 +302,7 @@ export class RanchMode extends Mode {
 
     const domain = this._domain = new Domain({},
         {trans, obj, mixer, body, state, paths, hovers, graph})
-    this._pathsys = new PathSystem(domain, trans, paths, state,
-        this.setY.bind(this), this.actorWasPlaced.bind(this))
+    this._pathsys = new PathSystem(domain, trans, paths, state, this.setY.bind(this))
     this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
     this._graphsys = new GraphSystem(nodeCtx, domain, graph)
@@ -319,11 +316,7 @@ export class RanchMode extends Mode {
         obj: {type: "perspectiveCamera"},
       },
     })
-    const updateCamera = (loc :Vector3, quat :Quaternion) :void => {
-      trans.updatePosition(cameraId, loc)
-      trans.updateQuaternion(cameraId, quat)
-    }
-    this._camControl = new Lakitu(this.setY.bind(this), updateCamera)
+    this._camControl = new Lakitu(cameraId, trans, this.setY.bind(this))
 
     // mouse wheel adjusts camera distance
     const WHEEL_FACTOR = .05
@@ -473,7 +466,6 @@ export class RanchMode extends Mode {
       this._trans.updatePosition(actorInfo.entityId, state.pos)
       this._trans.updateQuaternion(actorInfo.entityId,
           scratchQ.setFromAxisAngle(unitY, state.orient))
-      this.actorWasPlaced(actorInfo.entityId, state.pos)
     }
     this._trans.updateScale(actorInfo.entityId,
         scratchV.set(state.scale, state.scale, state.scale))
@@ -822,9 +814,7 @@ export class RanchMode extends Mode {
     if (!actorInfo) return
     this._actors.delete(id)
     this._domain.delete(actorInfo.entityId)
-    if (actorInfo.entityId === this._trackedEntityId) {
-      this._trackedEntityId = -1
-    }
+    this._camControl.noteEntityDeleted(actorInfo.entityId)
   }
 
   protected mouseToLocation (pos :vec2) :Vector3|undefined {
@@ -850,11 +840,7 @@ export class RanchMode extends Mode {
    * Have the camera follow the specified actor. */
   protected trackActor (id :number) :void {
     const actorInfo = this._actors.get(id)
-    if (actorInfo) {
-      this._trackedEntityId = actorInfo.entityId
-      this._trans.readPosition(actorInfo.entityId, scratchV)
-      this._camControl.setNewTarget(scratchV)
-    }
+    if (actorInfo) this._camControl.setTrackedEntity(actorInfo.entityId)
   }
 
   /**
@@ -890,17 +876,11 @@ export class RanchMode extends Mode {
     }
   }
 
-  protected actorWasPlaced (entityId :number, pos :Vector3) :void {
-    if (entityId === this._trackedEntityId) {
-      this._camControl.updateTarget(pos)
-    }
-  }
-
   /**
    * Make a relative adjustment to the camera and stop tracking any tracked entity. */
   protected adjustCameraTarget (deltaX :number, deltaZ :number) :void {
+    this._camControl.clearTrackedEntity()
     this._camControl.adjustTarget(deltaX, deltaZ)
-    this._trackedEntityId = -1
   }
 
   protected showNavMesh (show :boolean) :void {
@@ -924,9 +904,6 @@ export class RanchMode extends Mode {
         "target", this._camControl.getTarget(),
         "angle", this._camControl.angle)
   }
-
-  /** Camera will follow this id. */
-  protected _trackedEntityId :number = -1
 
   /** Tracks all the urls we've preloaded. */
   // TODO: call some removers when we might think we don't need something anymore

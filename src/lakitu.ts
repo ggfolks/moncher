@@ -5,6 +5,8 @@ import {
   Vector3,
 } from "three"
 import {Clock} from "tfw/core/clock"
+import {ID} from "tfw/entity/entity"
+import {TransformComponent} from "tfw/space/entity"
 
 interface Easing {
   /** Starting position of the ease. */
@@ -29,10 +31,12 @@ const scratchV = new Vector3()
 export class Lakitu
 {
   constructor (
+    /** The entity system's camera ID. */
+    public cameraId :ID,
+    /** The transform component. */
+    protected _trans :TransformComponent,
     /** A Function to possibly override the Y value of our target with one from a navmesh. */
-    protected readonly setY :(into :Vector3, terrainFallback? :boolean) => void,
-    /** A Function to update the camera. */
-    protected readonly updateCamera :(loc :Vector3, rot :Quaternion) => void,
+    protected readonly _setY :(into :Vector3, terrainFallback? :boolean) => void,
   ) {
     this._updateQuaternion()
   }
@@ -68,6 +72,28 @@ export class Lakitu
     this._targetBounds.copy(box)
     this.updateTarget(this._target)
     this._dirty = true
+  }
+
+  /**
+   * Configure the camera to track the specified entity. */
+  setTrackedEntity (id :ID) :void {
+    if (id !== this._trackedId) {
+      this._trackedId = id
+      this._trans.readPosition(id, scratchV)
+      this.setNewTarget(scratchV)
+    }
+  }
+
+  /**
+   * Christ on a pogo stick. */
+  noteEntityDeleted (id :ID) :void {
+    if (id === this._trackedId) this.clearTrackedEntity()
+  }
+
+  /**
+   * Stop tracking an entity. */
+  clearTrackedEntity () :void {
+    this._trackedId = undefined
   }
 
   /**
@@ -111,13 +137,21 @@ export class Lakitu
     const targ = this._target
     targ.x += deltaX
     targ.z += deltaZ
-    this.setY(targ, false)
+    this._setY(targ, false)
     this.updateTarget(targ)
   }
 
   /**
    * Update the position of the camera before rendering, if needed. */
   update (clock :Clock) :void {
+    if (this._trackedId !== undefined) {
+      this._trans.readPosition(this._trackedId, scratchV)
+      if (!scratchV.equals(this._target)) {
+        // bleah. Should we clamp it?
+        this._target.copy(scratchV)
+        this._dirty = true
+      }
+    }
     let target :Vector3 = this._target
     if (this._easing) {
       this._dirty = true
@@ -137,7 +171,8 @@ export class Lakitu
     if (this._dirty) {
       const quat = this._quat
       scratchV.set(0, 0, 1).multiplyScalar(this._distance).applyQuaternion(quat).add(target)
-      this.updateCamera(scratchV, quat)
+      this._trans.updatePosition(this.cameraId, scratchV)
+      this._trans.updateQuaternion(this.cameraId, quat)
       this._dirty = false
     }
   }
@@ -148,6 +183,9 @@ export class Lakitu
     this._quat.setFromAxisAngle(scratchV.set(-1, 0, 0), this.angle)
     this._dirty = true
   }
+
+  /** The entity we're currently tracking, if any. */
+  protected _trackedId? :ID
 
   /** The current target of the camera. */
   protected _target :Vector3 = new Vector3(0, 0, 0)
