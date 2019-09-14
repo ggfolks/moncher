@@ -169,10 +169,8 @@ export class Lakitu
     }
 
     if (this._dirty) {
-      const quat = this._quat
-      scratchV.set(0, 0, 1).multiplyScalar(this._distance).applyQuaternion(quat).add(target)
+      scratchV.set(0, 0, 1).multiplyScalar(this._distance).applyQuaternion(this._quat).add(target)
       this._trans.updatePosition(this.cameraId, scratchV)
-      this._trans.updateQuaternion(this.cameraId, quat)
       this._dirty = false
     }
   }
@@ -181,6 +179,7 @@ export class Lakitu
    * Update our precomputed quaternion. */
   protected _updateQuaternion () :void {
     this._quat.setFromAxisAngle(scratchV.set(-1, 0, 0), this.angle)
+    this._trans.updateQuaternion(this.cameraId, this._quat)
     this._dirty = true
   }
 
