@@ -6,8 +6,7 @@ import {Pathfinding} from "three-pathfinding"
 import {MONSTER_ACCELERANT} from "./debug"
 
 /**
- * The kind of actor.
- */
+ * The kind of actor. */
 export class ActorKind {
   // Big fat TODO...
   static readonly EGG :ActorKind = new ActorKind(false, false, false, 0)
@@ -33,8 +32,7 @@ export class ActorKind {
 }
 
 /**
- * Configuration for the 3D aspects of an actor. This will probably move.
- */
+ * Configuration for the 3D aspects of an actor. This will probably move. */
 export interface ActorModel {
   model :string
   /** Idle animation. */
@@ -79,8 +77,7 @@ export class PathRec {
 }
 
 /**
- * Configuration of an actor.
- */
+ * Configuration of an actor. */
 export class ActorConfig {
 
   constructor (

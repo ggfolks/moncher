@@ -36,8 +36,7 @@ export class Hud
   }
 
   /**
-   * Create the root for the specified ui state.
-   */
+   * Create the root for the specified ui state. */
   protected createRoot (uiState :UiState) :Root|undefined {
     let contents :ElementConfig
     const model :ModelData = {}
