@@ -246,6 +246,15 @@ export class RanchMode extends Mode {
     this._ranchObj = ranch
     this.onDispose.add(unranch)
 
+    this.onDispose.add(ranch.state.onValue(s => {log.debug("Ranch state: " + s)}))
+
+    this.onDispose.add(ranch.state.whenOnce(s => (s === "active"), s => {
+      log.debug("Setting urban ranch name...")
+      ranch.ranchq.post({type: "setName", name: "UrbanRanch 2.0"})
+    }))
+
+    ranch.ranchq.post({type: "setName", name: "GorbleRanch"})
+
     // TEMP: log name
     this.onDispose.add(ranch.name.onValue(v => {log.debug("Ranch name : " + v)}))
   }

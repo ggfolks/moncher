@@ -97,6 +97,8 @@ function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
 export type RanchReq =
     /** A request to "touch" a particular actor. */
     {type :"touch", id :number} |
+    /** Set the name of the ranch. */
+    {type :"setName", name :string} |
     /** A client-initiated tick (TEMP) */
     {type :"tick"}
 
@@ -139,6 +141,11 @@ function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
 
     case "tick":
       log.debug("Someone wants us to tick")
+      break
+
+    case "setName":
+      log.debug("Got setname " + req.name)
+      obj.name.update(req.name)
       break
 
     default:
