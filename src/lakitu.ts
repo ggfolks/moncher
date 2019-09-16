@@ -21,8 +21,6 @@ interface Easing {
 
 const scratchV = new Vector3()
 
-/** I should probably rename this file. */
-export type CameraController = Lakitu
 
 /**
  * Camera controller!
@@ -31,6 +29,7 @@ export type CameraController = Lakitu
 // TODO: possibly have the easing pull the camera back until halfway through the ease and
 // then forward again during the second half. But that's a bit more complicated to let
 // the user adjust distance as well as do the right thing if we start a new ease in the middle. TBD.
+export type CameraController = Lakitu
 export class Lakitu
 {
   constructor (

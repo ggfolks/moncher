@@ -95,6 +95,11 @@ export class ActorConfig {
   ) {}
 }
 
+// ActorAction -> ActorState, probably
+// behind that will be a Behavior, which has its own internal state and moves between states
+// behind that are _joneses_ which trigger different behaviors.
+// maybe ActorState -> ActorUpdate
+
 export const enum ActorAction {
   Idle = 1,
   ReadyToHatch,
