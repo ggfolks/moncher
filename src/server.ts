@@ -12,6 +12,7 @@ const Timestamp = firebase.firestore.Timestamp
 const FieldValue = firebase.firestore.FieldValue
 
 import {TextEncoder, TextDecoder} from "util"
+import {log} from "tfw/core/util"
 import {Data, Record} from "tfw/core/data"
 import {UUID} from "tfw/core/uuid"
 import {Encoder, Decoder, SyncSet, SyncMap, ValueType, setTextCodec} from "tfw/core/codec"
@@ -180,14 +181,19 @@ class FirebaseResolved extends Resolved {
     const unsub = this.ref.onSnapshot(snap => {
       if (snap.exists) {
         for (const meta of this.object.metas) {
-          const value = snap.get(meta.name)
-          const prop = this.object[meta.name]
-          switch (meta.type) {
-          case "value": (prop as DMutable<any>).update(
-              valueFromFirestore(value, meta.vtype), true) ; break
-          case "set": setFromFirestore(value, meta.etype, (prop as SyncSet<any>)) ; break
-          case "map": mapFromFirestore(value, meta.vtype, (prop as SyncMap<string,any>)) ; break
-          default: break // nothing to sync for collection & queue props
+          try {
+            const value = snap.get(meta.name)
+            if (value === undefined) continue // TODO: what about undefined/null Mutables?
+            const prop = this.object[meta.name]
+            switch (meta.type) {
+            case "value": (prop as DMutable<any>).update(
+                valueFromFirestore(value, meta.vtype), true) ; break
+            case "set": setFromFirestore(value, meta.etype, (prop as SyncSet<any>)) ; break
+            case "map": mapFromFirestore(value, meta.vtype, (prop as SyncMap<string,any>)) ; break
+            default: break // nothing to sync for collection & queue props
+            }
+          } catch (error) {
+            log.warn("Failed to sync prop", "meta", meta, error)
           }
         }
       }
