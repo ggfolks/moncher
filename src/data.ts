@@ -93,6 +93,13 @@ function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
   }
 }
 
+/** Player requests to the ranch. */
+export type RanchReq =
+    /** A request to "touch" a particular actor. */
+    {type :"touch", id :number} |
+    /** A client-initiated tick (TEMP) */
+    {type :"tick"}
+
 @dobject
 export class RanchObject extends DObject {
 
@@ -106,6 +113,9 @@ export class RanchObject extends DObject {
   metaq = this.queue<MetaMsg>()
 
   canSubscribe (auth :Auth) { return true /* TODO: ranch membership */ }
+
+  @dqueue(handleRanchReq)
+  ranchq = this.queue<RanchReq>()
 }
 
 export const ranchQ = (id :UUID) => RanchObject.queueAddr(["ranches", id], "ranchq")
@@ -118,6 +128,22 @@ function handleMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth) {
   case "unsubscribed":
     obj.occupants.delete(msg.id)
     break
+  }
+}
+
+function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
+  switch (req.type) {
+    case "touch":
+      log.debug("I would like to touch an actor", "id", req.id)
+      break
+
+    case "tick":
+      log.debug("Someone wants us to tick")
+      break
+
+    default:
+      log.warn("Unhandled ranch request", "req", req)
+      break
   }
 }
 
