@@ -112,10 +112,10 @@ export class RanchObject extends DObject {
   @dqueue(handleMetaMsg)
   metaq = this.queue<MetaMsg>()
 
-  canSubscribe (auth :Auth) { return true /* TODO: ranch membership */ }
-
   @dqueue(handleRanchReq)
   ranchq = this.queue<RanchReq>()
+
+  canSubscribe (auth :Auth) { return true /* TODO: ranch membership */ }
 }
 
 export const ranchQ = (id :UUID) => RanchObject.queueAddr(["ranches", id], "ranchq")
