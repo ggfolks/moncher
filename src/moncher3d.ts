@@ -82,7 +82,7 @@ import {MonsterDb} from "./monsterdb"
 import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
-import {RanchObject, ranchQ} from "./data"
+import {RanchObject} from "./data"
 
 class ActorInfo {
 
@@ -243,15 +243,11 @@ export class RanchMode extends Mode {
   protected subscribeToRanch () :void {
     const ranchId = this._app.state.ranchId.current // TODO
     const [ranch, unranch] = this._app.client.resolve(["ranches", ranchId], RanchObject)
-    const queueAddr = ranchQ(ranchId)
+    this._ranchObj = ranch
     this.onDispose.add(unranch)
 
     // TEMP: log name
     this.onDispose.add(ranch.name.onValue(v => {log.debug("Ranch name : " + v)}))
-
-    this._postTouchReq = (id :number) => {
-      ranch.source.post(queueAddr, {type: "touch", id})
-    }
   }
 
   protected configureScene (app :App) :void {
@@ -850,7 +846,8 @@ export class RanchMode extends Mode {
 
   protected actorTouched (id :number) :void {
     this._ranch.actorTouched(id)
-    this._postTouchReq(id)
+
+    this._ranchObj.ranchq.post({type: "touch", id: id})
   }
 
   /**
@@ -963,7 +960,7 @@ export class RanchMode extends Mode {
   protected _navMesh? :Mesh
   protected _terrain? :Object3D
 
-  protected _postTouchReq! :(id :number) => void
+  protected _ranchObj! :RanchObject
 
   protected _bubbleMaterial! :SpriteMaterial
   protected readonly _emojis :Map<ActorAction, SpriteMaterial> = new Map()
