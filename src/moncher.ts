@@ -25,6 +25,18 @@ export class ActorKindAttributes {
       default: return true
     }
   }
+
+  static initialHealth (kind :ActorKind) :number {
+    switch (kind) {
+      default: return 50
+    }
+  }
+
+  static baseMovementSpeed (kind :ActorKind) :number {
+    switch (kind) {
+      default: return .7
+    }
+  }
 }
 
 /**
@@ -72,26 +84,15 @@ export class PathRec {
   timeLeft :number
 }
 
-export interface ActorConfig2 {
-  model :ActorModel
-  spawn? :ActorConfig2
-}
-
-//export class ActorConfig2 implements Record {
-//  constructor (
-//    readonly model :ActorModel,
-//    readonly spawn? :ActorConfig2,
-//  ) {}
-//}
-
 /**
  * Configuration of an actor. */
-export class ActorConfig {
+ // TODO: OLD REMOVE
+export class ActorConfigOld {
 
   constructor (
     readonly kind :ActorKind,
     readonly model :ActorModel,
-    readonly spawn? :ActorConfig,
+    readonly spawn? :ActorConfigOld,
     /** A Custom color that may be used to modify the model. */
     readonly color? :number,
     readonly startingHealth :number = 50,
@@ -101,6 +102,13 @@ export class ActorConfig {
 //    readonly maxActionPts :number = 10,
 //    readonly regenActionPts :number = .2,
   ) {}
+}
+
+export interface ActorConfig {
+  kind :ActorKind
+  model :ActorModel
+  spawn? :ActorConfig
+  color? :number
 }
 
 // ActorAction -> ActorState, probably
@@ -171,7 +179,7 @@ abstract class Actor {
     public action :ActorAction,
   ) {
     this.pos = position.clone()
-    this.health = config.startingHealth
+    this.health = ActorKindAttributes.initialHealth(config.kind)
     this.postConstruct()
   }
 
@@ -403,7 +411,7 @@ class Monster extends Actor {
 
   /** Get the actor's speed specified in distance per second. */
   getSpeed () :number {
-    return this.config.baseWalkSpeed * this._scale
+    return ActorKindAttributes.baseMovementSpeed(this.config.kind) * this._scale
   }
 
   getPath () :PathRec|undefined {

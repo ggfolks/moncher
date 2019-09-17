@@ -166,8 +166,11 @@ function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
       log.debug("Got dropegg")
       const egg = MonsterDb.getRandomEgg()
       const uuid = uuidv1()
+      log.debug("about to set")
       obj.actorConfigs.set(uuid, egg)
+      log.debug("did set 1")
       obj.actors.set(uuid, ActorState.createDummy())
+      log.debug("did set 2!")
       break
 
     default:

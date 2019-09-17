@@ -11,6 +11,10 @@ export class MonsterDb {
     return MonsterDb.makeEgg(MonsterDb.getRandomMonster())
   }
 
+  static getFood () :ActorConfig {
+    return { kind: ActorKind.Food, model: <ActorModel>{ model: "monsters/Acorn.glb" }}
+  }
+
   static makeEgg (monster :ActorConfig) :ActorConfig {
     const eggModel :ActorModel = {
       model: "monsters/Egg.glb",
@@ -19,7 +23,7 @@ export class MonsterDb {
       hatch: "monsters/Egg.glb#Hatch",
     }
     const color = MonsterDb._colors[Math.trunc(Math.random() * MonsterDb._colors.length)]
-    return new ActorConfig(ActorKind.Egg, eggModel, monster, color)
+    return { kind: ActorKind.Egg, model: eggModel, spawn: monster, color: color }
   }
 
   /**
@@ -27,7 +31,7 @@ export class MonsterDb {
   private static _initMonsters () :void {
     const monsters :ActorConfig[] = MonsterDb._monsters = []
 
-    monsters.push(new ActorConfig(ActorKind.Lobber, <ActorModel>{
+    monsters.push({ kind: ActorKind.Lobber, model: <ActorModel>{
       model:      "monsters/LobberBlue.glb",
       idle:       "monsters/LobberBlue.glb#Idle",
       hatch:      "monsters/LobberBlue.glb#Hatch",
@@ -39,9 +43,9 @@ export class MonsterDb {
       sleep:      "monsters/LobberBlue.glb#Sleep",
       wakeUp:     "monsters/LobberBlue.glb#WakeUp",
       happyReact: "monsters/LobberBlue.glb#HappyReact",
-    }))
+    }})
 
-    monsters.push(new ActorConfig(ActorKind.Lobber, <ActorModel>{
+    monsters.push({ kind: ActorKind.Lobber, model: <ActorModel>{
       model:      "monsters/LobberGreen.glb",
       idle:       "monsters/LobberGreen.glb#Idle",
       hatch:      "monsters/LobberGreen.glb#Hatch",
@@ -53,9 +57,9 @@ export class MonsterDb {
       sleep:      "monsters/LobberGreen.glb#Sleep",
       wakeUp:     "monsters/LobberGreen.glb#WakeUp",
       happyReact: "monsters/LobberGreen.glb#HappyReact",
-    }))
+    }})
 
-    monsters.push(new ActorConfig(ActorKind.Lobber, <ActorModel>{
+    monsters.push({ kind: ActorKind.Lobber, model: <ActorModel>{
       model:      "monsters/LobberRed.glb",
       idle:       "monsters/LobberRed.glb#Idle",
       hatch:      "monsters/LobberRed.glb#Hatch",
@@ -67,9 +71,9 @@ export class MonsterDb {
       sleep:      "monsters/LobberRed.glb#Sleep",
       wakeUp:     "monsters/LobberRed.glb#WakeUp",
       happyReact: "monsters/LobberRed.glb#HappyReact",
-    }))
+    }})
 
-    monsters.push(new ActorConfig(ActorKind.Runner, <ActorModel>{
+    monsters.push({ kind: ActorKind.Runner, model: <ActorModel>{
       model:      "monsters/PonyBlue.glb",
       idle:       "monsters/anim/PonyAnim.glb#Idle",
       hatch:      "monsters/anim/PonyAnim.glb#Hatch",
@@ -81,8 +85,8 @@ export class MonsterDb {
       sleep:      "monsters/anim/PonyAnim.glb#Sleep",
       wakeUp:     "monsters/anim/PonyAnim.glb#WakeUp",
       happyReact: "monsters/anim/PonyAnim.glb#HappyReact",
-    }))
-    monsters.push(new ActorConfig(ActorKind.Runner, <ActorModel>{
+    }})
+    monsters.push({ kind: ActorKind.Runner, model: <ActorModel>{
       model:      "monsters/PonyGreen.glb",
       idle:       "monsters/anim/PonyAnim.glb#Idle",
       hatch:      "monsters/anim/PonyAnim.glb#Hatch",
@@ -94,8 +98,8 @@ export class MonsterDb {
       sleep:      "monsters/anim/PonyAnim.glb#Sleep",
       wakeUp:     "monsters/anim/PonyAnim.glb#WakeUp",
       happyReact: "monsters/anim/PonyAnim.glb#HappyReact",
-    }))
-    monsters.push(new ActorConfig(ActorKind.Runner, <ActorModel>{
+    }})
+    monsters.push({ kind: ActorKind.Runner, model: <ActorModel>{
       model:      "monsters/PonyRed.glb",
       idle:       "monsters/anim/PonyAnim.glb#Idle",
       hatch:      "monsters/anim/PonyAnim.glb#Hatch",
@@ -107,7 +111,7 @@ export class MonsterDb {
       sleep:      "monsters/anim/PonyAnim.glb#Sleep",
       wakeUp:     "monsters/anim/PonyAnim.glb#WakeUp",
       happyReact: "monsters/anim/PonyAnim.glb#HappyReact",
-    }))
+    }})
   }
 
   private static _monsters? :ActorConfig[]

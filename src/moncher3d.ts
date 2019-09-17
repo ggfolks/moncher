@@ -74,7 +74,6 @@ import {
   ActorInstant,
   ActorKind,
   ActorKindAttributes,
-  ActorModel,
   ActorState,
   PathRec,
   RanchModel,
@@ -882,9 +881,7 @@ export class RanchMode extends Mode {
    * Place an egg or food. */
   protected doPlacement (pos :Vector3) :void {
     const isEgg = (this._uiState === UiState.PlacingEgg)
-    const actorConfig :ActorConfig = isEgg
-        ? MonsterDb.getRandomEgg()
-        : new ActorConfig(ActorKind.Food, <ActorModel>{ model: "monsters/Acorn.glb" })
+    const actorConfig :ActorConfig = isEgg ? MonsterDb.getRandomEgg() : MonsterDb.getFood()
     this._ranch.addActor(actorConfig, pos)
     this.setUiState(UiState.Default)
 
