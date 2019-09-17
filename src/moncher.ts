@@ -84,26 +84,6 @@ export class PathRec {
   timeLeft :number
 }
 
-/**
- * Configuration of an actor. */
- // TODO: OLD REMOVE
-export class ActorConfigOld {
-
-  constructor (
-    readonly kind :ActorKind,
-    readonly model :ActorModel,
-    readonly spawn? :ActorConfigOld,
-    /** A Custom color that may be used to modify the model. */
-    readonly color? :number,
-    readonly startingHealth :number = 50,
-    readonly baseWalkSpeed :number = .7,
-//    readonly maximumHealth :number = 50,
-//    readonly startingActionPts :number = 5,
-//    readonly maxActionPts :number = 10,
-//    readonly regenActionPts :number = .2,
-  ) {}
-}
-
 export interface ActorConfig {
   kind :ActorKind
   model :ActorModel
