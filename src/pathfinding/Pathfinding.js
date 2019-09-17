@@ -22,7 +22,7 @@ class Pathfinding {
   if ( geometry.isGeometry ) {
    // Haven't actually implemented support for BufferGeometry yet, but Geometry is somewhat
    // not-recommended these days, so go ahead and start warning.
-   console.warn('[three-pathfinding]: Use THREE.BufferGeometry, not THREE.Geometry, to create zone.');
+   //console.warn('[three-pathfinding]: Use THREE.BufferGeometry, not THREE.Geometry, to create zone.');
   } else {
    geometry = new THREE.Geometry().fromBufferGeometry(geometry);
   }
@@ -43,9 +43,9 @@ class Pathfinding {
   * Returns a random node within a given range of a given position.
   * @param  {string} zoneID
   * @param  {number} groupID
-  * @param  {THREE.Vector3} nearPosition
+  * @param  {THREE.Vector3} nearPosition (squared)
   * @param  {number} nearRange
-  * @return {Node}
+  * @return {THREE.Vector3}
   */
  getRandomNode (zoneID, groupID, nearPosition, nearRange) {
 
