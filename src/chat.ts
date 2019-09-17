@@ -1,12 +1,13 @@
 import {dim2} from "tfw/core/math"
 import {Disposable, Disposer} from "tfw/core/util"
 import {Mutable, Value} from "tfw/core/react"
-import {Root} from "tfw/ui/element"
+import {Host} from "tfw/ui/element"
 import {Model, mapProvider} from "tfw/ui/model"
 
 import {App} from "./app"
 import {ChannelObject, channelQ} from "./data"
 import {box, label} from "./ui"
+import {AuthDialog} from "./auth"
 
 const sausageCorner = 12
 
@@ -64,9 +65,13 @@ const chatUiConfig = {
       type: "row",
       gap: 5,
       contents: [{
-        type: "image",
-        image: "profilePhoto",
-        height: 20,
+        type: "button",
+        onClick: "showAuth",
+        contents: {
+          type: "image",
+          image: "profilePhoto",
+          height: 20,
+        }
       }, {
         type: "text",
         constraints: {stretch: true},
@@ -94,10 +99,8 @@ function tail<A> (elems :A[], count :number) :A[] {
 
 export class ChatView implements Disposable {
   private _onDispose = new Disposer()
-  readonly root :Root
-  readonly model :Model
 
-  constructor (readonly app :App) {
+  constructor (readonly app :App, host :Host) {
     // TODO: ranchId should not be a value, it's not going to change
     const channelId = app.state.ranchId.current
     const [channel, unchannel] = app.client.resolve(["channels", channelId], ChannelObject)
@@ -118,19 +121,22 @@ export class ChatView implements Disposable {
           modelData.input.update("")
         }
       },
-      // TODO: move authed id to a reactive value in the app store & switchMap from that
-      profilePhoto: app.client.auth.switchMap(sess => app.profiles.profile(sess.id).photo)
+      profilePhoto: app.client.auth.switchMap(sess => app.profiles.profile(sess.id).photo),
+      showAuth: () => new AuthDialog(app, host),
     }
-    this.model = new Model(modelData)
 
-    this.root = app.ui.createRoot({
+    const root = app.ui.createRoot({
       type: "root",
       scale: app.renderer.scale,
       autoSize: true,
       hintSize: app.renderer.size.map(d => dim2.fromValues(Math.min(d[0], 700), d[1])),
       minSize: Value.constant(dim2.fromValues(300, 0)),
       contents: chatUiConfig,
-    }, this.model)
+    }, new Model(modelData))
+
+    root.bindOrigin(app.renderer.size, "left", "bottom", "left", "bottom")
+    host.addRoot(root)
+    this._onDispose.add(() => host.removeRoot(root))
   }
 
   dispose () {

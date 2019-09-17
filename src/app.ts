@@ -11,7 +11,7 @@ import {Surface} from "tfw/scene2/surface"
 import {UniformQuadBatch} from "tfw/scene2/batch"
 import {Client} from "tfw/data/client"
 import {UI} from "tfw/ui/ui"
-import {initFirebaseAuth} from "tfw/auth/firebase"
+import {initFirebaseAuth, currentUser} from "tfw/auth/firebase"
 
 import {ProfileStore} from "./stores"
 import {moncherStyles, moncherTheme} from "./uistyles"
@@ -58,6 +58,19 @@ export class App implements Disposable {
     this.profiles = new ProfileStore(this)
 
     initFirebaseAuth()
+
+    // when we're authed as a Google user, slurp our profile info
+    this.client.auth.onValue(sess => {
+      if (sess.source === "firebase") {
+        const user = currentUser.current
+        if (user) {
+          const {displayName, photoURL} = user
+          const profile = this.profiles.profile(sess.id)
+          if (displayName) profile.name.update(displayName)
+          if (photoURL) profile.photo.update(photoURL)
+        }
+      }
+    })
   }
 
   start () {

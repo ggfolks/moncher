@@ -2,7 +2,7 @@ import {Color} from "tfw/core/color"
 import {StyleDefs} from "tfw/ui/style"
 import {Theme} from "tfw/ui/ui"
 
-const buttonCorner = 5
+const buttonCorner = 12
 const textCorner = 2
 
 export const moncherStyles :StyleDefs = {
@@ -12,6 +12,7 @@ export const moncherStyles :StyleDefs = {
   shadows: {},
   fonts: {
     base: {family: "Helvetica", size: 16},
+    header: {family: "Helvetica", size: 20, weight: "bold"},
     icon: {family: "Helvetica", size: 24},
   },
   paints: {
@@ -23,19 +24,14 @@ export const moncherStyles :StyleDefs = {
   },
   borders: {
     debug: {stroke: {type: "color", color: "#FF0000"}},
-    button: {stroke: {type: "color", color: "#999999"}, cornerRadius: buttonCorner},
     buttonFocused: {stroke: {type: "color", color: "#FFFFFF"}, cornerRadius: buttonCorner},
     textNormal: {stroke: {type: "color", color: "#999999"}, cornerRadius: textCorner},
     textDisabled: {stroke: {type: "color", color: "#666666"}, cornerRadius: textCorner},
     textFocused: {stroke: {type: "color", color: "#6666FF"}, cornerRadius: textCorner},
   },
   backgrounds: {
-    buttonNormal: {
-      fill: {type: "color", color: "#99CCFF"},
-      cornerRadius: buttonCorner,
-      shadow: {offsetX: 2, offsetY: 2, blur: 5, color: "#000000"}
-    },
-    buttonPressed: {fill: {type: "color", color: "#77AADD"}, cornerRadius: buttonCorner},
+    buttonNormal: {fill: "$white", cornerRadius: buttonCorner},
+    buttonPressed: {fill: "$orange", cornerRadius: buttonCorner},
     buttonDisabled: {fill: {type: "color", color: "$transWhite"}, cornerRadius: buttonCorner},
     text: {fill: {type: "color", color: "#FFFFFF"}, cornerRadius: textCorner},
   },
@@ -57,8 +53,7 @@ export const moncherTheme :Theme = {
   },
   button: {
     box: {
-      padding: 10,
-      border: "$button",
+      padding: [6, 10, 4, 10],
       background: "$buttonNormal",
       disabled: {background: "$buttonDisabled"},
       focused: {border: "$buttonFocused"},

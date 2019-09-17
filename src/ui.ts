@@ -32,3 +32,11 @@ export function button (text :Spec<Value<string>>, onClick :Spec<Action>,
                         style? :LabelStyle, extra? :Object) {
   return mergeExtra({type: "button", onClick, contents: box(label(text, style))}, extra)
 }
+
+const closeX = Value.constant("×")
+
+export function closeButton (onClick :Spec<Action>, extra? :Object) {
+  return mergeExtra({type: "button", onClick, contents: box(label(closeX), {
+    padding: [4, 8, 4, 8],
+  })}, extra)
+}
