@@ -39,7 +39,9 @@ export class ActorKindAttributes {
   }
 }
 
-export interface LocProps {
+/**
+ * An interface for things that have a location. */
+export interface Located {
   x :number
   y :number
   z :number
@@ -153,7 +155,7 @@ export interface PathInfo {
 
 /**
  * The latest public update from an actor.  */
-export interface ActorUpdate extends LocProps {
+export interface ActorUpdate extends Located {
   x :number
   y :number
   z :number
@@ -181,7 +183,7 @@ export function blankActorUpdate () :ActorUpdate {
 
 /**
  * An actor's "private" "server-side" data. */
-export interface ActorData extends LocProps {
+export interface ActorData extends Located {
   /** The actor's health (hit points). Actors are removed when this is 0 or less. */
   hp :number
   x :number
@@ -200,9 +202,9 @@ export interface ActorData extends LocProps {
 
 /**
  * Return a new ActorData, mostly blank. */
-export function newActorData (kind? :ActorKind, locProps? :LocProps) :ActorData {
+export function newActorData (kind? :ActorKind, locProps? :Located) :ActorData {
   let x = 0, y = 0, z = 0
-  const hp = kind ? ActorKindAttributes.initialHealth(kind) : 0
+  const hp = kind ? ActorKindAttributes.initialHealth(kind) : 1
   if (locProps) ({x, y, z} = locProps)
   return {
     x, y, z,

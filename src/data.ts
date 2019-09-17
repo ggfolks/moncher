@@ -4,7 +4,7 @@ import {Auth, DObject, MetaMsg} from "tfw/data/data"
 import {dcollection, dobject, dset, dmap, dqueue, dvalue} from "tfw/data/meta"
 import {MonsterDb} from "./monsterdb"
 import {
-  ActorConfig, ActorData, ActorUpdate, LocProps,
+  ActorConfig, ActorData, ActorUpdate, Located,
   newActorData, actorDataToUpdate,
 } from "./moncher"
 
@@ -189,7 +189,7 @@ function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
 function addActor (
     obj :RanchObject,
     config :ActorConfig,
-    locProps :LocProps,
+    locProps :Located,
   ) :void {
 //  if (true) {
 //    obj.actorConfigs.clear()
@@ -205,6 +205,11 @@ function addActor (
   obj.actorData.set(uuid, data)
   obj.actors.set(uuid, update)
 }
+
+//function tickRanch (
+//    obj :RanchObject,
+//  ) :void {
+//}
 
 @dobject
 export class ServerObject extends DObject {
