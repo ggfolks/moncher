@@ -222,11 +222,6 @@ abstract class Actor {
 
 class Egg extends Actor {
 
-  protected postConstruct () :void {
-    // force health because we're going to do modify it in tick
-    this.health = 50
-  }
-
   // override
   setTouched (model :RanchModel) :void {
     switch (this.action) {
