@@ -48,7 +48,7 @@ const chatUiConfig = {
               type: "label",
               text: "speaker",
               style: {
-                fill: {type: "color", color: "#333333"}
+                fill: {type: "color", color: "#663333"}
               }
             }, {
               type: "label",
@@ -63,7 +63,11 @@ const chatUiConfig = {
     }, {
       type: "row",
       gap: 5,
-      contents: [label(Value.constant("➤"), {fill: "$orange", font: "$icon"}), {
+      contents: [{
+        type: "image",
+        image: "profilePhoto",
+        height: 20,
+      }, {
         type: "text",
         constraints: {stretch: true},
         text: "input",
@@ -99,8 +103,6 @@ export class ChatView implements Disposable {
     const [channel, unchannel] = app.client.resolve(["channels", channelId], ChannelObject)
     this._onDispose.add(unchannel)
 
-    channel.msgs.onChange(foo => console.log(foo))
-
     const modelData = {
       msgdata: mapProvider(channel.msgs, msg => ({
         text: msg.map(m => m.text),
@@ -115,7 +117,9 @@ export class ChatView implements Disposable {
           channel.source.post(channelQ(channelId), {type: "speak", text})
           modelData.input.update("")
         }
-      }
+      },
+      // TODO: move authed id to a reactive value in the app store & switchMap from that
+      profilePhoto: app.client.auth.switchMap(sess => app.profiles.profile(sess.id).photo)
     }
     this.model = new Model(modelData)
 
@@ -123,7 +127,7 @@ export class ChatView implements Disposable {
       type: "root",
       scale: app.renderer.scale,
       autoSize: true,
-      hintSize: app.renderer.size,
+      hintSize: app.renderer.size.map(d => dim2.fromValues(Math.min(d[0], 700), d[1])),
       minSize: Value.constant(dim2.fromValues(300, 0)),
       contents: chatUiConfig,
     }, this.model)

@@ -1,6 +1,8 @@
+import * as firebase from "firebase/app"
+
 import {Disposable, Disposer} from "tfw/core/util"
 import {dim2} from "tfw/core/math"
-import {UUID, uuidv1} from "tfw/core/uuid"
+import {UUID} from "tfw/core/uuid"
 import {Clock, Loop} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
 import {Mutable, Subject} from "tfw/core/react"
@@ -9,15 +11,21 @@ import {Surface} from "tfw/scene2/surface"
 import {UniformQuadBatch} from "tfw/scene2/batch"
 import {Client} from "tfw/data/client"
 import {UI} from "tfw/ui/ui"
+import {initFirebaseAuth} from "tfw/auth/firebase"
 
 import {ProfileStore} from "./stores"
 import {moncherStyles, moncherTheme} from "./uistyles"
 
-// TODO: firebase auth stuff
-const auth = {id: uuidv1(), token: "guest"}
 const host = window.location.hostname
 const port = host === "localhost" ? 8080 : parseInt(window.location.port || "443")
 const addr = {host, port, path: "data"}
+
+firebase.initializeApp({
+  apiKey: "AIzaSyBqGwobKx4ReOufFpoQcKD8qv_jY4lgRSk",
+  authDomain: "tfwchat.firebaseapp.com",
+  projectId: "tfwchat",
+  appId: "1:733313051370:web:ef572661b45a730f8d8593"
+})
 
 export class App implements Disposable {
   private mode :Mode
@@ -25,7 +33,7 @@ export class App implements Disposable {
   readonly renderer :Renderer
   readonly loop  = new Loop()
   readonly ui = new UI(moncherTheme, moncherStyles, {resolve: loadImage})
-  readonly client = new Client(p => Subject.constant(addr), auth)
+  readonly client = new Client(p => Subject.constant(addr))
   readonly profiles :ProfileStore
 
   // global app "state"
@@ -48,6 +56,8 @@ export class App implements Disposable {
     this.loop = new Loop()
     this.loop.clock.onEmit(clock => this.mode.render(clock))
     this.profiles = new ProfileStore(this)
+
+    initFirebaseAuth()
   }
 
   start () {

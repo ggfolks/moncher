@@ -11,7 +11,7 @@ export class ProfileStore implements Disposable {
   constructor (readonly app :App) {}
 
   /*** Resolves the profile object for the user with `id`. */
-  profile (id :UUID) {
+  profile (id :UUID) :ProfileObject {
     const obj = this._profiles.get(id)
     if (obj) return obj
     const [nobj, unsub] = this.app.client.resolve(["profiles", id], ProfileObject)

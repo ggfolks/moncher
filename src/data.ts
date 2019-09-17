@@ -4,7 +4,7 @@ import {Auth, DObject, MetaMsg} from "tfw/data/data"
 import {dcollection, dobject, dset, dmap, dqueue, dvalue} from "tfw/data/meta"
 
 const guestName = (id :UUID) => `Guest ${id.substring(0, 4)}`
-const guestPhoto = (id :UUID) => "https://api.adorable.io/avatars/128/${id}.png"
+const guestPhoto = (id :UUID) => "ui/DefaultAvatar.png"
 const ranchName = (id :UUID) => `Ranch ${id.substring(0, 4)}`
 
 @dobject
