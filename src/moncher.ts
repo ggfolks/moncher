@@ -2,7 +2,7 @@ import {MutableMap, RMap} from "tfw/core/rcollect"
 import {log} from "tfw/core/util"
 
 import {Geometry, Mesh, Vector3} from "three"
-import {Pathfinding} from "three-pathfinding"
+import {Pathfinding} from "./pathfinding"
 import {MONSTER_ACCELERANT} from "./debug"
 
 /**
@@ -516,7 +516,9 @@ export class RanchModel {
     // but if you look at the implementation, it is actually wanting a *regular* Geometry
     // and will create one if you pass-in a BufferedGeometry. So for now we accept the warning
     // to get the actually less expensive code path.
-    this._pathFinder.setZoneData(RanchModel.RANCH_ZONE, Pathfinding.createZone(this._navGeometry))
+    this._pathFinder.setZoneData(RanchModel.RANCH_ZONE, Pathfinding.createZone(
+      // TEMP: avoid type errors until we make Pathfinding not dumb
+      this._navGeometry as any))
     // SEE NOTE
   }
 

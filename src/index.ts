@@ -1,7 +1,3 @@
-// Pathfinding needs THREE to be a global
-import * as threejs from "three"
-window["THREE"] = threejs
-
 import {App} from "./app"
 import {RanchModel} from "./moncher"
 import {RanchMode} from "./moncher3d"

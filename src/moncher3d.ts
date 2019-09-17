@@ -16,7 +16,7 @@ import {
   WebGLRenderer,
 } from "three"
 
-import {Pathfinding} from "three-pathfinding"
+import {Pathfinding} from "./pathfinding"
 
 import {Body} from "cannon"
 
@@ -454,7 +454,8 @@ export class RanchMode extends Mode {
    * Configure pathfinding once we have the navmesh. */
   protected configurePathFinding (navMesh :Mesh) :void {
     this._pathFinder = new Pathfinding()
-    this._pathFinder.setZoneData(RanchMode.RANCH_ZONE, Pathfinding.createZone(navMesh.geometry))
+    this._pathFinder.setZoneData(
+      RanchMode.RANCH_ZONE, Pathfinding.createZone(navMesh.geometry as THREE.BufferGeometry))
   }
 
   /**
