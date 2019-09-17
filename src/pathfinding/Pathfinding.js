@@ -43,8 +43,8 @@ class Pathfinding {
   * Returns a random node within a given range of a given position.
   * @param  {string} zoneID
   * @param  {number} groupID
-  * @param  {THREE.Vector3} nearPosition (squared)
-  * @param  {number} nearRange
+  * @param  {THREE.Vector3} nearPosition
+  * @param  {number} nearRange (squared)
   * @return {THREE.Vector3}
   */
  getRandomNode (zoneID, groupID, nearPosition, nearRange) {
