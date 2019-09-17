@@ -128,15 +128,15 @@ export class RanchObject extends DObject {
   ranchq = this.queue<RanchReq>()
 
   /** The map of actor configs, which is updated prior to the actor being added. */
-  @dmap("uuid", "record", true)
+  @dmap("uuid", "record", false)
   actorConfigs = this.map<UUID, ActorConfig>()
 
   /** The latest snapshot of each actor. */
-  @dmap("uuid", "record", true)
+  @dmap("uuid", "record", false)
   actors = this.map<UUID, ActorUpdate>()
 
   /** The "server-side" data about each actor. */
-  @dmap("uuid", "record", true)
+  @dmap("uuid", "record", false)
   actorData = this.map<UUID, ActorData>()
 
   canSubscribe (auth :Auth) { return true /* TODO: ranch membership */ }
@@ -190,14 +190,20 @@ function addActor (
     obj :RanchObject,
     config :ActorConfig,
     locProps :LocProps,
-  ) :UUID {
+  ) :void {
+//  if (true) {
+//    obj.actorConfigs.clear()
+//    obj.actorData.clear()
+//    obj.actors.clear()
+//    return
+//  }
+
   const uuid = uuidv1()
   const data = newActorData(config.kind, locProps)
   const update = actorDataToUpdate(data)
   obj.actorConfigs.set(uuid, config)
   obj.actorData.set(uuid, data)
   obj.actors.set(uuid, update)
-  return uuid
 }
 
 @dobject
