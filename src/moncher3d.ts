@@ -270,21 +270,21 @@ export class RanchMode extends Mode {
           log.debug("actor config set",
             "key", ch.key,
             "value", ch.value)
-        }
+        } else log.debug("actor config delete", "key", ch.key)
       }))
     this.onDispose.add(ranch.actors.onChange(ch => {
         if (ch.type === "set") {
           log.debug("actor set",
             "key", ch.key,
             "value", ch.value)
-        }
+        } else log.debug("actor delete", "key", ch.key)
       }))
     this.onDispose.add(ranch.actorData.onChange(ch => {
         if (ch.type === "set") {
           log.debug("actor data set",
             "key", ch.key,
             "value", ch.value)
-        }
+        } else log.debug("actor data delete", "key", ch.key)
       }))
   }
 
