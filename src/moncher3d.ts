@@ -244,27 +244,49 @@ export class RanchMode extends Mode {
     this._ranchObj = ranch
     this.onDispose.add(unranch)
 
-    this.onDispose.add(ranch.state.onValue(s => {log.debug("Ranch state: " + s)}))
+    //this.onDispose.add(ranch.state.onValue(s => {log.debug("Ranch state: " + s)}))
 
     // TEMP: log name
     this.onDispose.add(ranch.name.onValue(v => {log.debug("Ranch name : " + v)}))
 
-    // TEMP Log other changes and whatnot
-    ranch.actorConfigs.onChange(ch => {
-      if (ch.type === "set") {
-        log.debug("actor config set",
-          "key", ch.key,
-          "value", ch.value)
-      }
-    })
-
-    ranch.actors.onChange(ch => {
-      if (ch.type === "set") {
-        log.debug("actor set",
-          "key", ch.key,
-          "value", ch.value)
-      }
-    })
+    // TEMP: debugging for persistence: log everything
+    log.debug("Existing actors: " + ranch.actorConfigs.size)
+    ranch.actorConfigs.forEach((v, k) => {
+        log.debug("Existing actorConfig",
+          "key", k,
+          "value", v)
+      })
+    ranch.actors.forEach((v, k) => {
+        log.debug("Existing actor",
+          "key", k,
+          "value", v)
+      })
+    ranch.actorData.forEach((v, k) => {
+        log.debug("Existing actorData",
+          "key", k,
+          "value", v)
+      })
+    this.onDispose.add(ranch.actorConfigs.onChange(ch => {
+        if (ch.type === "set") {
+          log.debug("actor config set",
+            "key", ch.key,
+            "value", ch.value)
+        }
+      }))
+    this.onDispose.add(ranch.actors.onChange(ch => {
+        if (ch.type === "set") {
+          log.debug("actor set",
+            "key", ch.key,
+            "value", ch.value)
+        }
+      }))
+    this.onDispose.add(ranch.actorData.onChange(ch => {
+        if (ch.type === "set") {
+          log.debug("actor data set",
+            "key", ch.key,
+            "value", ch.value)
+        }
+      }))
   }
 
   protected configureScene (app :App) :void {

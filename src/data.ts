@@ -2,8 +2,11 @@ import {Timestamp, log} from "tfw/core/util"
 import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
 import {Auth, DObject, MetaMsg} from "tfw/data/data"
 import {dcollection, dobject, dset, dmap, dqueue, dvalue} from "tfw/data/meta"
-import {ActorConfig, ActorState} from "./moncher"
 import {MonsterDb} from "./monsterdb"
+import {
+  ActorConfig, ActorData, ActorUpdate, LocProps,
+  newActorData, actorDataToUpdate,
+} from "./moncher"
 
 const guestName = (id :UUID) => `Guest ${id.substring(0, 4)}`
 const guestPhoto = (id :UUID) => "ui/DefaultAvatar.png"
@@ -128,8 +131,13 @@ export class RanchObject extends DObject {
   @dmap("uuid", "record", true)
   actorConfigs = this.map<UUID, ActorConfig>()
 
+  /** The latest snapshot of each actor. */
   @dmap("uuid", "record", true)
-  actors = this.map<UUID, ActorState>()
+  actors = this.map<UUID, ActorUpdate>()
+
+  /** The "server-side" data about each actor. */
+  @dmap("uuid", "record", true)
+  actorData = this.map<UUID, ActorData>()
 
   canSubscribe (auth :Auth) { return true /* TODO: ranch membership */ }
 }
@@ -163,20 +171,33 @@ function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
       break
 
     case "dropEgg":
-      log.debug("Got dropegg")
-      const egg = MonsterDb.getRandomEgg()
-      const uuid = uuidv1()
-      log.debug("about to set")
-      obj.actorConfigs.set(uuid, egg)
-      log.debug("did set 1")
-      obj.actors.set(uuid, ActorState.createDummy())
-      log.debug("did set 2!")
+      addActor(obj, MonsterDb.getRandomEgg(), req)
+      break
+
+    case "dropFood":
+      addActor(obj, MonsterDb.getFood(), req)
       break
 
     default:
       log.warn("Unhandled ranch request", "req", req)
       break
   }
+}
+
+/**
+ * Handle adding an actor. */
+function addActor (
+    obj :RanchObject,
+    config :ActorConfig,
+    locProps :LocProps,
+  ) :UUID {
+  const uuid = uuidv1()
+  const data = newActorData(config.kind, locProps)
+  const update = actorDataToUpdate(data)
+  obj.actorConfigs.set(uuid, config)
+  obj.actorData.set(uuid, data)
+  obj.actors.set(uuid, update)
+  return uuid
 }
 
 @dobject

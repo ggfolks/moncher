@@ -39,6 +39,12 @@ export class ActorKindAttributes {
   }
 }
 
+export interface LocProps {
+  x :number
+  y :number
+  z :number
+}
+
 /**
  * Configuration for the 3D aspects of an actor. This will probably move. */
 export interface ActorModel {
@@ -139,6 +145,90 @@ export class ActorState {
 
   static createDummy () :ActorState {
     return new ActorState(new Vector3(), 1, 0, ActorAction.Unknown)
+  }
+}
+
+export interface PathInfo {
+}
+
+/**
+ * The latest public update from an actor.  */
+export interface ActorUpdate extends LocProps {
+  x :number
+  y :number
+  z :number
+  scale :number
+  orient :number
+  action :ActorAction    // rename to "state"
+  instant :ActorInstant // TODO: WILL BE REMOVED
+  path? :PathInfo
+}
+
+/**
+ * Return a blank (dummy) ActorUpdate. */
+export function blankActorUpdate () :ActorUpdate {
+  return <ActorUpdate>{
+    x: 0,
+    y: 0,
+    z: 0,
+    scale: 0,
+    orient: 0,
+    action: ActorAction.Idle,
+    instant: ActorInstant.None,
+    path: undefined,
+  }
+}
+
+/**
+ * An actor's "private" "server-side" data. */
+export interface ActorData extends LocProps {
+  /** The actor's health (hit points). Actors are removed when this is 0 or less. */
+  hp :number
+  x :number
+  y :number
+  z :number
+
+  action :ActorAction
+  hunger :number
+  counter :number       // TODO: going away, subsumed into new "Behavior" type
+  scale :number
+  path :PathInfo
+  orient :number
+  instant :ActorInstant // TODO: going away
+  stateStack :ActorAction[] // Almost certainly going away because Behavior will handle it
+}
+
+/**
+ * Return a new ActorData, mostly blank. */
+export function newActorData (kind? :ActorKind, locProps? :LocProps) :ActorData {
+  let x = 0, y = 0, z = 0
+  const hp = kind ? ActorKindAttributes.initialHealth(kind) : 0
+  if (locProps) ({x, y, z} = locProps)
+  return <ActorData>{
+    x, y, z,
+    hp,
+    action: ActorAction.Idle,
+    hunger: 0,
+    scale: 1,
+    path: {},
+    orient: 0,
+    stateStack: [],
+
+    instant: ActorInstant.None,
+    counter: 0,
+  }
+}
+
+/**
+ * Publish an actor update derived from the specified ActorData. */
+export function actorDataToUpdate (data :ActorData) :ActorUpdate {
+  const {x, y, z, scale, orient, action, instant} = data
+  return {
+    x, y, z,
+    scale,
+    orient,
+    action,
+    instant,
   }
 }
 
@@ -467,7 +557,6 @@ class Monster extends Actor {
   protected _orient :number = 0
 
   protected _instant :ActorInstant = ActorInstant.None
-  protected _hit :boolean = false
 
   protected _stateStack :ActorAction[] = []
 }
