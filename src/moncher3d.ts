@@ -624,7 +624,7 @@ export class RanchMode extends Mode {
       component: "state",
     }
     graphCfg.action = <NodeConfig>{
-      type: "property",
+      type: "getProperty",
       input: "state",
       name: "action",
     }
@@ -768,7 +768,7 @@ export class RanchMode extends Mode {
       // So we need to set up a separate animation controller.
       if (cfg.model.happyReact || cfg.model.hitReact) {
         graphCfg.getInstant = <NodeConfig>{
-          type: "property",
+          type: "getProperty",
           input: "state",
           name: "instant",
         }
