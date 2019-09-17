@@ -2,7 +2,7 @@ import {Disposable, Disposer} from "tfw/core/util"
 import {Value} from "tfw/core/react"
 import {Host} from "tfw/ui/element"
 import {Model} from "tfw/ui/model"
-import {showGoogleLogin} from "tfw/auth/firebase"
+import {showGoogleLogin, firebaseLogout} from "tfw/auth/firebase"
 
 import {App} from "./app"
 import {box, label, button, closeButton} from "./ui"
@@ -54,7 +54,7 @@ export class AuthDialog implements Disposable {
       profileName: curProfile.switchMap(p => p.name),
       profilePhoto: curProfile.switchMap(p => p.photo),
       closeDialog: () => this.dispose(),
-      logout: () => {},
+      logout: () => firebaseLogout(),
       loginGoogle: () => showGoogleLogin(),
     }
 
