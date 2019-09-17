@@ -658,7 +658,7 @@ export class RanchModel {
     let nearest = undefined
     for (const actor of this._actorData.values()) {
       if (predicate(actor)) {
-        const dd = pos.distanceToSquared(actor.pos)
+        const dd = pos.distanceTo(actor.pos)
         if (dd < maxDist) {
           maxDist = dd
           nearest = actor
