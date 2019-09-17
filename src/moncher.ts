@@ -167,7 +167,7 @@ export interface ActorUpdate extends LocProps {
 /**
  * Return a blank (dummy) ActorUpdate. */
 export function blankActorUpdate () :ActorUpdate {
-  return <ActorUpdate>{
+  return {
     x: 0,
     y: 0,
     z: 0,
@@ -204,7 +204,7 @@ export function newActorData (kind? :ActorKind, locProps? :LocProps) :ActorData 
   let x = 0, y = 0, z = 0
   const hp = kind ? ActorKindAttributes.initialHealth(kind) : 0
   if (locProps) ({x, y, z} = locProps)
-  return <ActorData>{
+  return {
     x, y, z,
     hp,
     action: ActorAction.Idle,

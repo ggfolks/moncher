@@ -106,7 +106,7 @@ export class Lakitu
         ? this._easing.current
         : new Vector3().copy(this._target)
     this.updateTarget(loc)
-    this._easing = <Easing>{
+    this._easing = {
       from,
       current: new Vector3().copy(from),
       duration: this._target.distanceTo(from) / Lakitu.EASING_SPEED

@@ -44,10 +44,9 @@ import {
   System,
 } from "tfw/entity/entity"
 import {TransformComponent} from "tfw/space/entity"
-import {AnimationControllerConfig, StateConfig, TransitionConfig} from "tfw/scene3/animation"
+import {StateConfig, TransitionConfig} from "tfw/scene3/animation"
 import {
   AnimationSystem,
-  GLTFConfig,
   HoverMap,
   SceneSystem,
   loadGLTFAnimationClip,
@@ -64,7 +63,7 @@ import {registerPhysics3Nodes} from "tfw/physics3/node"
 import {registerInputNodes} from "tfw/input/node"
 import {registerUINodes} from "tfw/ui/node"
 import {Graph, GraphConfig} from "tfw/graph/graph"
-import {NodeConfig, NodeContext, NodeTypeRegistry} from "tfw/graph/node"
+import {NodeContext, NodeTypeRegistry} from "tfw/graph/node"
 import {DefaultStyles, DefaultTheme} from "tfw/ui/theme"
 
 import {App, Mode} from "./app"
@@ -579,7 +578,7 @@ export class RanchMode extends Mode {
     // make the graph inspectable
 //0    const triggerInspect = Mutable.local(false)
 //0    let touchTime :number = 0
-    graphCfg.inspectable = <NodeConfig>{
+    graphCfg.inspectable = {
       type: "subgraph",
       graph: {
         doubleClick: {type: "doubleClick"},
@@ -641,11 +640,11 @@ export class RanchMode extends Mode {
     }
 
     // set up nodes to read the actor's state / action
-    graphCfg.state = <NodeConfig>{
+    graphCfg.state = {
       type: "readComponent",
       component: "state",
     }
-    graphCfg.action = <NodeConfig>{
+    graphCfg.action = {
       type: "getProperty",
       input: "state",
       name: "action",
@@ -655,17 +654,17 @@ export class RanchMode extends Mode {
     const anyTransitions :PMap<TransitionConfig> = {}
     const defaultTransitions :PMap<TransitionConfig> = {}
     const animStates :PMap<StateConfig> = {
-      default: <StateConfig>{
+      default: {
         transitions: defaultTransitions,
       },
-      any: <StateConfig>{
+      any: {
         transitions: anyTransitions,
       },
     }
-    graphCfg.controller = <NodeConfig>{
+    graphCfg.controller = {
       type: "animationController",
       component: "mixer",
-      config: <AnimationControllerConfig>{
+      config: {
         states: animStates,
       },
     }
@@ -678,7 +677,7 @@ export class RanchMode extends Mode {
     const isEgg = (cfg.kind === ActorKind.Egg)
     if (cfg.model.hatch) {
       // set up hatching (nearly the same between eggs and monsters)
-      graphCfg.isHatching = <NodeConfig>{
+      graphCfg.isHatching = {
         type: "equals",
         x: "action",
         y: ActorAction.Hatching,
@@ -697,7 +696,7 @@ export class RanchMode extends Mode {
     }
 
     if (isEgg) {
-      graphCfg.isReadyToHatch = <NodeConfig>{
+      graphCfg.isReadyToHatch = {
         type: "equals",
         x: "action",
         y: ActorAction.ReadyToHatch,
@@ -712,16 +711,16 @@ export class RanchMode extends Mode {
     } else {
       // regular monster
       if (cfg.model.walk) {
-        graphCfg.readPath = <NodeConfig>{
+        graphCfg.readPath = {
           type: "readComponent",
           component: "paths",
         }
-        graphCfg.noPath = <NodeConfig>{
+        graphCfg.noPath = {
           type: "equals",
           x: "readPath",
           y: undefined,
         }
-        graphCfg.yesPath = <NodeConfig>{
+        graphCfg.yesPath = {
           type: "not",
           input: "noPath",
         }
@@ -736,7 +735,7 @@ export class RanchMode extends Mode {
       } // end: walk
 
       if (cfg.model.eat) {
-        graphCfg.isEating = <NodeConfig>{
+        graphCfg.isEating = {
           type: "equals",
           x: "action",
           y: ActorAction.Eating,
@@ -752,7 +751,7 @@ export class RanchMode extends Mode {
       } // end: eat
 
       if (cfg.model.sleep && cfg.model.faint && cfg.model.wakeUp) {
-        graphCfg.isSleeping = <NodeConfig>{
+        graphCfg.isSleeping = {
           type: "equals",
           x: "action",
           y: ActorAction.Sleeping,
@@ -772,7 +771,7 @@ export class RanchMode extends Mode {
           transitions: {wake: {condition: "wakeCond"}}
         }
 
-        graphCfg.isWaking = <NodeConfig>{
+        graphCfg.isWaking = {
           type: "equals",
           x: "action",
           y: ActorAction.Waking,
@@ -789,25 +788,25 @@ export class RanchMode extends Mode {
       // Happy-react happens whenever you touch a monster, even if in the other states.
       // So we need to set up a separate animation controller.
       if (cfg.model.happyReact || cfg.model.hitReact) {
-        graphCfg.getInstant = <NodeConfig>{
+        graphCfg.getInstant = {
           type: "getProperty",
           input: "state",
           name: "instant",
         }
-        graphCfg.isInstantTouched = <NodeConfig>{
+        graphCfg.isInstantTouched = {
           type: "equals",
           x: "getInstant",
           y: ActorInstant.Touched,
         }
-        graphCfg.isInstantHit = <NodeConfig>{
+        graphCfg.isInstantHit = {
           type: "equals",
           x: "getInstant",
           y: ActorInstant.Hit,
         }
-        graphCfg.auxController = <NodeConfig>{
+        graphCfg.auxController = {
           type: "animationController",
           component: "mixer",
-          config: <AnimationControllerConfig>{
+          config: {
             states: {
               default: {},
               touched: {
@@ -835,10 +834,10 @@ export class RanchMode extends Mode {
       }
     }
 
-    const objDef = <GLTFConfig>{
+    const objDef = {
       type: "gltf",
       url: cfg.model.model,
-      onLoad: obj => {
+      onLoad: (obj :Object3D) => {
         if (cfg.color !== undefined) this.colorize(obj, new Color(cfg.color))
         makeShadowy(obj)
         if (ActorKindAttributes.isMonster(cfg.kind)) this.addBubble(obj, state)
