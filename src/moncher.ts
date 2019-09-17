@@ -5,27 +5,23 @@ import {Geometry, Mesh, Vector3} from "three"
 import {Pathfinding} from "./pathfinding"
 import {MONSTER_ACCELERANT} from "./debug"
 
+/** Actor kinds. */
+export const enum ActorKind {
+  /** These will be persisted. Do not reuse ids. */
+  Egg = 1,
+  Food = 2,
+  Lobber = 3,
+  Runner = 4,
+}
+
 /**
- * The kind of actor. */
-export class ActorKind {
-  // Big fat TODO...
-  static readonly EGG :ActorKind = new ActorKind(false, false, false, 0)
-  static readonly FOOD :ActorKind = new ActorKind(false, false, false, 0)
-  static readonly RUNNER :ActorKind = new ActorKind(true, false, false)
-  static readonly HEALER :ActorKind = new ActorKind(false, true, true)
-  static readonly LOBBER :ActorKind = new ActorKind(true, false, false)
-  static readonly TESTER :ActorKind = new ActorKind(true, true, true)
-
-  private constructor (
-    readonly canRangeAttack :boolean,
-    readonly canMeleeAttack :boolean,
-    readonly canHeal :boolean,
-    readonly maxSpeed :number = .025 // units per second
-  ) {}
-
-  isMonster () :boolean {
-    switch (this) {
-      case ActorKind.EGG: case ActorKind.FOOD: return false
+ * Static methods to go with ActorKind. */
+export class ActorKindAttributes {
+  /**
+   * Is the specified kind a monster? */
+  static isMonster (kind :ActorKind) :boolean {
+    switch (kind) {
+      case ActorKind.Egg: case ActorKind.Food: return false
       default: return true
     }
   }
@@ -76,22 +72,34 @@ export class PathRec {
   timeLeft :number
 }
 
+export interface ActorConfig2 {
+  model :ActorModel
+  spawn? :ActorConfig2
+}
+
+//export class ActorConfig2 implements Record {
+//  constructor (
+//    readonly model :ActorModel,
+//    readonly spawn? :ActorConfig2,
+//  ) {}
+//}
+
 /**
  * Configuration of an actor. */
 export class ActorConfig {
 
   constructor (
-    readonly kind :ActorKind = ActorKind.TESTER,
+    readonly kind :ActorKind,
     readonly model :ActorModel,
     readonly spawn? :ActorConfig,
     /** A Custom color that may be used to modify the model. */
     readonly color? :number,
     readonly startingHealth :number = 50,
-    readonly maximumHealth :number = 50,
-    readonly startingActionPts :number = 5,
-    readonly maxActionPts :number = 10,
-    readonly regenActionPts :number = .2,
     readonly baseWalkSpeed :number = .7,
+//    readonly maximumHealth :number = 50,
+//    readonly startingActionPts :number = 5,
+//    readonly maxActionPts :number = 10,
+//    readonly regenActionPts :number = .2,
   ) {}
 }
 
@@ -321,7 +329,7 @@ class Monster extends Actor {
       case ActorAction.Idle:
         if (++this._hunger > 100 / MONSTER_ACCELERANT) {
           const food = model.getNearestActor(this.pos,
-              actor => (actor.config.kind === ActorKind.FOOD))
+              actor => (actor.config.kind === ActorKind.Food))
           if (food) {
             if (this.pos.distanceTo(food.pos) < .1) {
               food.health -= 10
@@ -337,7 +345,7 @@ class Monster extends Actor {
 
         // Maybe go visit a nice egg
         if (Math.random() < .2) {
-          const isEgg = (actor :Actor) :boolean => (actor.config.kind === ActorKind.EGG)
+          const isEgg = (actor :Actor) :boolean => (actor.config.kind === ActorKind.Egg)
           const isReadyEgg = (actor :Actor) :boolean =>
               (isEgg(actor) && (actor.action === ActorAction.ReadyToHatch))
           const egg = model.getNearestActor(this.pos, isReadyEgg) ||
@@ -556,7 +564,7 @@ export class RanchModel {
 
   protected validateConfig (config :ActorConfig) {
     switch (config.kind) {
-      case ActorKind.EGG:
+      case ActorKind.Egg:
         if (!config.spawn) {
           throw new Error("Eggs must specify a spawn config.")
         }
@@ -568,8 +576,8 @@ export class RanchModel {
 
   protected pickActorClass (config :ActorConfig) :ConstructableActorClass {
     switch (config.kind) {
-      case ActorKind.EGG: return Egg
-      case ActorKind.FOOD: return Food
+      case ActorKind.Egg: return Egg
+      case ActorKind.Food: return Food
       default: return Monster
     }
   }

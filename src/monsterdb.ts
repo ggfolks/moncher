@@ -19,7 +19,7 @@ export class MonsterDb {
       hatch: "monsters/Egg.glb#Hatch",
     }
     const color = MonsterDb._colors[Math.trunc(Math.random() * MonsterDb._colors.length)]
-    return new ActorConfig(ActorKind.EGG, eggModel, monster, color)
+    return new ActorConfig(ActorKind.Egg, eggModel, monster, color)
   }
 
   /**
@@ -27,7 +27,7 @@ export class MonsterDb {
   private static _initMonsters () :void {
     const monsters :ActorConfig[] = MonsterDb._monsters = []
 
-    monsters.push(new ActorConfig(ActorKind.LOBBER, <ActorModel>{
+    monsters.push(new ActorConfig(ActorKind.Lobber, <ActorModel>{
       model:      "monsters/LobberBlue.glb",
       idle:       "monsters/LobberBlue.glb#Idle",
       hatch:      "monsters/LobberBlue.glb#Hatch",
@@ -41,7 +41,7 @@ export class MonsterDb {
       happyReact: "monsters/LobberBlue.glb#HappyReact",
     }))
 
-    monsters.push(new ActorConfig(ActorKind.LOBBER, <ActorModel>{
+    monsters.push(new ActorConfig(ActorKind.Lobber, <ActorModel>{
       model:      "monsters/LobberGreen.glb",
       idle:       "monsters/LobberGreen.glb#Idle",
       hatch:      "monsters/LobberGreen.glb#Hatch",
@@ -55,7 +55,7 @@ export class MonsterDb {
       happyReact: "monsters/LobberGreen.glb#HappyReact",
     }))
 
-    monsters.push(new ActorConfig(ActorKind.LOBBER, <ActorModel>{
+    monsters.push(new ActorConfig(ActorKind.Lobber, <ActorModel>{
       model:      "monsters/LobberRed.glb",
       idle:       "monsters/LobberRed.glb#Idle",
       hatch:      "monsters/LobberRed.glb#Hatch",
@@ -69,7 +69,7 @@ export class MonsterDb {
       happyReact: "monsters/LobberRed.glb#HappyReact",
     }))
 
-    monsters.push(new ActorConfig(ActorKind.RUNNER, <ActorModel>{
+    monsters.push(new ActorConfig(ActorKind.Runner, <ActorModel>{
       model:      "monsters/PonyBlue.glb",
       idle:       "monsters/anim/PonyAnim.glb#Idle",
       hatch:      "monsters/anim/PonyAnim.glb#Hatch",
@@ -82,7 +82,7 @@ export class MonsterDb {
       wakeUp:     "monsters/anim/PonyAnim.glb#WakeUp",
       happyReact: "monsters/anim/PonyAnim.glb#HappyReact",
     }))
-    monsters.push(new ActorConfig(ActorKind.RUNNER, <ActorModel>{
+    monsters.push(new ActorConfig(ActorKind.Runner, <ActorModel>{
       model:      "monsters/PonyGreen.glb",
       idle:       "monsters/anim/PonyAnim.glb#Idle",
       hatch:      "monsters/anim/PonyAnim.glb#Hatch",
@@ -95,7 +95,7 @@ export class MonsterDb {
       wakeUp:     "monsters/anim/PonyAnim.glb#WakeUp",
       happyReact: "monsters/anim/PonyAnim.glb#HappyReact",
     }))
-    monsters.push(new ActorConfig(ActorKind.RUNNER, <ActorModel>{
+    monsters.push(new ActorConfig(ActorKind.Runner, <ActorModel>{
       model:      "monsters/PonyRed.glb",
       idle:       "monsters/anim/PonyAnim.glb#Idle",
       hatch:      "monsters/anim/PonyAnim.glb#Hatch",

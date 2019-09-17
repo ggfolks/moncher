@@ -2,6 +2,8 @@ import {Timestamp, log} from "tfw/core/util"
 import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
 import {Auth, DObject, MetaMsg} from "tfw/data/data"
 import {dcollection, dobject, dset, dmap, dqueue, dvalue} from "tfw/data/meta"
+import {ActorConfig, ActorState} from "./moncher"
+import {MonsterDb} from "./monsterdb"
 
 const guestName = (id :UUID) => `Guest ${id.substring(0, 4)}`
 const guestPhoto = (id :UUID) => "ui/DefaultAvatar.png"
@@ -97,7 +99,11 @@ function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
 export type RanchReq =
     /** A request to "touch" a particular actor. */
     {type :"touch", id :number} |
-    /** Set the name of the ranch. */
+    /** Drop an egg at the specified location. */
+    {type :"dropEgg", x :number, y :number, z :number} |
+    /** Drop food at the specified location. */
+    {type :"dropFood", x :number, y :number, z :number} |
+    /** Set the name of the ranch. (TEMP?) */
     {type :"setName", name :string} |
     /** A client-initiated tick (TEMP) */
     {type :"tick"}
@@ -114,8 +120,16 @@ export class RanchObject extends DObject {
   @dqueue(handleMetaMsg)
   metaq = this.queue<MetaMsg>()
 
+  /** The queue on which all client requests are handled. */
   @dqueue(handleRanchReq)
   ranchq = this.queue<RanchReq>()
+
+  /** The map of actor configs, which is updated prior to the actor being added. */
+  @dmap("uuid", "record", true)
+  actorConfigs = this.map<UUID, ActorConfig>()
+
+  @dmap("uuid", "record", true)
+  actors = this.map<UUID, ActorState>()
 
   canSubscribe (auth :Auth) { return true /* TODO: ranch membership */ }
 }
@@ -146,6 +160,14 @@ function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
     case "setName":
       log.debug("Got setname " + req.name)
       obj.name.update(req.name)
+      break
+
+    case "dropEgg":
+      log.debug("Got dropegg")
+      const egg = MonsterDb.getRandomEgg()
+      const uuid = uuidv1()
+      obj.actorConfigs.set(uuid, egg)
+      obj.actors.set(uuid, ActorState.createDummy())
       break
 
     default:

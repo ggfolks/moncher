@@ -73,6 +73,7 @@ import {
   ActorConfig,
   ActorInstant,
   ActorKind,
+  ActorKindAttributes,
   ActorModel,
   ActorState,
   PathRec,
@@ -250,6 +251,23 @@ export class RanchMode extends Mode {
 
     // TEMP: log name
     this.onDispose.add(ranch.name.onValue(v => {log.debug("Ranch name : " + v)}))
+
+    // TEMP Log other changes and whatnot
+    ranch.actorConfigs.onChange(ch => {
+      if (ch.type === "set") {
+        log.debug("actor config set",
+          "key", ch.key,
+          "value", ch.value)
+      }
+    })
+
+    ranch.actors.onChange(ch => {
+      if (ch.type === "set") {
+        log.debug("actor set",
+          "key", ch.key,
+          "value", ch.value)
+      }
+    })
   }
 
   protected configureScene (app :App) :void {
@@ -637,7 +655,7 @@ export class RanchMode extends Mode {
       animStates.default.url = cfg.model.idle
     }
 
-    const isEgg = (cfg.kind === ActorKind.EGG)
+    const isEgg = (cfg.kind === ActorKind.Egg)
     if (cfg.model.hatch) {
       // set up hatching (nearly the same between eggs and monsters)
       graphCfg.isHatching = <NodeConfig>{
@@ -803,7 +821,7 @@ export class RanchMode extends Mode {
       onLoad: obj => {
         if (cfg.color !== undefined) this.colorize(obj, new Color(cfg.color))
         makeShadowy(obj)
-        if (cfg.kind.isMonster()) this.addBubble(obj, state)
+        if (ActorKindAttributes.isMonster(cfg.kind)) this.addBubble(obj, state)
       },
     }
     const entityId = this._domain.add({
@@ -863,11 +881,14 @@ export class RanchMode extends Mode {
   /**
    * Place an egg or food. */
   protected doPlacement (pos :Vector3) :void {
-    const actorConfig :ActorConfig = (this._uiState === UiState.PlacingEgg)
+    const isEgg = (this._uiState === UiState.PlacingEgg)
+    const actorConfig :ActorConfig = isEgg
         ? MonsterDb.getRandomEgg()
-        : new ActorConfig(ActorKind.FOOD, <ActorModel>{ model: "monsters/Acorn.glb" })
+        : new ActorConfig(ActorKind.Food, <ActorModel>{ model: "monsters/Acorn.glb" })
     this._ranch.addActor(actorConfig, pos)
     this.setUiState(UiState.Default)
+
+    this._ranchObj.ranchq.post({type: isEgg ? "dropEgg" : "dropFood", x: pos.x, y: pos.y, z: pos.z})
   }
 
   /**
