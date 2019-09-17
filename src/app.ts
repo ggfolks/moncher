@@ -60,12 +60,12 @@ export class App implements Disposable {
     initFirebaseAuth()
 
     // when we're authed as a Google user, slurp our profile info
-    this.client.auth.onValue(sess => {
-      if (sess.source === "firebase") {
+    this.client.serverAuth.onValue(id => {
+      if (this.client.auth.current.source === "firebase") {
         const user = currentUser.current
         if (user) {
           const {displayName, photoURL} = user
-          const profile = this.profiles.profile(sess.id)
+          const profile = this.profiles.profile(id)
           if (displayName) profile.name.update(displayName)
           if (photoURL) profile.photo.update(photoURL)
         }
