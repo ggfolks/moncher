@@ -30,6 +30,10 @@ declare module "three-pathfinding" {
     getRandomNode (
         zoneID :string, groupID :number, nearPosition :Vector3, maxDistSq :number) :Vector3
 
+    /** Added by Ray, 2019-09-17. */
+    getRandomPositionFrom (
+        zoneID :string, groupID :number, nearPosition :Vector3, maxDist :number) :Vector3|undefined
+
     getClosestNode (
         position :Vector3, zoneID :string, groupID :number, checkPolygon? :boolean) :Node
 

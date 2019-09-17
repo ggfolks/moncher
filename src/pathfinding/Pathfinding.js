@@ -71,6 +71,35 @@ class Pathfinding {
  }
 
  /**
+  * Returns a random-ish point within a given range of a given position.
+  * Unlike getRandomNode, this will pick a random point on each face.
+  *
+  * @param  {string} zoneID
+  * @param  {number} groupID
+  * @param  {THREE.Vector3} nearPosition
+  * @param  {number} maxDist
+  * @return {THREE.Vector3|undefined}
+  */
+ getRandomPositionFrom (zoneID, groupID, nearPosition, maxDist = Infinity) {
+   const zone = this.zones[zoneID]
+   if (!zone) return undefined
+
+   const candidates = [];
+   const polygons = this.zones[zoneID].groups[groupID];
+   polygons.forEach((p) => {
+      const a = Math.random(), b = Math.random(), c = Math.random();
+      const vv = new THREE.Vector3()
+          .addScaledVector(zone.vertices[p.vertexIds[0]], a)
+          .addScaledVector(zone.vertices[p.vertexIds[1]], b)
+          .addScaledVector(zone.vertices[p.vertexIds[2]], c)
+          .divideScalar(a + b + c);
+      if (nearPosition.distanceTo(vv) < maxDist) candidates.push(vv);
+   });
+
+   return Utils.sample(candidates); // or undefined
+ }
+
+ /**
   * Returns the closest node to the target position.
   * @param  {THREE.Vector3} position
   * @param  {string}  zoneID
