@@ -56,10 +56,10 @@ import {HTMLHost} from "tfw/ui/element"
 
 import {registerLogicNodes} from "tfw/graph/logic"
 import {registerMathNodes} from "tfw/graph/math"
-import {registerUtilNodes} from "tfw/graph/util"
+import {SubgraphRegistry, registerUtilNodes} from "tfw/graph/util"
 import {registerEntityNodes} from "tfw/entity/node"
 import {registerSpaceNodes} from "tfw/space/node"
-import {registerScene3Nodes} from "tfw/scene3/node"
+import {registerScene3Nodes, registerScene3Subgraphs} from "tfw/scene3/node"
 import {registerPhysics3Nodes} from "tfw/physics3/node"
 import {registerInputNodes} from "tfw/input/node"
 import {registerUINodes} from "tfw/ui/node"
@@ -311,6 +311,7 @@ export class RanchMode extends Mode {
         registerInputNodes,
         registerUINodes,
       ),
+      subgraphs: new SubgraphRegistry(registerScene3Subgraphs),
       hand,
       host,
       theme: DefaultTheme,
