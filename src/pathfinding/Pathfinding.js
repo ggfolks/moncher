@@ -81,8 +81,8 @@ class Pathfinding {
   * @return {THREE.Vector3|undefined}
   */
  getRandomPositionFrom (zoneID, groupID, nearPosition, maxDist = Infinity) {
-   const zone = this.zones[zoneID]
-   if (!zone) return undefined
+   const zone = this.zones[zoneID];
+   if (!zone) return undefined;
 
    const candidates = [];
    const polygons = this.zones[zoneID].groups[groupID];
