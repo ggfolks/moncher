@@ -7,6 +7,7 @@ import {
   ActorAction, ActorConfig, ActorData, ActorInstant, ActorKind, ActorUpdate, Located,
   newActorData, actorDataToUpdate,
 } from "./moncher"
+import {Pathfinding} from "./pathfinding"
 import {MONSTER_ACCELERANT} from "./debug"
 
 const guestName = (id :UUID) => `Guest ${id.substring(0, 4)}`
@@ -163,14 +164,20 @@ function handleMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth) {
   }
 }
 
+interface RanchContext {
+  obj :RanchObject
+  path? :Pathfinding
+}
+
 function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
+  const ctx = { obj }
   switch (req.type) {
     case "touch":
-      touchActor(obj, req.id)
+      touchActor(ctx, req.id)
       break
 
     case "tick":
-      tickRanch(obj, 1000) // TODO
+      tickRanch(ctx, 1000) // TODO
       break
 
     case "setName":
@@ -179,11 +186,11 @@ function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
       break
 
     case "dropEgg":
-      addActor(obj, MonsterDb.getRandomEgg(), req)
+      addActor(ctx, MonsterDb.getRandomEgg(), req)
       break
 
     case "dropFood":
-      addActor(obj, MonsterDb.getFood(), req)
+      addActor(ctx, MonsterDb.getFood(), req)
       break
 
     default:
@@ -195,7 +202,7 @@ function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
 /**
  * Handle adding an actor. */
 function addActor (
-  obj :RanchObject,
+  ctx :RanchContext,
   config :ActorConfig,
   locProps :Located,
 ) :void {
@@ -209,43 +216,43 @@ function addActor (
   const uuid = uuidv1()
   const data = newActorData(config.kind, locProps)
   const update = actorDataToUpdate(data)
-  obj.actorConfigs.set(uuid, config)
-  obj.actorData.set(uuid, data)
-  obj.actors.set(uuid, update)
+  ctx.obj.actorConfigs.set(uuid, config)
+  ctx.obj.actorData.set(uuid, data)
+  ctx.obj.actors.set(uuid, update)
 }
 
 function removeActor (
-  obj :RanchObject,
+  ctx :RanchContext,
   uuid :UUID,
 ) :void {
-  obj.actorData.delete(uuid)
-  obj.actors.delete(uuid)
-  obj.actorConfigs.delete(uuid)
+  ctx.obj.actorData.delete(uuid)
+  ctx.obj.actors.delete(uuid)
+  ctx.obj.actorConfigs.delete(uuid)
 }
 
 function tickRanch (
-  obj :RanchObject,
+  ctx :RanchContext,
   dt :number,
 ) :void {
   // tick every actor
-  obj.actorData.forEach((data :ActorData, key :UUID) => {
-      const config = obj.actorConfigs.get(key)
-      if (config) tickActor(obj, dt, key, config, data)
+  ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
+      const config = ctx.obj.actorConfigs.get(key)
+      if (config) tickActor(ctx, dt, key, config, data)
       else log.warn("Missing actor config?", "key", key)
     })
 
   // publish changes (after ticking EVERY actor. Actors may modify each other.)
-  obj.actorData.forEach((data :ActorData, key :UUID) => {
+  ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
       if (data.hp <= 0) {
-        removeActor(obj, key)
+        removeActor(ctx, key)
       } else {
-        obj.actors.set(key, actorDataToUpdate(data))
+        ctx.obj.actors.set(key, actorDataToUpdate(data))
       }
     })
 }
 
 function tickActor (
-  obj :RanchObject,
+  ctx :RanchContext,
   dt :number,
   key :UUID,
   config :ActorConfig,
@@ -274,7 +281,7 @@ function tickActor (
 
     case ActorKind.Lobber:
     case ActorKind.Runner:
-      tickMonster(obj, dt, key, config, data)
+      tickMonster(ctx, dt, key, config, data)
       break
 
     default:
@@ -286,7 +293,7 @@ function tickActor (
 /**
  * Handle monster tick (for now) */
 function tickMonster (
-  obj :RanchObject,
+  ctx :RanchContext,
   dt :number,
   key :UUID,
   config :ActorConfig,
@@ -298,12 +305,12 @@ function tickMonster (
   switch (data.action) {
     case ActorAction.Waiting:
       if (--data.counter <= 0) {
-        setAction(obj, data, ActorAction.Idle)
+        setAction(ctx, data, ActorAction.Idle)
       }
       break
 
 		case ActorAction.Hatching:
-      setAction(obj, data, ActorAction.Waiting, 3)
+      setAction(ctx, data, ActorAction.Waiting, 3)
 			break
 
 		case ActorAction.Walking:
@@ -335,31 +342,31 @@ function tickMonster (
 			if (--data.counter <= 0) {
 				data.hunger = 0
 				data.scale *= 1.2 // TODO
-				const newpos = getRandomPositionFrom(obj, data, 2)
+				const newpos = getRandomPositionFrom(ctx, data, 2)
 				if (newpos) {
-          setAction(obj, data, ActorAction.Sleepy)
+          setAction(ctx, data, ActorAction.Sleepy)
           pushState(data, ActorAction.Sleeping)
           data.counter = 100 / MONSTER_ACCELERANT
-          walkTo(obj, data, newpos, .5)
+          walkTo(ctx, data, newpos, .5)
 				} else {
-					setAction(obj, data, ActorAction.Sleeping, 100 / MONSTER_ACCELERANT)
+					setAction(ctx, data, ActorAction.Sleeping, 100 / MONSTER_ACCELERANT)
 				}
 			}
 			break
 
 		case ActorAction.Sleeping:
 			if (--data.counter <= 0) {
-				setAction(obj, data, ActorAction.Waking)
+				setAction(ctx, data, ActorAction.Waking)
 			}
 			break
 
 		case ActorAction.Waking:
-			setAction(obj, data, ActorAction.Waiting, 8 / MONSTER_ACCELERANT)
+			setAction(ctx, data, ActorAction.Waiting, 8 / MONSTER_ACCELERANT)
 			break
 
 		case ActorAction.Unknown: // Do nothing for a little while
 			if (--data.counter <= 0) {
-				setAction(obj, data, popState(data))
+				setAction(ctx, data, popState(data))
 			}
 			break
 
@@ -367,15 +374,15 @@ function tickMonster (
       if (++data.hunger > 100 / MONSTER_ACCELERANT) {
         const isFood = (key :UUID, config :ActorConfig, data :ActorData) :boolean =>
             (config.kind === ActorKind.Food)
-        const food = getNearestActor(obj, data, isFood)
+        const food = getNearestActor(ctx, data, isFood)
         if (food) {
           const foodData = food[2]
           if (getDistance(data, foodData) < .1) {
             foodData.hp -= 10
-            setAction(obj, data, ActorAction.Eating, 10 / MONSTER_ACCELERANT)
+            setAction(ctx, data, ActorAction.Eating, 10 / MONSTER_ACCELERANT)
           } else {
-            setAction(obj, data, ActorAction.SeekingFood)
-            walkTo(obj, data, foodData, 1.5)
+            setAction(ctx, data, ActorAction.SeekingFood)
+            walkTo(ctx, data, foodData, 1.5)
           }
           break
         }
@@ -388,13 +395,13 @@ function tickMonster (
             (config.kind === ActorKind.Egg)
         const isReadyEgg = (key :UUID, config :ActorConfig, data :ActorData) :boolean =>
             (isEgg(key, config, data) && (data.action === ActorAction.ReadyToHatch))
-        const egg = getNearestActor(obj, data, isReadyEgg) ||
-            getNearestActor(obj, data, isEgg)
+        const egg = getNearestActor(ctx, data, isReadyEgg) ||
+            getNearestActor(ctx, data, isEgg)
         if (egg) {
           const eggData = egg[2]
-          const nearEgg = getRandomPositionFrom(obj, eggData, 5)
+          const nearEgg = getRandomPositionFrom(ctx, eggData, 5)
           if (nearEgg) {
-            walkTo(obj, data, nearEgg, 1.2)
+            walkTo(ctx, data, nearEgg, 1.2)
           }
         }
         break
@@ -402,9 +409,9 @@ function tickMonster (
 
       // Wander randomly!
       if (Math.random() < .075) {
-        const newpos = getRandomPositionFrom(obj, data, 10)
+        const newpos = getRandomPositionFrom(ctx, data, 10)
         if (newpos) {
-          walkTo(obj, data, newpos)
+          walkTo(ctx, data, newpos)
         }
       }
       break
@@ -426,15 +433,15 @@ function popState (data :ActorData) :ActorAction {
 /**
  * Handle "touching" an actor. */
 function touchActor (
-  obj :RanchObject,
+  ctx :RanchContext,
   id :UUID,
 ) :void {
-  const data = obj.actorData.get(id)
+  const data = ctx.obj.actorData.get(id)
   if (!data) {
     log.warn("Client asked to touch missing actor", "key", id)
     return
   }
-  const config = obj.actorConfigs.get(id)
+  const config = ctx.obj.actorConfigs.get(id)
   if (!config) {
     log.warn("Missing actor config?", "key", id)
     return
@@ -445,7 +452,7 @@ function touchActor (
     case ActorKind.Egg:
       if (data.action === ActorAction.ReadyToHatch) {
         data.action = ActorAction.Hatching
-        addActor(obj, config.spawn!, data)
+        addActor(ctx, config.spawn!, data)
         publish = true
       }
       break
@@ -454,7 +461,7 @@ function touchActor (
     case ActorKind.Runner:
       switch (data.action) {
         case ActorAction.Sleeping:
-          setAction(obj, data, ActorAction.Waking)
+          setAction(ctx, data, ActorAction.Waking)
           break
 
         default:
@@ -480,26 +487,26 @@ function touchActor (
   }
 
   if (publish) {
-    obj.actors.set(id, actorDataToUpdate(data))
+    ctx.obj.actors.set(id, actorDataToUpdate(data))
   }
 }
 
 function setAction (
-  obj :RanchObject, data :ActorData, action :ActorAction, counterInit :number = 0
+  ctx :RanchContext, data :ActorData, action :ActorAction, counterInit :number = 0
 ) :void {
   data.action = action
   data.counter = Math.trunc(counterInit)
 }
 
 function getNearestActor (
-  obj :RanchObject,
+  ctx :RanchContext,
   loc :Located,
   predicate :(key :UUID, config :ActorConfig, data :ActorData) => boolean,
   maxDist :number = Infinity
 ) :[ UUID, ActorConfig, ActorData ]|undefined {
   let nearest = undefined
-  obj.actorData.forEach((data :ActorData, key :UUID) => {
-    const config = obj.actorConfigs.get(key)
+  ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
+    const config = ctx.obj.actorConfigs.get(key)
     if (!config) {
       log.warn("Missing actor config?", "key", key)
       return
@@ -516,7 +523,7 @@ function getNearestActor (
 }
 
 function getRandomPositionFrom (
-  obj :RanchObject,
+  ctx :RanchContext,
   loc :Located,
   maxDist = Infinity
 ) :Located|undefined {
@@ -530,7 +537,7 @@ function getDistance (one :Located, two :Located) :number {
   return Math.sqrt(dx*dx + dy*dy + dz*dz)
 }
 
-function walkTo (obj :RanchObject, data :ActorData, newPos :Located, speedFactor = 1) :void {
+function walkTo (ctx :RanchContext, data :ActorData, newPos :Located, speedFactor = 1) :void {
   // TODO!
 }
 
