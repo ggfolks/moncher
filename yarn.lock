@@ -4611,13 +4611,13 @@ terser@^4.0.0:
     firebase "^6.6.1"
     firebase-admin "^8.5.0"
     gl-matrix "^3.0.0"
-    three "^0.106.2"
+    three "^0.108.0"
     ws "^7.1.2"
 
-three@^0.106.2:
-  version "0.106.2"
-  resolved "https://registry.yarnpkg.com/three/-/three-0.106.2.tgz#6752d304c470e4df230944ecd45325e7bf79e1f8"
-  integrity sha512-4Tlx43uoxnIaZFW2Bzkd1rXsatvVHEWAZJy8LuE+s6Q8c66ogNnhfq1bHiBKPAnXP230LD11H/ScIZc2LZMviA==
+three@^0.108.0:
+  version "0.108.0"
+  resolved "https://registry.yarnpkg.com/three/-/three-0.108.0.tgz#53d26597c7932f214bb43f4655e566d2058143b5"
+  integrity sha512-d1ysIXwi8qTlbmMwrTxi5pYiiYIflEr0e48krP0LAY8ndS8c6fkLHn6NvRT+o76/Fs9PBLxFViuI62iGVWwwlg==
 
 through2@^2.0.0:
   version "2.0.5"
