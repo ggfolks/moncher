@@ -175,14 +175,14 @@ interface RanchContext {
 }
 
 function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
-  const ctx = { obj, path: global["_ranchPathfinder"] }
+  const ctx :RanchContext = { obj, path: global["_ranchPathfinder"] }
   switch (req.type) {
     case "touch":
       touchActor(ctx, req.id)
       break
 
     case "tick":
-      tickRanch(ctx, 1000) // TODO
+      tickRanch(ctx, 1000) // TODO delta time?
       break
 
     case "setName":
@@ -241,6 +241,7 @@ function tickRanch (
   ctx :RanchContext,
   dt :number,
 ) :void {
+  //log.debug("Ticking ranch")
   // tick every actor
   ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
       const config = ctx.obj.actorConfigs.get(key)
@@ -548,11 +549,11 @@ function getDistance (one :Located, two :Located) :number {
   return Math.sqrt(dx*dx + dy*dy + dz*dz)
 }
 
-function loc2vec (loc :Located, into? :Vector3) :Vector3 {
+export function loc2vec (loc :Located, into? :Vector3) :Vector3 {
   return (into || new Vector3()).set(loc.x, loc.y, loc.z)
 }
 
-function vec2loc (vec :Vector3, into? :Located) :Located {
+export function vec2loc (vec :Vector3, into? :Located) :Located {
   if (!into) into = <Located>{}
   into.x = vec.x
   into.y = vec.y

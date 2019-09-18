@@ -16,7 +16,7 @@ import {
   WebGLRenderer,
 } from "three"
 
-import {Pathfinding} from "./pathfinding"
+//import {Pathfinding} from "./pathfinding"
 
 import {Body} from "cannon"
 
@@ -31,6 +31,7 @@ import {
   Remover,
   log,
 } from "tfw/core/util"
+import {UUID} from "tfw/core/uuid"
 import {Hand, Pointer} from "tfw/input/hand"
 import {Keyboard} from "tfw/input/keyboard"
 import {
@@ -73,23 +74,24 @@ import {
   ActorInstant,
   ActorKind,
   ActorKindAttributes,
-  ActorState,
+  ActorUpdate,
+//  Located,
   PathRec,
-  RanchModel,
+  blankActorUpdate,
 } from "./moncher"
-import {MonsterDb} from "./monsterdb"
 import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
-import {RanchObject} from "./data"
+import {RanchObject, loc2vec} from "./data"
 
 class ActorInfo {
 
   constructor (
-    /** The id from the RanchModel. */
-    readonly id :number,
+    /** The id from server. */
+    readonly id :UUID,
     /** The id in the entity system. */
     readonly entityId :number,
+    /** An easy reference to the config. */
     readonly config :ActorConfig,
   ) {}
 }
@@ -105,7 +107,7 @@ class PathSystem extends System {
     domain :Domain,
     readonly trans :TransformComponent,
     readonly paths :Component<PathRec|undefined>,
-    readonly state :Component<ActorState>,
+    readonly state :Component<ActorUpdate>,
     readonly setY :(into :Vector3) => void,
   ) {
     super(domain, Matcher.hasAllC(trans.id, paths.id))
@@ -177,7 +179,6 @@ export class RanchMode extends Mode {
 
   constructor (
     protected _app :App,
-    protected _ranch :RanchModel,
   ) {
     super()
     this.subscribeToRanch()
@@ -186,13 +187,24 @@ export class RanchMode extends Mode {
 
     // But, let's set things to be ready after a short delay even if there's *trouble at the mill*
     // Dispatches to setReady() unless we've been disposed already, but setReady is idempotent.
-    let handle :any
-    const cancelTimeout = () => { clearTimeout(handle) }
-    handle = setTimeout(() => { this.onDispose.remove(cancelTimeout); this.setReady() }, 2000)
-    this.onDispose.add(cancelTimeout)
+//    let handle :any
+//    const cancelTimeout = () => { clearTimeout(handle) }
+//    handle = setTimeout(() => { this.onDispose.remove(cancelTimeout); this.setReady() }, 2000)
+//    this.onDispose.add(cancelTimeout)
 
     this.onDispose.add(this._hud = new Hud(_app, this._host, _app.renderer, this))
     this.setUiState(UiState.Default)
+
+    // TEMP: ticks initiated from the client!
+    let nextTime = 0
+    this.onDispose.add(_app.loop.clock.onEmit(clock => {
+        if (clock.elapsed > nextTime) {
+          this._ranchObj.ranchq.post({type: "tick"})
+          // tick just once, advance a full second. This will all change and I don't
+          // want to flood ticks
+          nextTime = clock.elapsed + 1
+        }
+      }))
 
     this.onDispose.add(this._chat = new ChatView(_app, this._host))
 
@@ -347,7 +359,7 @@ export class RanchMode extends Mode {
         new AnimationMixer(new Object3D()))
     const body = new DenseValueComponent<Body>("body", new Body())
     const state = this._state =
-        new DenseValueComponent<ActorState>("state", ActorState.createDummy())
+        new DenseValueComponent<ActorUpdate>("state", blankActorUpdate())
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
     const paths = this._paths = new SparseValueComponent<PathRec|undefined>("paths", undefined)
     const graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
@@ -453,10 +465,7 @@ export class RanchMode extends Mode {
       navMesh.parent!.remove(navMesh)
       this._navMesh = navMesh
 
-      // update the ranch model TODO: this will be a serverside thing, can't update it from here!
-      this._ranch.setNavMesh(navMesh)
-
-      this.configurePathFinding(navMesh)
+//      this.configurePathFinding(navMesh)
 
       // use the bounding box of the navmesh geometry as the bounds of our camera focus
       navMesh.geometry.computeBoundingBox()
@@ -480,13 +489,13 @@ export class RanchMode extends Mode {
     }
   }
 
-  /**
-   * Configure pathfinding once we have the navmesh. */
-  protected configurePathFinding (navMesh :Mesh) :void {
-    this._pathFinder = new Pathfinding()
-    this._pathFinder.setZoneData(
-      RanchMode.RANCH_ZONE, Pathfinding.createZone(navMesh.geometry as THREE.BufferGeometry))
-  }
+//  /**
+//   * Configure pathfinding once we have the navmesh. */
+//  protected configurePathFinding (navMesh :Mesh) :void {
+//    this._pathFinder = new Pathfinding()
+//    this._pathFinder.setZoneData(
+//      RanchMode.RANCH_ZONE, Pathfinding.createZone(navMesh.geometry as THREE.BufferGeometry))
+//  }
 
   /**
    * Called once we know enough to start adding actors. */
@@ -494,38 +503,38 @@ export class RanchMode extends Mode {
     if (this._ready) return
     this._ready = true
 
-    this.onDispose.add(this._ranch.actors.onChange(this._actorChanged))
-    this._ranch.actors.forEach((actor, id) => { this.updateActor(id, actor) })
+    this.onDispose.add(this._ranchObj.actors.onChange(this._actorChanged))
+    this._ranchObj.actors.forEach((actor, id) => { this.updateActor(id, actor) })
   }
 
   /**
    * React to a actor being updated in the ranch model. */
-  protected updateActor (id :number, state :ActorState) :void {
+  protected updateActor (id :UUID, update :ActorUpdate) :void {
     // see if we've given this monster an entity ID yet
     let actorInfo = this._actors.get(id)
     if (!actorInfo) {
-      actorInfo = this.addActor(id, state)
+      actorInfo = this.addActor(id, update)
     }
-    this.updateActorSprite(actorInfo, state)
+    this.updateActorSprite(actorInfo, update)
   }
 
   /**
    * Effect updates received from the RanchModel. */
-  protected updateActorSprite (actorInfo :ActorInfo, state :ActorState) :void {
+  protected updateActorSprite (actorInfo :ActorInfo, update :ActorUpdate) :void {
     // store their state in the entity system...
-    this._state.update(actorInfo.entityId, state)
-    this._paths.update(actorInfo.entityId, state.path)
-    if (!state.path) {
-      this._trans.updatePosition(actorInfo.entityId, state.pos)
+    this._state.update(actorInfo.entityId, update)
+    //this._paths.update(actorInfo.entityId, update.path)
+    if (!update.path) {
+      this._trans.updatePosition(actorInfo.entityId, loc2vec(update, scratchV))
       this._trans.updateQuaternion(actorInfo.entityId,
-          scratchQ.setFromAxisAngle(unitY, state.orient))
+          scratchQ.setFromAxisAngle(unitY, update.orient))
     }
     this._trans.updateScale(actorInfo.entityId,
-        scratchV.set(state.scale, state.scale, state.scale))
-    this.updateBubble(actorInfo, state)
+        scratchV.set(update.scale, update.scale, update.scale))
+    this.updateBubble(actorInfo, update)
   }
 
-  protected addBubble (monst :Object3D, state :ActorState) :void {
+  protected addBubble (monst :Object3D, update :ActorUpdate) :void {
     const bubble = new Sprite(this._bubbleMaterial)
     bubble.name = "bubble"
     const emoji = new Sprite()
@@ -534,29 +543,29 @@ export class RanchMode extends Mode {
     bubble.position.y =  1.2
     bubble.scale.set(.8, .8, .8)
     monst.add(bubble)
-    this.updateBubble2(monst, state)
+    this.updateBubble2(monst, update)
   }
 
-  protected updateBubble (actorInfo :ActorInfo, state :ActorState) :void {
+  protected updateBubble (actorInfo :ActorInfo, update :ActorUpdate) :void {
     const obj = this._obj.read(actorInfo.entityId)
-    this.updateBubble2(obj, state)
+    this.updateBubble2(obj, update)
   }
 
-  protected updateBubble2 (monst :Object3D, state :ActorState) :void {
+  protected updateBubble2 (monst :Object3D, update :ActorUpdate) :void {
     const bub = monst.getObjectByName("bubble")
     if (!bub) return
-    const material = this._emojis.get(state.action)
+    const material = this._emojis.get(update.action)
     bub.visible = material !== undefined
     if (material) {
       (bub.children[0] as Sprite).material = material
     }
   }
 
-  protected addActor (id :number, state :ActorState) :ActorInfo {
-    const cfg = this._ranch.actorConfig.get(id)
+  protected addActor (id :UUID, update :ActorUpdate) :ActorInfo {
+    const cfg = this._ranchObj.actorConfigs.get(id)
     if (!cfg) {
       // this isn't supposed to happen
-      throw new Error("Actor doesn't have a config in the RanchModel")
+      throw new Error("Actor doesn't have a config in the Ranch")
     }
 
     // Preloading!
@@ -840,15 +849,15 @@ export class RanchMode extends Mode {
       onLoad: (obj :Object3D) => {
         if (cfg.color !== undefined) this.colorize(obj, new Color(cfg.color))
         makeShadowy(obj)
-        if (ActorKindAttributes.isMonster(cfg.kind)) this.addBubble(obj, state)
+        if (ActorKindAttributes.isMonster(cfg.kind)) this.addBubble(obj, update)
       },
     }
     const entityId = this._domain.add({
       components: {
         trans: {initial: new Float32Array(
-            [state.pos.x, state.pos.y, state.pos.z, 0, 0, 0, 1, 1, 1, 1])},
+            [update.x, update.y, update.z, 0, 0, 0, 1, 1, 1, 1])},
         obj: objDef,
-        state: {initial: state},
+        state: {initial: update},
         paths: {},
         hovers: {},
         mixer: {},
@@ -862,7 +871,7 @@ export class RanchMode extends Mode {
 
   /**
    * React to an actor being removed from the ranch model. */
-  protected deleteActor (id :number) :void {
+  protected deleteActor (id :UUID) :void {
     const actorInfo = this._actors.get(id)
     if (!actorInfo) return
     this._actors.delete(id)
@@ -884,15 +893,13 @@ export class RanchMode extends Mode {
     return undefined
   }
 
-  protected actorTouched (id :number) :void {
-    this._ranch.actorTouched(id)
-
+  protected actorTouched (id :UUID) :void {
     this._ranchObj.ranchq.post({type: "touch", id: id})
   }
 
   /**
    * Have the camera follow the specified actor. */
-  protected trackActor (id :number) :void {
+  protected trackActor (id :UUID) :void {
     const actorInfo = this._actors.get(id)
     if (actorInfo) this._camControl.setTrackedEntity(this._domain.ref(actorInfo.entityId))
   }
@@ -901,11 +908,9 @@ export class RanchMode extends Mode {
    * Place an egg or food. */
   protected doPlacement (pos :Vector3) :void {
     const isEgg = (this._uiState === UiState.PlacingEgg)
-    const actorConfig :ActorConfig = isEgg ? MonsterDb.getRandomEgg() : MonsterDb.getFood()
-    this._ranch.addActor(actorConfig, pos)
+    this._ranchObj.ranchq.post(
+        {type: isEgg ? "dropEgg" : "dropFood", x: pos.x, y: pos.y, z: pos.z})
     this.setUiState(UiState.Default)
-
-    this._ranchObj.ranchq.post({type: isEgg ? "dropEgg" : "dropFood", x: pos.x, y: pos.y, z: pos.z})
   }
 
   /**
@@ -975,7 +980,7 @@ export class RanchMode extends Mode {
 
   protected _uiState :UiState = UiState.Default
 
-  protected _pathFinder? :Pathfinding
+//  protected _pathFinder? :Pathfinding
 
   protected _ready :boolean = false
 
@@ -985,7 +990,7 @@ export class RanchMode extends Mode {
   protected _hand! :Hand
   protected _trans! :TransformComponent
   protected _obj! :Component<Object3D>
-  protected _state! :Component<ActorState>
+  protected _state! :Component<ActorUpdate>
   protected _paths! :Component<PathRec|undefined>
   protected _graphsys! :GraphSystem
   protected _pathsys! :PathSystem
@@ -1008,9 +1013,9 @@ export class RanchMode extends Mode {
 
   protected readonly _inspectUiSize :dim2 = dim2.fromValues(1024, 768)
 
-  protected readonly _actors :Map<number, ActorInfo> = new Map()
+  protected readonly _actors :Map<UUID, ActorInfo> = new Map()
 
-  protected readonly _actorChanged = (change :MapChange<number, ActorState>) => {
+  protected readonly _actorChanged = (change :MapChange<UUID, ActorUpdate>) => {
     if (change.type === "set") {
       this.updateActor(change.key, change.value)
     } else {
@@ -1074,5 +1079,5 @@ export class RanchMode extends Mode {
     }
   }
 
-  private static readonly RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
+//  private static readonly RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
 }
