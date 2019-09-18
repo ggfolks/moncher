@@ -1714,6 +1714,11 @@ eslint-scope@^4.0.0:
     esrecurse "^4.1.0"
     estraverse "^4.1.1"
 
+esm@^3.2.25:
+  version "3.2.25"
+  resolved "https://registry.yarnpkg.com/esm/-/esm-3.2.25.tgz#342c18c29d56157688ba5ce31f8431fbb795cc10"
+  integrity sha512-U1suiZ2oDVWv4zPO56S0NcR5QriEahGtdN2OR6FiOG4WJvcjBVFB0qI4+eKoWFH483PKGuLuu6V8Z4T5g63UVA==
+
 esrecurse@^4.1.0:
   version "4.2.1"
   resolved "https://registry.yarnpkg.com/esrecurse/-/esrecurse-4.2.1.tgz#007a3b9fdbc2b3bb87e4879ea19c92fdbd3942cf"
@@ -4887,6 +4892,18 @@ wbuf@^1.1.0, wbuf@^1.7.3:
   integrity sha512-O84QOnr0icsbFGLS0O3bI5FswxzRr8/gHwWkDlQFskhSPryQXvrTMxjxGP4+iWYoauLoBvfDpkrOauZ+0iZpDA==
   dependencies:
     minimalistic-assert "^1.0.0"
+
+web-blob@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/web-blob/-/web-blob-1.0.0.tgz#33d6b931557275251417e22ea160a27de6c87429"
+  integrity sha512-SJxela8BFD8S2alsyppbkHTlem7vN+ijPhUcIQeMUxnmHzsk1wJKtUvNIVblOUypkl7cgmlwkJH0Kb+mzbI23Q==
+  dependencies:
+    web-streams-polyfill "2.0.3"
+
+web-streams-polyfill@2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/web-streams-polyfill/-/web-streams-polyfill-2.0.3.tgz#0c396f069a5eedc96c711393b12f2c67cf283a00"
+  integrity sha512-pOqiHmL3RBAGS+SgOR42RbPU6nc8/n15N2rsOXFYHLnTfs2Z8QHs8AizOeOaYEnhwPN4+hu3M2D9XvAqzvt6MA==
 
 webpack-cli@^3.3.4:
   version "3.3.6"

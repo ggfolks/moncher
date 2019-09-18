@@ -25,8 +25,10 @@
     }
   },
   "dependencies": {
+    "esm": "^3.2.25",
     "tfw": "file:../platform/lib",
-    "three-gltf-loader": "^1.108.0"
+    "three-gltf-loader": "^1.108.0",
+    "web-blob": "^1.0.0"
   },
   "devDependencies": {
     "awesome-typescript-loader": "^5.2.0",
