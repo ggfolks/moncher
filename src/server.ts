@@ -3,11 +3,11 @@ import * as admin from "firebase-admin"
 
 import {TextEncoder, TextDecoder} from "util"
 import {setTextCodec} from "tfw/core/codec"
+import {log} from "tfw/core/util"
 import {Server} from "tfw/data/server"
 import {FirebaseDataStore} from "tfw/data/firebase"
 import {FirebaseAuthValidator} from "tfw/auth/firebase"
-import {ServerObject} from "./data"
-import {log} from "tfw/core/util"
+import {ServerObject, RANCH_ZONE_ID} from "./data"
 import {Pathfinding} from "./pathfinding"
 
 setTextCodec(() => new TextEncoder() as any, () => new TextDecoder() as any)
@@ -35,26 +35,23 @@ global["Blob"] = require("web-blob").constructor
 const Loader = require("three-gltf-loader")
 const fs = require("fs")
 fs.readFile("dist/ranch/RanchNavmesh.glb", (err :any, data :any) => {
-  if (err) {
-    log.warn("Got an error", "err", err)
-  } else {
-    if (data instanceof Buffer) {
-      log.info("It's a buffer!")
-      const loader = new Loader()
-      loader.parse(data.buffer, "./",
-        (gltf :any) => {
-          console.log("Holy crap we got it? " + gltf)
-          configureNavMesh(gltf)
-        },
-        (error :any) => {
-          console.error("I got an error " + error)
-        })
-
-    } else {
-      log.info("Data is", typeof data, data)
+    if (err) {
+      log.warn("Error reading navmesh GLB file", "err", err)
+      return
     }
-  }
-})
+    if (!(data instanceof Buffer)) {
+      log.warn("Unrecognized data from filesystem load. Not loading navmesh.")
+      return
+    }
+    const loader = new Loader()
+    loader.parse(data.buffer, "./",
+      (gltf :any) => {
+        configureNavMesh(gltf)
+      },
+      (error :any) => {
+        log.warn("Error loading navmesh GLB", "err", error)
+      })
+  })
 
 function configureNavMesh (gltf :any) :void {
   const scene = gltf.scene
@@ -62,6 +59,6 @@ function configureNavMesh (gltf :any) :void {
 //  log.debug("I got something: " + navMesh)
 //  log.debug("It's a mesh? " + (navMesh instanceof Mesh))
   const pather = new Pathfinding()
-  pather.setZoneData("ranch", Pathfinding.createZone(navMesh.geometry))
+  pather.setZoneData(RANCH_ZONE_ID, Pathfinding.createZone(navMesh.geometry))
   global["_ranchPathfinder"] = pather
 }

@@ -2,6 +2,7 @@ import {Timestamp, log} from "tfw/core/util"
 import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
 import {Auth, DObject, MetaMsg} from "tfw/data/data"
 import {dcollection, dobject, dset, dmap, dqueue, dvalue} from "tfw/data/meta"
+import {Vector3} from "three"
 import {MonsterDb} from "./monsterdb"
 import {
   ActorAction, ActorConfig, ActorData, ActorInstant, ActorKind, ActorUpdate, Located,
@@ -13,6 +14,10 @@ import {MONSTER_ACCELERANT} from "./debug"
 const guestName = (id :UUID) => `Guest ${id.substring(0, 4)}`
 const guestPhoto = (id :UUID) => "ui/DefaultAvatar.png"
 const ranchName = (id :UUID) => `Ranch ${id.substring(0, 4)}`
+
+/** A zoneId for three-pathfinding. */
+// TODO: make a fucking ZonedPathfinder that just encapsulates this crap
+export const RANCH_ZONE_ID = "ranch"
 
 @dobject
 export class ProfileObject extends DObject {
@@ -170,7 +175,7 @@ interface RanchContext {
 }
 
 function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
-  const ctx = { obj }
+  const ctx = { obj, path: global["_ranchPathfinder"] }
   switch (req.type) {
     case "touch":
       touchActor(ctx, req.id)
@@ -219,6 +224,8 @@ function addActor (
   ctx.obj.actorConfigs.set(uuid, config)
   ctx.obj.actorData.set(uuid, data)
   ctx.obj.actors.set(uuid, update)
+
+  //log.debug("We got a random position?", "pos", getRandomPositionFrom(ctx, data))
 }
 
 function removeActor (
@@ -527,9 +534,13 @@ function getRandomPositionFrom (
   loc :Located,
   maxDist = Infinity
 ) :Located|undefined {
-
-  // TODO!
-  return undefined
+  if (!ctx.path) return undefined
+  const vec = loc2vec(loc)
+  const groupId = ctx.path.getGroup(RANCH_ZONE_ID, vec)
+  if (groupId === null) return undefined
+  const result = ctx.path.getRandomPositionFrom(RANCH_ZONE_ID, groupId, vec, maxDist)
+  if (result) return vec2loc(result)
+  else return undefined
 }
 
 function getDistance (one :Located, two :Located) :number {
@@ -537,8 +548,26 @@ function getDistance (one :Located, two :Located) :number {
   return Math.sqrt(dx*dx + dy*dy + dz*dz)
 }
 
+function loc2vec (loc :Located, into? :Vector3) :Vector3 {
+  return (into || new Vector3()).set(loc.x, loc.y, loc.z)
+}
+
+function vec2loc (vec :Vector3, into? :Located) :Located {
+  if (!into) into = <Located>{}
+  into.x = vec.x
+  into.y = vec.y
+  into.z = vec.z
+  return into
+}
+
 function walkTo (ctx :RanchContext, data :ActorData, newPos :Located, speedFactor = 1) :void {
-  // TODO!
+  // FOR NOW, simply update our location to the new loc!
+  data.x = newPos.x
+  data.y = newPos.y
+  data.z = newPos.z
+
+  // when we finish walking this happens: (remove from here)
+  setAction(ctx, data, popState(data), data.counter)
 }
 
 @dobject
