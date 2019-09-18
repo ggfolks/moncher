@@ -26,3 +26,20 @@ const server = new Server(store, {firebase: new FirebaseAuthValidator()})
 server.state.onValue(ss => {
   console.log(`Server state: ${ss}`)
 })
+
+
+var loader = require("three-gltf-loader")
+var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest
+global["XMLHttpRequest"] = XMLHttpRequest
+
+// Load the ranch and just shoooove it into the global context
+new loader().load(
+  "http://localhost:3000/ranch/Ranch.glb",
+  (gltf :any) => {
+    console.log("Holy crap we got it? " + gltf)
+  },
+  (event :any) => { /* progress events */ },
+  (error :any) => {
+    console.error("I got an error " + error)
+  })
+

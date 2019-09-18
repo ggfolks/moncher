@@ -4614,6 +4614,11 @@ terser@^4.0.0:
     three "^0.108.0"
     ws "^7.1.2"
 
+three-gltf-loader@^1.108.0:
+  version "1.108.0"
+  resolved "https://registry.yarnpkg.com/three-gltf-loader/-/three-gltf-loader-1.108.0.tgz#d1baa993f4eae8f35586f7a30231a13547b6cb1d"
+  integrity sha512-oywS/qkqBTO3IKPzBCvlP2mvDfprrqvIu2tvWcvAHiANr9digUeGF0EKPWWsmiYpyBLs/Gh0ocdypSxZs3pu8w==
+
 three@^0.108.0:
   version "0.108.0"
   resolved "https://registry.yarnpkg.com/three/-/three-0.108.0.tgz#53d26597c7932f214bb43f4655e566d2058143b5"
@@ -5108,7 +5113,7 @@ xdg-basedir@^4.0.0:
   resolved "https://registry.yarnpkg.com/xdg-basedir/-/xdg-basedir-4.0.0.tgz#4bc8d9984403696225ef83a1573cbbcb4e79db13"
   integrity sha512-PSNhEJDejZYV7h50BohL09Er9VaIefr2LMAf3OEmpCkjOi34eYyQYAXUTjEQtZJTKcF0E2UKTh+osDLsgNim9Q==
 
-xmlhttprequest@1.8.0:
+xmlhttprequest@1.8.0, xmlhttprequest@^1.8.0:
   version "1.8.0"
   resolved "https://registry.yarnpkg.com/xmlhttprequest/-/xmlhttprequest-1.8.0.tgz#67fe075c5c24fef39f9d65f5f7b7fe75171968fc"
   integrity sha1-Z/4HXFwk/vOfnWX197f+dRcZaPw=
