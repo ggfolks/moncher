@@ -328,15 +328,15 @@ function tickMonster (
 			if (--data.counter <= 0) {
 				data.hunger = 0
 				data.scale *= 1.2 // TODO
-//				const newpos = model.randomPositionFrom(this.pos, 2)
-//				if (newpos) {
-//					this.setAction(ActorAction.Sleepy)
-//					this.pushState(ActorAction.Sleeping)
-//					this._counter = 100 / MONSTER_ACCELERANT
-//					this.walkTo(model, newpos, .5)
-//				} else {
+				const newpos = getRandomPositionFrom(obj, data, 2)
+				if (newpos) {
+          setAction(obj, data, ActorAction.Sleepy)
+          pushState(data, ActorAction.Sleeping)
+          data.counter = 100 / MONSTER_ACCELERANT
+          walkTo(obj, data, newpos, .5)
+				} else {
 					setAction(obj, data, ActorAction.Sleeping, 100 / MONSTER_ACCELERANT)
-//				}
+				}
 			}
 			break
 
@@ -358,18 +358,20 @@ function tickMonster (
 
     case ActorAction.Idle:
       if (++data.hunger > 100 / MONSTER_ACCELERANT) {
-//        const food = model.getNearestActor(this.pos,
-//            actor => (actor.config.kind === ActorKind.Food))
-//        if (food) {
-//          if (this.pos.distanceTo(food.pos) < .1) {
-//            food.health -= 10
-//            this.setAction(ActorAction.Eating, 10 / MONSTER_ACCELERANT)
-//          } else {
-//            this.setAction(ActorAction.SeekingFood)
-//            this.walkTo(model, food.pos, 1.5)
-//          }
-//          break
-//        }
+        const isFood = (key :UUID, config :ActorConfig, data :ActorData) :boolean =>
+            (config.kind === ActorKind.Food)
+        const food = getNearestActor(obj, data, isFood)
+        if (food) {
+          const foodData = food[2]
+          if (getDistance(data, foodData) < .1) {
+            foodData.hp -= 10
+            setAction(obj, data, ActorAction.Eating, 10 / MONSTER_ACCELERANT)
+          } else {
+            setAction(obj, data, ActorAction.SeekingFood)
+            walkTo(obj, data, foodData, 1.5)
+          }
+          break
+        }
         // no food? Fall back to wandering...
       }
 
@@ -382,20 +384,21 @@ function tickMonster (
         const egg = getNearestActor(obj, data, isReadyEgg) ||
             getNearestActor(obj, data, isEgg)
         if (egg) {
-//          const nearEgg = model.randomPositionFrom(egg.pos, 5)
-//          if (nearEgg) {
-//            this.walkTo(model, nearEgg, 1.2)
-//          }
+          const eggData = egg[2]
+          const nearEgg = getRandomPositionFrom(obj, eggData, 5)
+          if (nearEgg) {
+            walkTo(obj, data, nearEgg, 1.2)
+          }
         }
         break
       }
 
       // Wander randomly!
       if (Math.random() < .075) {
-//        const newpos = model.randomPositionFrom(this.pos, 10)
-//        if (newpos) {
-//          this.walkTo(model, newpos)
-//        }
+        const newpos = getRandomPositionFrom(obj, data, 10)
+        if (newpos) {
+          walkTo(obj, data, newpos)
+        }
       }
       break
 
@@ -405,8 +408,11 @@ function tickMonster (
   }
 }
 
-function popState (data :ActorData) :ActorAction
-{
+function pushState (data :ActorData, state :ActorAction) :void {
+  data.stateStack.push(state)
+}
+
+function popState (data :ActorData) :ActorAction {
   return data.stateStack.pop() || ActorAction.Idle
 }
 
@@ -502,9 +508,23 @@ function getNearestActor (
   return nearest
 }
 
+function getRandomPositionFrom (
+  obj :RanchObject,
+  loc :Located,
+  maxDist = Infinity
+) :Located|undefined {
+
+  // TODO!
+  return undefined
+}
+
 function getDistance (one :Located, two :Located) :number {
   const dx = one.x - two.x, dy = one.y - two.y, dz = one.z - two.z
   return Math.sqrt(dx*dx + dy*dy + dz*dz)
+}
+
+function walkTo (obj :RanchObject, data :ActorData, newPos :Located, speedFactor = 1) :void {
+  // TODO!
 }
 
 @dobject
