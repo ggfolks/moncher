@@ -140,6 +140,13 @@ export class RanchObject extends DObject {
   @dmap("uuid", "record", false)
   actorData = this.map<UUID, ActorData>()
 
+  canRead (prop :keyof RanchObject, auth :Auth) :boolean {
+    switch (prop) {
+      case "actorData": return auth.isSystem
+      default: return super.canRead(prop, auth)
+    }
+  }
+
   canSubscribe (auth :Auth) { return true /* TODO: ranch membership */ }
 }
 
