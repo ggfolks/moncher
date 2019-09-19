@@ -59,7 +59,7 @@ function handleUserReq (obj :UserObject, req :UserReq, auth :Auth) {
   }
 }
 
-type Message = {
+export type Message = {
   sender :UUID
   text :string
   sent :Timestamp

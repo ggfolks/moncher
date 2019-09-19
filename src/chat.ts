@@ -5,7 +5,7 @@ import {Host} from "tfw/ui/element"
 import {Model, mapProvider} from "tfw/ui/model"
 
 import {App} from "./app"
-import {ChannelObject} from "./data"
+import {ChannelObject, Message} from "./data"
 import {box, label} from "./ui"
 import {AuthDialog} from "./auth"
 
@@ -97,6 +97,12 @@ function tail<A> (elems :A[], count :number) :A[] {
   return (elems.length <= count) ? elems : elems.slice(elems.length-count, elems.length)
 }
 
+function latestMsgs (msgs :ReadonlyMap<string, Message>, count :number) {
+  const entries = Array.from(msgs.entries())
+  entries.sort((e1, e2) => e1[1].sent.millis - e2[1].sent.millis)
+  return tail(entries.map(e => e[0]), count)
+}
+
 export class ChatView implements Disposable {
   private _onDispose = new Disposer()
 
@@ -114,7 +120,7 @@ export class ChatView implements Disposable {
         speaker: msg.switchMap(m => app.profiles.profile(m.sender).name)
       })),
       // TODO: sort these by timestamp?
-      msgkeys: msgs.map(msgs => tail(Array.from(msgs.keys()), 6)),
+      msgkeys: msgs.map(msgs => latestMsgs(msgs, 6)),
       input: Mutable.local(""),
       sendChat: () => {
         const text = modelData.input.current.trim()
