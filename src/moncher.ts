@@ -1,3 +1,7 @@
+import {PMap} from "tfw/core/util"
+import {UUID} from "tfw/core/uuid"
+import {RanchContext} from "./data"
+
 /** Actor kinds. */
 export const enum ActorKind {
   /** These will be persisted. Do not reuse ids. */
@@ -32,6 +36,16 @@ export class ActorKindAttributes {
   }
 }
 
+// TODO: use this?
+// Right now I'm going to proceed without it and see how annoying things get.
+// It's a bit more expensive to look-up the config as well, usually, and I want to be
+// consistent about what we're passing around. So many methods just take the data.
+export interface Actor {
+  id :UUID
+  config :ActorConfig
+  data :ActorData
+}
+
 /**
  * An interface for things that have a location. */
 export interface Located {
@@ -39,6 +53,62 @@ export interface Located {
   y :number
   z :number
 }
+
+export abstract class Behavior {
+  /**
+   * Tick an actor's behavior. */
+  tick (ctx :RanchContext, dt :number, data :ActorData) :void {
+    // process any walking
+    let path = data.path
+    while (path) {
+      if (dt < path.timeLeft) {
+        path.timeLeft -= dt
+        // update our position along this path piece
+        const perc = path.timeLeft / path.duration
+        data.x = (path.dest.x - path.src.x) * perc + path.src.x
+        data.y = (path.dest.y - path.src.y) * perc + path.src.y
+        data.z = (path.dest.z - path.src.z) * perc + path.src.z
+        return
+      }
+      // otherwise we used-up a path segment
+      if (path.next) {
+        dt -= path.timeLeft
+      } else {
+        // otherwise we have finished!
+        data.x = path.dest.x
+        data.y = path.dest.y
+        data.z = path.dest.z
+        // proceed to assign path to undefined, and fall out of the while
+      }
+      path = data.path = path.next
+    }
+  }
+
+  _isWalking (data :ActorData) :boolean {
+    return (data.path !== undefined)
+  }
+
+  static registerBehavior (code :string, beh :Behavior) :void {
+  }
+
+  protected static readonly _behaviors :Map<string, Behavior> = new Map()
+}
+
+class WanderBehavior extends Behavior {
+
+  tick (ctx :RanchContext, dt :number, data :ActorData) :void {
+    super.tick(ctx, dt, data)
+
+    if (!this._isWalking(data)) {
+      if (Math.random() < .1) {
+        // TODO HERE
+      }
+    }
+  }
+}
+console.log("Gruntle: " + WanderBehavior)
+
+export type BehaviorData = PMap<number>
 
 /**
  * Configuration for the 3D aspects of an actor. This will probably move. */
@@ -81,7 +151,6 @@ export const enum ActorAction {
   Eating,
   Sleepy,
   Sleeping,
-  Waking,
   Unknown,
 }
 

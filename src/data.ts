@@ -179,7 +179,7 @@ function handleMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth) {
   }
 }
 
-interface RanchContext {
+export interface RanchContext {
   obj :RanchObject
   path? :ZonedPathfinding
 }
@@ -385,12 +385,8 @@ function tickMonster (
 
   case ActorAction.Sleeping:
     if (--data.counter <= 0) {
-      setAction(ctx, data, ActorAction.Waking)
+      setAction(ctx, data, ActorAction.Waiting, 8 / MONSTER_ACCELERANT)
     }
-    break
-
-  case ActorAction.Waking:
-    setAction(ctx, data, ActorAction.Waiting, 8 / MONSTER_ACCELERANT)
     break
 
   case ActorAction.Unknown: // Do nothing for a little while
@@ -490,7 +486,7 @@ function touchActor (
     case ActorKind.Runner:
       switch (data.action) {
         case ActorAction.Sleeping:
-          setAction(ctx, data, ActorAction.Waking)
+          setAction(ctx, data, ActorAction.Idle)
           break
 
         default:
