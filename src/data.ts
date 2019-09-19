@@ -309,127 +309,127 @@ function tickMonster (
   data.instant = ActorInstant.None
 
   switch (data.action) {
-    case ActorAction.Waiting:
-      if (--data.counter <= 0) {
-        setAction(ctx, data, ActorAction.Idle)
+  case ActorAction.Waiting:
+    if (--data.counter <= 0) {
+      setAction(ctx, data, ActorAction.Idle)
+    }
+    break
+
+  case ActorAction.Hatching:
+    setAction(ctx, data, ActorAction.Waiting, 3)
+    break
+
+  case ActorAction.Walking:
+  case ActorAction.Sleepy:
+  case ActorAction.SeekingFood:
+    // advance along our path positions
+    let path = data.path
+    while (path) {
+      if (dt < path.timeLeft) {
+        path.timeLeft -= dt
+        // update our position along this path piece
+        const perc = path.timeLeft / path.duration
+        data.x = (path.dest.x - path.src.x) * perc + path.src.x
+        data.y = (path.dest.y - path.src.y) * perc + path.src.y
+        data.z = (path.dest.z - path.src.z) * perc + path.src.z
+        return
       }
-      break
+      // otherwise we used-up a path segment
+      if (path.next) {
+        dt -= path.timeLeft
+      } else {
+        // otherwise we have finished!
+        data.x = path.dest.x
+        data.y = path.dest.y
+        data.z = path.dest.z
+        setAction(ctx, data, popState(data), data.counter)
+        // proceed to assign path to undefined, and fall out of the while
+      }
+      path = data.path = path.next
+    }
+    break
 
-		case ActorAction.Hatching:
-      setAction(ctx, data, ActorAction.Waiting, 3)
-			break
+  case ActorAction.Eating:
+    if (--data.counter <= 0) {
+      data.hunger = 0
+      data.scale *= 1.2 // TODO
+      const newpos = getRandomPositionFrom(ctx, data, 2)
+      if (newpos) {
+        setAction(ctx, data, ActorAction.Sleepy)
+        pushState(data, ActorAction.Sleeping)
+        data.counter = 100 / MONSTER_ACCELERANT
+        walkTo(ctx, key, data, newpos, .5)
+      } else {
+        setAction(ctx, data, ActorAction.Sleeping, 100 / MONSTER_ACCELERANT)
+      }
+    }
+    break
 
-		case ActorAction.Walking:
-		case ActorAction.Sleepy:
-		case ActorAction.SeekingFood:
-			// advance along our path positions
-			let path = data.path
-			while (path) {
-				if (dt < path.timeLeft) {
-					path.timeLeft -= dt
-					// update our position along this path piece
-          const perc = path.timeLeft / path.duration
-          data.x = (path.dest.x - path.src.x) * perc + path.src.x
-          data.y = (path.dest.y - path.src.y) * perc + path.src.y
-          data.z = (path.dest.z - path.src.z) * perc + path.src.z
-          return
-        }
-        // otherwise we used-up a path segment
-        if (path.next) {
-          dt -= path.timeLeft
+  case ActorAction.Sleeping:
+    if (--data.counter <= 0) {
+      setAction(ctx, data, ActorAction.Waking)
+    }
+    break
+
+  case ActorAction.Waking:
+    setAction(ctx, data, ActorAction.Waiting, 8 / MONSTER_ACCELERANT)
+    break
+
+  case ActorAction.Unknown: // Do nothing for a little while
+    if (--data.counter <= 0) {
+      setAction(ctx, data, popState(data))
+    }
+    break
+
+  case ActorAction.Idle:
+    if (++data.hunger > 100 / MONSTER_ACCELERANT) {
+      const isFood = (key :UUID, config :ActorConfig, data :ActorData) :boolean =>
+      (config.kind === ActorKind.Food)
+      const food = getNearestActor(ctx, data, isFood)
+      if (food) {
+        const foodData = food[2]
+        if (getDistance(data, foodData) < .1) {
+          foodData.hp -= 10
+          setAction(ctx, data, ActorAction.Eating, 10 / MONSTER_ACCELERANT)
         } else {
-          // otherwise we have finished!
-          data.x = path.dest.x
-          data.y = path.dest.y
-          data.z = path.dest.z
-          setAction(ctx, data, popState(data), data.counter)
-          // proceed to assign path to undefined, and fall out of the while
-        }
-        path = data.path = path.next
-      }
-      break
-
-		case ActorAction.Eating:
-			if (--data.counter <= 0) {
-				data.hunger = 0
-				data.scale *= 1.2 // TODO
-				const newpos = getRandomPositionFrom(ctx, data, 2)
-				if (newpos) {
-          setAction(ctx, data, ActorAction.Sleepy)
-          pushState(data, ActorAction.Sleeping)
-          data.counter = 100 / MONSTER_ACCELERANT
-          walkTo(ctx, key, data, newpos, .5)
-				} else {
-					setAction(ctx, data, ActorAction.Sleeping, 100 / MONSTER_ACCELERANT)
-				}
-			}
-			break
-
-		case ActorAction.Sleeping:
-			if (--data.counter <= 0) {
-				setAction(ctx, data, ActorAction.Waking)
-			}
-			break
-
-		case ActorAction.Waking:
-			setAction(ctx, data, ActorAction.Waiting, 8 / MONSTER_ACCELERANT)
-			break
-
-		case ActorAction.Unknown: // Do nothing for a little while
-			if (--data.counter <= 0) {
-				setAction(ctx, data, popState(data))
-			}
-			break
-
-    case ActorAction.Idle:
-      if (++data.hunger > 100 / MONSTER_ACCELERANT) {
-        const isFood = (key :UUID, config :ActorConfig, data :ActorData) :boolean =>
-            (config.kind === ActorKind.Food)
-        const food = getNearestActor(ctx, data, isFood)
-        if (food) {
-          const foodData = food[2]
-          if (getDistance(data, foodData) < .1) {
-            foodData.hp -= 10
-            setAction(ctx, data, ActorAction.Eating, 10 / MONSTER_ACCELERANT)
-          } else {
-            setAction(ctx, data, ActorAction.SeekingFood)
-            walkTo(ctx, key, data, foodData, 1.5)
-          }
-          break
-        }
-        // no food? Fall back to wandering...
-      }
-
-      // Maybe go visit a nice egg
-      if (Math.random() < .2) {
-        const isEgg = (key :UUID, config :ActorConfig, data :ActorData) :boolean =>
-            (config.kind === ActorKind.Egg)
-        const isReadyEgg = (key :UUID, config :ActorConfig, data :ActorData) :boolean =>
-            (isEgg(key, config, data) && (data.action === ActorAction.ReadyToHatch))
-        const egg = getNearestActor(ctx, data, isReadyEgg) ||
-            getNearestActor(ctx, data, isEgg)
-        if (egg) {
-          const eggData = egg[2]
-          const nearEgg = getRandomPositionFrom(ctx, eggData, 5)
-          if (nearEgg) {
-            walkTo(ctx, key, data, nearEgg, 1.2)
-          }
+          setAction(ctx, data, ActorAction.SeekingFood)
+          walkTo(ctx, key, data, foodData, 1.5)
         }
         break
       }
+      // no food? Fall back to wandering...
+    }
 
-      // Wander randomly!
-      if (Math.random() < .075) {
-        const newpos = getRandomPositionFrom(ctx, data, 10)
-        if (newpos) {
-          walkTo(ctx, key, data, newpos)
+    // Maybe go visit a nice egg
+    if (Math.random() < .2) {
+      const isEgg = (key :UUID, config :ActorConfig, data :ActorData) :boolean =>
+      (config.kind === ActorKind.Egg)
+      const isReadyEgg = (key :UUID, config :ActorConfig, data :ActorData) :boolean =>
+      (isEgg(key, config, data) && (data.action === ActorAction.ReadyToHatch))
+      const egg = getNearestActor(ctx, data, isReadyEgg) ||
+      getNearestActor(ctx, data, isEgg)
+      if (egg) {
+        const eggData = egg[2]
+        const nearEgg = getRandomPositionFrom(ctx, eggData, 5)
+        if (nearEgg) {
+          walkTo(ctx, key, data, nearEgg, 1.2)
         }
       }
       break
+    }
 
-    default:
-      log.warn("Unhandled action in Monster.tick", "action", data.action)
-      break
+    // Wander randomly!
+    if (Math.random() < .075) {
+      const newpos = getRandomPositionFrom(ctx, data, 10)
+      if (newpos) {
+        walkTo(ctx, key, data, newpos)
+      }
+    }
+    break
+
+  default:
+    log.warn("Unhandled action in Monster.tick", "action", data.action)
+    break
   }
 }
 
