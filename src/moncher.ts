@@ -61,6 +61,35 @@ export interface Located {
 
 abstract class Behavior {
   /**
+   * Retrieve a Behavior from the code stored in the data's BehaviorData. */
+  static getBehavior (data :ActorData) :Behavior {
+    const code = (data.data && data.data.code) ? data.data.code : 0
+    return Behavior._behaviors.get(code) || Behavior._defaultBehavior
+  }
+
+  /** The code for this behavior, computed from the class name. */
+  readonly code :number
+
+  constructor (makeDefault = false) {
+    const name = this.constructor.name
+    let hash = 0
+    for (let ii = 0, nn = name.length; ii < nn; ii++) {
+      hash = ((hash << 5) - hash) + name.charCodeAt(ii)
+      hash |= 0 // force to integer
+    }
+    log.debug("Behavior", "name", name, "code", hash)
+    this.code = hash
+    if (Behavior._behaviors.has(hash)) {
+      log.warn("Uh-oh, two Behaviors have the same 'code'. Change something!")
+    } else {
+      Behavior._behaviors.set(hash, this)
+    }
+    if (makeDefault) {
+      Behavior._defaultBehavior = this
+    }
+  }
+
+  /**
    * Tick an actor's behavior. */
   tick (ctx :RanchContext, dt :number, data :ActorData) :void {
     // process any walking
@@ -93,10 +122,11 @@ abstract class Behavior {
     return (data.path !== undefined)
   }
 
-  static registerBehavior (code :string, beh :Behavior) :void {
-  }
+  /** A mapping of code to Behavior. */
+  protected static readonly _behaviors :Map<number, Behavior> = new Map()
 
-  protected static readonly _behaviors :Map<string, Behavior> = new Map()
+  /** The default behavior. */
+  protected static _defaultBehavior :Behavior
 }
 
 class WanderBehavior extends Behavior {
@@ -111,7 +141,14 @@ class WanderBehavior extends Behavior {
     }
   }
 }
-console.log("Gruntle: " + WanderBehavior)
+
+class EatFoodBehavior extends Behavior {
+  // TODO
+}
+
+// Create all the behavior subclasses to register them (side-effects of their constructor)
+new WanderBehavior(true)
+new EatFoodBehavior()
 
 type BehaviorData = PMap<number>
 
@@ -296,6 +333,7 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
       const now = Date.now()
       const diff = now - obj.lastTick.current
       if (diff >= 1000) {
+        log.debug("Tick with delta " + diff)
         tickRanch(ctx, Math.min(diff, 5000)) // 5s max tick
         obj.lastTick.update(now)
       } else {
@@ -519,11 +557,11 @@ function tickMonster (
     // Maybe go visit a nice egg
     if (Math.random() < .2) {
       const isEgg = (key :UUID, config :ActorConfig, data :ActorData) :boolean =>
-      (config.kind === ActorKind.Egg)
+          (config.kind === ActorKind.Egg)
       const isReadyEgg = (key :UUID, config :ActorConfig, data :ActorData) :boolean =>
-      (isEgg(key, config, data) && (data.action === ActorAction.ReadyToHatch))
+          (isEgg(key, config, data) && (data.action === ActorAction.ReadyToHatch))
       const egg = getNearestActor(ctx, data, isReadyEgg) ||
-      getNearestActor(ctx, data, isEgg)
+          getNearestActor(ctx, data, isEgg)
       if (egg) {
         const eggData = egg[2]
         const nearEgg = getRandomPositionFrom(ctx, eggData, 5)
