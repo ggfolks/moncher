@@ -68,6 +68,7 @@ export class App implements Disposable {
           const profile = this.profiles.profile(id)
           if (displayName) profile.name.update(displayName)
           if (photoURL) profile.photo.update(photoURL)
+          profile.type.update(1) // person
         }
       }
     })

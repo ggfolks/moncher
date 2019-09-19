@@ -26,6 +26,9 @@ export class ProfileObject extends DObject {
   @dvalue("string", true)
   photo = this.value(guestPhoto(this.key))
 
+  @dvalue("number", true)
+  type = this.value(0)
+
   canSubscribe (auth :Auth) { return true }
   canWrite (prop :string, auth :Auth) { return auth.id === this.key || super.canWrite(prop, auth) }
 }
