@@ -798,21 +798,21 @@ export class RanchMode extends Mode {
         graphCfg.controller.sleepCond = "isSleeping"
         animStates.sleep = {
           url: cfg.model.sleep,
-          transitions: {wake: {condition: "wakeCond"}}
+          transitions: {wake: {condition: "!sleepCond"}}
         }
 
-        graphCfg.isWaking = {
-          type: "equals",
-          x: "action",
-          y: ActorAction.Waking,
-        }
+//        graphCfg.isWaking = {
+//          type: "equals",
+//          x: "action",
+//          y: ActorAction.Waking,
+//        }
         animStates.wake = {
           url: cfg.model.wakeUp,
           repetitions: 1,
           finishBeforeTransition: true,
           transitions: {default: {}},
         }
-        graphCfg.controller.wakeCond = "isWaking"
+//        graphCfg.controller.wakeCond = "isWaking"
       } // end: faint / sleep / wakeUp
 
       // Happy-react happens whenever you touch a monster, even if in the other states.
