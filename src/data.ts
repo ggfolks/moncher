@@ -221,8 +221,7 @@ function addActor (
 //  }
 
   const uuid = uuidv1()
-  const data = newActorData(config.kind, locProps)
-  data.action = action
+  const data = newActorData(config.kind, locProps, action)
   const update = actorDataToUpdate(data)
   ctx.obj.actorConfigs.set(uuid, config)
   ctx.obj.actorData.set(uuid, data)

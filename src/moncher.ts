@@ -152,14 +152,18 @@ export interface ActorData extends Located {
 
 /**
  * Return a new ActorData, mostly blank. */
-export function newActorData (kind? :ActorKind, locProps? :Located) :ActorData {
+export function newActorData (
+  kind? :ActorKind,
+  locProps? :Located,
+  action = ActorAction.Idle
+) :ActorData {
   let x = 0, y = 0, z = 0
   const hp = kind ? ActorKindAttributes.initialHealth(kind) : 1
   if (locProps) ({x, y, z} = locProps)
   return {
     x, y, z,
     hp,
-    action: ActorAction.Idle,
+    action,
     hunger: 0,
     scale: 1,
     orient: 0,
