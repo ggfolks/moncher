@@ -151,7 +151,7 @@ export class RanchObject extends DObject {
   actorData = this.map<UUID, ActorData>()
 
   /** Keeps the last time we were ticked, from Date.now() */
-  @dvalue("number", true)
+  @dvalue("number", false)
   lastTick = this.value(0)
 
   canRead (prop :keyof RanchObject, auth :Auth) :boolean {
@@ -258,7 +258,6 @@ function tickRanch (
   ctx :RanchContext,
   dt :number,
 ) :void {
-  //log.debug("Ticking ranch")
   // tick every actor
   ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
       const config = ctx.obj.actorConfigs.get(key)
