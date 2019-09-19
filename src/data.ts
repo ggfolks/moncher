@@ -9,16 +9,12 @@ import {
   ActorUpdate, Located, PathInfo,
   newActorData, actorDataToUpdate,
 } from "./moncher"
-import {Pathfinding} from "./pathfinding"
+import {ZonedPathfinding} from "./zonedpathfinding"
 import {MONSTER_ACCELERANT} from "./debug"
 
 const guestName = (id :UUID) => `Guest ${id.substring(0, 4)}`
 const guestPhoto = (id :UUID) => "ui/DefaultAvatar.png"
 const ranchName = (id :UUID) => `Ranch ${id.substring(0, 4)}`
-
-/** A zoneId for three-pathfinding. */
-// TODO: make a fucking ZonedPathfinder that just encapsulates this crap
-export const RANCH_ZONE_ID = "ranch"
 
 @dobject
 export class ProfileObject extends DObject {
@@ -172,7 +168,7 @@ function handleMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth) {
 
 interface RanchContext {
   obj :RanchObject
-  path? :Pathfinding
+  path? :ZonedPathfinding
 }
 
 function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
@@ -544,9 +540,7 @@ function getRandomPositionFrom (
 ) :Located|undefined {
   if (!ctx.path) return undefined
   const vec = loc2vec(loc)
-  const groupId = ctx.path.getGroup(RANCH_ZONE_ID, vec)
-  if (groupId === null) return undefined
-  const result = ctx.path.getRandomPositionFrom(RANCH_ZONE_ID, groupId, vec, maxDist)
+  const result = ctx.path.getRandomPositionFrom(vec, maxDist)
   if (result) return vec2loc(result)
   else return undefined
 }
@@ -624,9 +618,7 @@ function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|un
     return undefined
   }
   const srcVec = loc2vec(src)
-  const groupId = ctx.path.getGroup(RANCH_ZONE_ID, srcVec)
-  if (groupId === null) return undefined
-  const foundPath = ctx.path.findPath(srcVec, loc2vec(dest), RANCH_ZONE_ID, groupId)
+  const foundPath = ctx.path.findPath(srcVec, loc2vec(dest))
   if (!foundPath) return undefined
   foundPath.unshift(srcVec) // put the damn src back on the start of the list
   //return foundPath.map(v => vec2loc(v))

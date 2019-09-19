@@ -7,8 +7,8 @@ import {log} from "tfw/core/util"
 import {Server} from "tfw/data/server"
 import {FirebaseDataStore} from "tfw/data/firebase"
 import {FirebaseAuthValidator} from "tfw/auth/firebase"
-import {ServerObject, RANCH_ZONE_ID} from "./data"
-import {Pathfinding} from "./pathfinding"
+import {ServerObject} from "./data"
+import {ZonedPathfinding} from "./zonedpathfinding"
 
 setTextCodec(() => new TextEncoder() as any, () => new TextDecoder() as any)
 
@@ -58,7 +58,5 @@ function configureNavMesh (gltf :any) :void {
   const navMesh = scene.getObjectByName("NavMesh")
 //  log.debug("I got something: " + navMesh)
 //  log.debug("It's a mesh? " + (navMesh instanceof Mesh))
-  const pather = new Pathfinding()
-  pather.setZoneData(RANCH_ZONE_ID, Pathfinding.createZone(navMesh.geometry))
-  global["_ranchPathfinder"] = pather
+  global["_ranchPathfinder"] = new ZonedPathfinding(navMesh.geometry)
 }
