@@ -16,8 +16,6 @@ import {
   WebGLRenderer,
 } from "three"
 
-//import {Pathfinding} from "./pathfinding"
-
 import {Body} from "cannon"
 
 //import {loadImage} from "tfw/core/assets"
@@ -488,14 +486,6 @@ export class RanchMode extends Mode {
       this.colorize(child, color)
     }
   }
-
-//  /**
-//   * Configure pathfinding once we have the navmesh. */
-//  protected configurePathFinding (navMesh :Mesh) :void {
-//    this._pathFinder = new Pathfinding()
-//    this._pathFinder.setZoneData(
-//      RanchMode.RANCH_ZONE, Pathfinding.createZone(navMesh.geometry as THREE.BufferGeometry))
-//  }
 
   /**
    * Called once we know enough to start adding actors. */
@@ -1009,8 +999,6 @@ export class RanchMode extends Mode {
 
   protected _uiState :UiState = UiState.Default
 
-//  protected _pathFinder? :Pathfinding
-
   protected _ready :boolean = false
 
   // The properties below are all definitely initialized via the constructor
@@ -1107,6 +1095,4 @@ export class RanchMode extends Mode {
       default: break
     }
   }
-
-//  private static readonly RANCH_ZONE = "ranch" // zone identifier needed for pathfinding
 }
