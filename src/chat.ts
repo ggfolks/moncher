@@ -35,30 +35,30 @@ const chatUiConfig = {
           halign: "left",
         },
         contents: {
-          type: "box",
-          style: {
-            halign: "left",
-            padding: [5, 10, 3, 10],
-            // border: {stroke: {type: "color", color: "#999999"}, cornerRadius: sausageCorner},
-            background: {fill: "$orange", cornerRadius: sausageCorner},
-          },
-          contents: {
-            type: "row",
-            gap: 5,
-            contents: [{
-              type: "label",
-              text: "speaker",
-              style: {
-                fill: {type: "color", color: "#663333"}
-              }
-            }, {
+          type: "row",
+          gap: 5,
+          // TODO: tooltip with name?
+          // {type: "label", text: "speaker", style: {fill: {type: "color", color: "#663333"}}}
+          contents: [{
+            type: "image",
+            image: "photo",
+            height: 20,
+          }, {
+            type: "box",
+            style: {
+              halign: "left",
+              padding: [5, 10, 3, 10],
+              // border: {stroke: {type: "color", color: "#999999"}, cornerRadius: sausageCorner},
+              background: {fill: "$orange", cornerRadius: sausageCorner},
+            },
+            contents: {
               type: "label",
               text: "text",
               style: {
                 fill: {type: "color", color: "#FFFFFF"}
               }
-            }]
-          }
+            }
+          }]
         }
       }
     }, {
@@ -75,6 +75,7 @@ const chatUiConfig = {
       }, {
         type: "text",
         constraints: {stretch: true},
+        visible: "notGuest",
         text: "input",
         onEnter: "sendChat",
         contents: box(label("input", {fill: "$white"}), {
@@ -85,7 +86,7 @@ const chatUiConfig = {
         })
       }, {
         type: "button",
-        // visible: Value.constant(false),
+        visible: "notGuest",
         onClick: "sendChat",
         contents: label(Value.constant("+"), {fill: "$orange", font: "$icon"})
       }]
@@ -117,7 +118,8 @@ export class ChatView implements Disposable {
     const modelData = {
       msgdata: mapProvider(msgs, msg => ({
         text: msg.map(m => m.text),
-        speaker: msg.switchMap(m => app.profiles.profile(m.sender).name)
+        speaker: msg.switchMap(m => app.profiles.profile(m.sender).name),
+        photo: msg.switchMap(m => app.profiles.profile(m.sender).photo),
       })),
       // TODO: sort these by timestamp?
       msgkeys: msgs.map(msgs => latestMsgs(msgs, 6)),
@@ -129,6 +131,7 @@ export class ChatView implements Disposable {
           modelData.input.update("")
         }
       },
+      notGuest: app.client.auth.map(sess => sess.source !== "guest"),
       profilePhoto: app.client.auth.switchMap(sess => app.profiles.profile(sess.id).photo),
       showAuth: () => new AuthDialog(app, host),
     }
