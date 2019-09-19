@@ -147,10 +147,16 @@ export class RanchObject extends DObject {
   @dmap("uuid", "record", false)
   actorData = this.map<UUID, ActorData>()
 
+  /** Keeps the last time we were ticked, from Date.now() */
+  @dvalue("number", true)
+  lastTick = this.value(0)
+
   canRead (prop :keyof RanchObject, auth :Auth) :boolean {
     switch (prop) {
-      case "actorData": return auth.isSystem
       default: return super.canRead(prop, auth)
+      case "actorData":
+      case "lastTick":
+        return auth.isSystem
     }
   }
 
@@ -183,7 +189,13 @@ function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
       break
 
     case "tick":
-      tickRanch(ctx, 1000) // TODO delta time?
+      const now = Date.now()
+      if (now > obj.lastTick.current + 1000) {
+        obj.lastTick.update(now)
+        tickRanch(ctx, 1000) // TODO real delta time? at some point
+      } else {
+        //log.info("Rejecting client-initiated tick (multiple clients connected?)")
+      }
       break
 
     case "setName":
