@@ -5,7 +5,8 @@ import {dcollection, dobject, dset, dmap, dqueue, dvalue} from "tfw/data/meta"
 import {Vector3} from "three"
 import {MonsterDb} from "./monsterdb"
 import {
-  ActorAction, ActorConfig, ActorData, ActorInstant, ActorKind, ActorUpdate, Located,
+  ActorAction, ActorConfig, ActorData, ActorInstant, ActorKind, ActorKindAttributes,
+  ActorUpdate, Located, PathInfo,
   newActorData, actorDataToUpdate,
 } from "./moncher"
 import {Pathfinding} from "./pathfinding"
@@ -325,26 +326,31 @@ function tickMonster (
 		case ActorAction.Sleepy:
 		case ActorAction.SeekingFood:
 			// advance along our path positions
-//			let path = data.path
-//			while (path) {
-//				if (dt < path.timeLeft) {
-//					path.timeLeft -= dt
-//					// update our position along this path piece
-//					this.pos.lerpVectors(path.dest, path.src, path.timeLeft / path.duration)
-//					return
-//				}
-//				// otherwise we used-up a path segment
-//				if (path.next) {
-//					dt -= path.timeLeft
-//				} else {
-//					// otherwise we have finished!
-//					this.pos.copy(path.dest)
-//					this.setAction(this.popState(), this._counter)
-//					// proceed to assign path to undefined, and we'll fall out of the while.
-//				}
-//				path = this._path = path.next
-//			}
-			break
+			let path = data.path
+			while (path) {
+				if (dt < path.timeLeft) {
+					path.timeLeft -= dt
+					// update our position along this path piece
+          const perc = path.timeLeft / path.duration
+          data.x = (path.dest.x - path.src.x) * perc + path.src.x
+          data.y = (path.dest.y - path.src.y) * perc + path.src.y
+          data.z = (path.dest.z - path.src.z) * perc + path.src.z
+          return
+        }
+        // otherwise we used-up a path segment
+        if (path.next) {
+          dt -= path.timeLeft
+        } else {
+          // otherwise we have finished!
+          data.x = path.dest.x
+          data.y = path.dest.y
+          data.z = path.dest.z
+          setAction(ctx, data, popState(data), data.counter)
+          // proceed to assign path to undefined, and fall out of the while
+        }
+        path = data.path = path.next
+      }
+      break
 
 		case ActorAction.Eating:
 			if (--data.counter <= 0) {
@@ -355,7 +361,7 @@ function tickMonster (
           setAction(ctx, data, ActorAction.Sleepy)
           pushState(data, ActorAction.Sleeping)
           data.counter = 100 / MONSTER_ACCELERANT
-          walkTo(ctx, data, newpos, .5)
+          walkTo(ctx, key, data, newpos, .5)
 				} else {
 					setAction(ctx, data, ActorAction.Sleeping, 100 / MONSTER_ACCELERANT)
 				}
@@ -390,7 +396,7 @@ function tickMonster (
             setAction(ctx, data, ActorAction.Eating, 10 / MONSTER_ACCELERANT)
           } else {
             setAction(ctx, data, ActorAction.SeekingFood)
-            walkTo(ctx, data, foodData, 1.5)
+            walkTo(ctx, key, data, foodData, 1.5)
           }
           break
         }
@@ -409,7 +415,7 @@ function tickMonster (
           const eggData = egg[2]
           const nearEgg = getRandomPositionFrom(ctx, eggData, 5)
           if (nearEgg) {
-            walkTo(ctx, data, nearEgg, 1.2)
+            walkTo(ctx, key, data, nearEgg, 1.2)
           }
         }
         break
@@ -419,7 +425,7 @@ function tickMonster (
       if (Math.random() < .075) {
         const newpos = getRandomPositionFrom(ctx, data, 10)
         if (newpos) {
-          walkTo(ctx, data, newpos)
+          walkTo(ctx, key, data, newpos)
         }
       }
       break
@@ -561,14 +567,80 @@ export function vec2loc (vec :Vector3, into? :Located) :Located {
   return into
 }
 
-function walkTo (ctx :RanchContext, data :ActorData, newPos :Located, speedFactor = 1) :void {
-  // FOR NOW, simply update our location to the new loc!
-  data.x = newPos.x
-  data.y = newPos.y
-  data.z = newPos.z
+function getSpeed (ctx :RanchContext, key :UUID, data :ActorData) :number {
+  const cfg = ctx.obj.actorConfigs.get(key)!
+  return ActorKindAttributes.baseMovementSpeed(cfg.kind) * data.scale
+}
 
-  // when we finish walking this happens: (remove from here)
-  setAction(ctx, data, popState(data), data.counter)
+function walkTo (
+  ctx :RanchContext,
+  key: UUID,
+  data :ActorData,
+  newPos :Located,
+  speedFactor = 1
+) :void {
+  const path = findPath(ctx, data, newPos)
+  if (!path) {
+    log.warn("Unable to find path",
+      "src", data,
+      "dest", newPos)
+    setAction(ctx, data, ActorAction.Unknown)
+    return
+  }
+
+  // TEMP!?
+  // make sure we can path-back
+  const pathBack = findPath(ctx, newPos, data)
+  if (!pathBack) {
+    log.warn("Unable to find a path BACK from a point. Skipping",
+      "point", newPos)
+    setAction(ctx, data, ActorAction.Unknown)
+    return
+  }
+  // END TEMP
+
+  let info :PathInfo|undefined = undefined
+  const speed = 1000 / (getSpeed(ctx, key, data) * speedFactor)
+  while (path.length > 1) {
+    const dest = path.pop()!
+    const src = path[path.length - 1]
+    const duration = src.distanceTo(dest) * speed
+    const orient = Math.atan2(dest.x - src.x, dest.z - src.z)
+    info = { src: vec2loc(src), dest: vec2loc(dest), orient, duration, timeLeft: duration,
+        next: info }
+  }
+  data.path = info
+  if (!isWalkingState(data.action)) {
+    setAction(ctx, data, ActorAction.Walking)
+  }
+  // set our final angle to something wacky
+  data.orient = Math.random() * Math.PI * 2
+}
+
+function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|undefined {
+  if (!ctx.path) {
+    log.warn("Pathfinder unknown. Can't path.")
+    return undefined
+  }
+  const srcVec = loc2vec(src)
+  const groupId = ctx.path.getGroup(RANCH_ZONE_ID, srcVec)
+  if (groupId === null) return undefined
+  const foundPath = ctx.path.findPath(srcVec, loc2vec(dest), RANCH_ZONE_ID, groupId)
+  if (!foundPath) return undefined
+  foundPath.unshift(srcVec) // put the damn src back on the start of the list
+  //return foundPath.map(v => vec2loc(v))
+  return foundPath
+}
+
+function isWalkingState (act :ActorAction) :boolean {
+  switch (act) {
+    case ActorAction.Walking:
+    case ActorAction.Sleepy:
+    case ActorAction.SeekingFood:
+      return true
+
+    default: return false
+  }
 }
 
 @dobject

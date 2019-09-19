@@ -76,7 +76,7 @@ import {
   ActorKindAttributes,
   ActorUpdate,
 //  Located,
-  PathRec,
+  PathInfo,
   blankActorUpdate,
 } from "./moncher"
 import {Hud, UiState} from "./hud"
@@ -106,7 +106,7 @@ class PathSystem extends System {
   constructor (
     domain :Domain,
     readonly trans :TransformComponent,
-    readonly paths :Component<PathRec|undefined>,
+    readonly paths :Component<PathInfo|undefined>,
     readonly state :Component<ActorUpdate>,
     readonly setY :(into :Vector3) => void,
   ) {
@@ -136,7 +136,7 @@ class PathSystem extends System {
           }
         } else {
           // otherwise, there's time left and we should update the position
-          scratchV.lerpVectors(path.dest, path.src, timeLeft / path.duration)
+          scratchV.lerpVectors(loc2vec(path.dest), loc2vec(path.src), timeLeft / path.duration)
           this.setY(scratchV)
           this.trans.updatePosition(id, scratchV)
           path = undefined
@@ -361,7 +361,7 @@ export class RanchMode extends Mode {
     const state = this._state =
         new DenseValueComponent<ActorUpdate>("state", blankActorUpdate())
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
-    const paths = this._paths = new SparseValueComponent<PathRec|undefined>("paths", undefined)
+    const paths = this._paths = new SparseValueComponent<PathInfo|undefined>("paths", undefined)
     const graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
 
     const domain = this._domain = new Domain({},
@@ -523,7 +523,7 @@ export class RanchMode extends Mode {
   protected updateActorSprite (actorInfo :ActorInfo, update :ActorUpdate) :void {
     // store their state in the entity system...
     this._state.update(actorInfo.entityId, update)
-    //this._paths.update(actorInfo.entityId, update.path)
+    this.updatePath(actorInfo, update.path)
     if (!update.path) {
       this._trans.updatePosition(actorInfo.entityId, loc2vec(update, scratchV))
       this._trans.updateQuaternion(actorInfo.entityId,
@@ -533,6 +533,35 @@ export class RanchMode extends Mode {
         scratchV.set(update.scale, update.scale, update.scale))
     this.updateBubble(actorInfo, update)
   }
+
+  protected updatePath (actorInfo :ActorInfo, path :PathInfo|undefined) :void {
+    if (path) {
+      // resolve objects against stored path to copy-over timestamps. OH LORDY THE HACKS
+      // TODO: make this sane
+      let existingPath = this._paths.read(actorInfo.entityId)
+      while (existingPath) {
+        if (existingPath.src.x === path.src.x &&
+            existingPath.src.y === path.src.y &&
+            existingPath.src.z === path.src.z &&
+            existingPath.dest.x === path.dest.x &&
+            existingPath.dest.y === path.dest.y &&
+            existingPath.dest.z === path.dest.z) {
+          // let's say: this is the same!
+          let pathPiece :PathInfo|undefined = path
+          while (pathPiece && existingPath) {
+            pathPiece.stamp = existingPath.stamp
+            pathPiece = pathPiece.next
+            existingPath = existingPath.next
+          }
+        } else {
+          existingPath = existingPath.next
+        }
+      }
+    }
+
+    this._paths.update(actorInfo.entityId, path)
+  }
+
 
   protected addBubble (monst :Object3D, update :ActorUpdate) :void {
     const bubble = new Sprite(this._bubbleMaterial)
@@ -991,7 +1020,7 @@ export class RanchMode extends Mode {
   protected _trans! :TransformComponent
   protected _obj! :Component<Object3D>
   protected _state! :Component<ActorUpdate>
-  protected _paths! :Component<PathRec|undefined>
+  protected _paths! :Component<PathInfo|undefined>
   protected _graphsys! :GraphSystem
   protected _pathsys! :PathSystem
   protected _scenesys! :SceneSystem

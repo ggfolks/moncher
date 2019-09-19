@@ -151,6 +151,13 @@ export class ActorState {
 }
 
 export interface PathInfo {
+  src :Located
+  dest :Located
+  orient :number
+  duration :number
+  next? :PathInfo
+  timeLeft :number // Server value (TBD)
+  stamp? :number // CLIENT value (TBD!!)
 }
 
 /**
@@ -194,7 +201,7 @@ export interface ActorData extends Located {
   hunger :number
   counter :number       // TODO: going away, subsumed into new "Behavior" type
   scale :number
-  path :PathInfo
+  path? :PathInfo
   orient :number
   instant :ActorInstant // TODO: going away
   stateStack :ActorAction[] // Almost certainly going away because Behavior will handle it
@@ -212,7 +219,6 @@ export function newActorData (kind? :ActorKind, locProps? :Located) :ActorData {
     action: ActorAction.Idle,
     hunger: 0,
     scale: 1,
-    path: {},
     orient: 0,
     stateStack: [],
 
@@ -224,13 +230,14 @@ export function newActorData (kind? :ActorKind, locProps? :Located) :ActorData {
 /**
  * Publish an actor update derived from the specified ActorData. */
 export function actorDataToUpdate (data :ActorData) :ActorUpdate {
-  const {x, y, z, scale, orient, action, instant} = data
+  const {x, y, z, scale, orient, action, instant, path} = data
   return {
     x, y, z,
     scale,
     orient,
     action,
     instant,
+    path,
   }
 }
 
