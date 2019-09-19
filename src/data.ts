@@ -211,6 +211,7 @@ function addActor (
   ctx :RanchContext,
   config :ActorConfig,
   locProps :Located,
+  action = ActorAction.Idle,
 ) :void {
 //  if (true) {
 //    obj.actorConfigs.clear()
@@ -221,6 +222,7 @@ function addActor (
 
   const uuid = uuidv1()
   const data = newActorData(config.kind, locProps)
+  data.action = action
   const update = actorDataToUpdate(data)
   ctx.obj.actorConfigs.set(uuid, config)
   ctx.obj.actorData.set(uuid, data)
@@ -466,7 +468,7 @@ function touchActor (
     case ActorKind.Egg:
       if (data.action === ActorAction.ReadyToHatch) {
         data.action = ActorAction.Hatching
-        addActor(ctx, config.spawn!, data)
+        addActor(ctx, config.spawn!, data, ActorAction.Hatching)
         publish = true
       }
       break
