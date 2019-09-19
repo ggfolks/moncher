@@ -1,7 +1,8 @@
 import {Timestamp, log} from "tfw/core/util"
 import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
 import {Auth, DObject, MetaMsg} from "tfw/data/data"
-import {dcollection, dobject, dset, dmap, dqueue, dvalue} from "tfw/data/meta"
+import {dcollection, dmap, dobject, dqueue, dset, dtable, dvalue, dview,
+        orderBy} from "tfw/data/meta"
 import {Vector3} from "three"
 import {MonsterDb} from "./monsterdb"
 import {
@@ -58,25 +59,28 @@ function handleUserReq (obj :UserObject, req :UserReq, auth :Auth) {
   }
 }
 
-interface Message {
+type Message = {
   sender :UUID
   text :string
   sent :Timestamp
-  edited? :Timestamp
+  edited :Timestamp|undefined
 }
 
 @dobject
 export class ChannelObject extends DObject {
 
-  @dmap("uuid", "record")
-  msgs = this.map<UUID, Message>()
+  @dtable()
+  msgs = this.table<Message>()
+
+  @dview("msgs", [], [orderBy("sent", "desc")])
+  msgsBySent = this.view<Message>()
 
   @dqueue(handleChannelReq)
   channelq = this.queue<ChannelReq>()
 
   addMessage (sender :UUID, text :string) {
     const mid = uuidv1()
-    this.msgs.set(mid, {sender, sent: Timestamp.now(), text})
+    this.msgs.create(mid, {sender, text, sent: Timestamp.now()})
   }
 
   canSubscribe (auth :Auth) { return true /* TODO: ranch/channel membership */ }

@@ -5,7 +5,7 @@ import {Host} from "tfw/ui/element"
 import {Model, mapProvider} from "tfw/ui/model"
 
 import {App} from "./app"
-import {ChannelObject, channelQ} from "./data"
+import {ChannelObject} from "./data"
 import {box, label} from "./ui"
 import {AuthDialog} from "./auth"
 
@@ -105,19 +105,21 @@ export class ChatView implements Disposable {
     const channelId = app.state.ranchId.current
     const [channel, unchannel] = app.client.resolve(["channels", channelId], ChannelObject)
     this._onDispose.add(unchannel)
+    const [msgs, unmsgs] = app.client.resolveView(channel.msgsBySent)
+    this._onDispose.add(unmsgs)
 
     const modelData = {
-      msgdata: mapProvider(channel.msgs, msg => ({
+      msgdata: mapProvider(msgs, msg => ({
         text: msg.map(m => m.text),
         speaker: msg.switchMap(m => app.profiles.profile(m.sender).name)
       })),
       // TODO: sort these by timestamp?
-      msgkeys: channel.msgs.map(msgs => tail(Array.from(msgs.keys()), 6)),
+      msgkeys: msgs.map(msgs => tail(Array.from(msgs.keys()), 6)),
       input: Mutable.local(""),
       sendChat: () => {
         const text = modelData.input.current.trim()
         if (text.length > 0) {
-          channel.source.post(channelQ(channelId), {type: "speak", text})
+          channel.channelq.post({type: "speak", text})
           modelData.input.update("")
         }
       },
