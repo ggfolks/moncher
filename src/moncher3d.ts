@@ -79,7 +79,8 @@ import {
 import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
-import {RanchObject, loc2vec} from "./data"
+import {loc2vec} from "./moncher"
+import {RanchObject} from "./data"
 
 class ActorInfo {
 
