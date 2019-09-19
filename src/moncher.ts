@@ -294,9 +294,10 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
 
     case "tick":
       const now = Date.now()
-      if (now > obj.lastTick.current + 1000) {
+      const diff = now - obj.lastTick.current
+      if (diff >= 1000) {
+        tickRanch(ctx, Math.min(diff, 5000)) // 5s max tick
         obj.lastTick.update(now)
-        tickRanch(ctx, 1000) // TODO real delta time? at some point
       } else {
         //log.info("Rejecting client-initiated tick (multiple clients connected?)")
       }
