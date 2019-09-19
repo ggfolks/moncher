@@ -77,7 +77,7 @@ abstract class Behavior {
       hash = ((hash << 5) - hash) + name.charCodeAt(ii)
       hash |= 0 // force to integer
     }
-    log.debug("Behavior", "name", name, "code", hash)
+    //log.debug("Behavior", "name", name, "code", hash)
     this.code = hash
     if (Behavior._behaviors.has(hash)) {
       log.warn("Uh-oh, two Behaviors have the same 'code'. Change something!")
@@ -333,7 +333,7 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
       const now = Date.now()
       const diff = now - obj.lastTick.current
       if (diff >= 1000) {
-        log.debug("Tick with delta " + diff)
+        //log.debug("Tick with delta " + diff)
         tickRanch(ctx, Math.min(diff, 5000)) // 5s max tick
         obj.lastTick.update(now)
       } else {
