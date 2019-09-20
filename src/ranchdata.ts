@@ -16,6 +16,12 @@ export const enum ActorKind {
  * Static methods to go with ActorKind. */
 export class ActorKindAttributes {
   /**
+   * Get all the kinds that represent monsters. */
+  static getAllMonsters () :ActorKind[] {
+    return [ ActorKind.Lobber, ActorKind.Runner ]
+  }
+
+  /**
    * Is the specified kind a monster? */
   static isMonster (kind :ActorKind) :boolean {
     switch (kind) {
@@ -77,24 +83,30 @@ export interface ActorConfig {
 // maybe ActorState -> ActorUpdate
 
 export const enum ActorAction {
+  // these are persisted, do not renumber!
   Idle = 1,
-  ReadyToHatch,
-  Hatching,
-  Walking,
-  Waiting,
-  SeekingFood,
-  Eating,
-  Sleepy,
-  Sleeping,
-  Unknown,
+
+  ReadyToHatch = 101,
+  Hatching = 102,
+  Hatched = 103, // use by eggs once they hatch
+
+  Walking = 201,
+  Waiting = 202,
+  SeekingFood = 203,
+  Eating = 204,
+  Sleepy = 205,
+  Sleeping = 206,
+
+  Unknown = 999,
 }
 
 /**
  * Represents 1 "instant action" that an actor can have. */
 export const enum ActorInstant {
+  // these are persisted, do not renumber!
   None = 0,
-  Touched,
-  Hit,
+  Touched = 1,
+  Hit = 2,
 }
 
 export interface PathInfo {

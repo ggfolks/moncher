@@ -13,21 +13,12 @@ import {
   ActorKindAttributes,
   ActorInstant,
   ActorUpdate,
+  BehaviorData,
   Located,
   PathInfo,
 } from "./ranchdata"
 import {loc2vec, vec2loc} from "./ranchutil"
 import {MONSTER_ACCELERANT} from "./debug"
-
-// TODO: use this?
-// Right now I'm going to proceed without it and see how annoying things get.
-// It's a bit more expensive to look-up the config as well, usually, and I want to be
-// consistent about what we're passing around. So many methods just take the data.
-//interface Actor {
-//  id :UUID
-//  config :ActorConfig
-//  data :ActorData
-//}
 
 /**
  * Context object passed to most request handlers. */
@@ -76,40 +67,122 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
   }
 }
 
+interface Actor {
+  id :UUID
+  config :ActorConfig
+  data :ActorData
+}
+
 abstract class Behavior {
   /**
    * Retrieve a Behavior from the code stored in the data's BehaviorData. */
-  static getBehavior (data :ActorData) :Behavior {
-    const code = (data.data && data.data.code) ? data.data.code : 0
-    return Behavior._behaviors.get(code) || Behavior._defaultBehavior
+  static getBehavior (actor :Actor) :Behavior {
+    const code = (actor.data.data && actor.data.data.code) ? actor.data.data.code : 0
+    return Behavior._byCode.get(code) || Behavior._byKind.get(actor.config.kind)!
   }
 
   /** The code for this behavior, computed from the class name. */
   readonly code :number
 
-  constructor (makeDefault = false) {
+  /**
+   * The base Behavior constructor: registers the behavior by its calculated code and
+   * the kinds of actors for which it is the default. */
+  constructor (...defaultForKinds :ActorKind[]) {
     const name = this.constructor.name
     let hash = 0
     for (let ii = 0, nn = name.length; ii < nn; ii++) {
       hash = ((hash << 5) - hash) + name.charCodeAt(ii)
       hash |= 0 // force to integer
     }
-    log.debug("Behavior", "name", name, "code", hash)
+    //log.debug("Behavior", "name", name, "code", hash)
     this.code = hash
-    if (Behavior._behaviors.has(hash)) {
+    if (Behavior._byCode.has(hash)) {
       log.warn("Uh-oh, two Behaviors have the same 'code'. Change something!")
     } else {
-      Behavior._behaviors.set(hash, this)
+      Behavior._byCode.set(hash, this)
     }
-    if (makeDefault) {
-      Behavior._defaultBehavior = this
+    for (const kind of defaultForKinds) {
+      Behavior._byKind.set(kind, this)
     }
   }
 
   /**
+   * Initialize this actor's when it starts using this Behavior. */
+  init (actor :Actor) :void {
+    const data :BehaviorData = {}
+    this.initData(actor, data)
+    data.code = this.code
+    actor.data.data = data
+  }
+
+  /**
+   * Initialize any behavior-specific data (specific to THIS behavior). */
+  initData (actor :Actor, data :BehaviorData) :void {
+    // nothing by default
+  }
+
+  /**
    * Tick an actor's behavior. */
-  tick (ctx :RanchContext, dt :number, data :ActorData) :void {
+  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
+    // nothin'
+  }
+
+  // TODO: move? Move to MobileBehavior, or just somewhere else entirely
+  _isWalking (data :ActorData) :boolean {
+    return (data.path !== undefined)
+  }
+
+  /** A mapping of code to Behavior. */
+  protected static readonly _byCode :Map<number, Behavior> = new Map()
+
+  /** A mapping of actor type to default behavior. */
+  protected static readonly _byKind :Map<ActorKind, Behavior> = new Map()
+
+  /** The default behavior. */
+  protected static _defaultBehavior :Behavior // why is it not an error that it's not initialized?
+}
+
+class FoodBehavior extends Behavior {
+  constructor () {
+    super(ActorKind.Food)
+  }
+
+  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
+    actor.data.hp -= .01 // food decays
+  }
+}
+
+class EggBehavior extends Behavior {
+  constructor () {
+    super(ActorKind.Egg)
+  }
+
+  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
+    const data = actor.data
+    switch (data.action) {
+    case ActorAction.Idle:
+      if (--data.hp < 20 * MONSTER_ACCELERANT) {
+        data.action = ActorAction.ReadyToHatch
+      }
+      break
+
+    case ActorAction.Hatching: // we are only hatching for a moment
+      data.action = ActorAction.Hatched
+      break
+
+    case ActorAction.Hatched:
+      --data.hp // deplete until removed
+      break
+    }
+  }
+}
+
+abstract class MobileBehavior extends Behavior {
+  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
+    super.tick(ctx, dt, actor)
+
     // process any walking
+    const data = actor.data
     let path = data.path
     while (path) {
       if (dt < path.timeLeft) {
@@ -134,53 +207,57 @@ abstract class Behavior {
       path = data.path = path.next
     }
   }
-
-  _isWalking (data :ActorData) :boolean {
-    return (data.path !== undefined)
-  }
-
-  /** A mapping of code to Behavior. */
-  protected static readonly _behaviors :Map<number, Behavior> = new Map()
-
-  /** The default behavior. */
-  protected static _defaultBehavior :Behavior // why is it not an error that it's not initialized?
 }
 
-class WanderBehavior extends Behavior {
+abstract class MonsterBehavior extends MobileBehavior {
+  // All I got is this busket!
 
-  tick (ctx :RanchContext, dt :number, data :ActorData) :void {
-    super.tick(ctx, dt, data)
-
-    if (!this._isWalking(data)) {
-      if (Math.random() < .1) {
-        // TODO HERE
-      }
-    }
+  // TEMP: defer to oldschool tick method
+  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
+    super.tick(ctx, dt, actor)
+    tickMonster(ctx, dt, actor)
   }
 }
 
-class EatFoodBehavior extends Behavior {
+class WanderBehavior extends MonsterBehavior {
+  constructor () {
+    super(...ActorKindAttributes.getAllMonsters())
+  }
+
+  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
+    super.tick(ctx, dt, actor)
+
+//    if (!this._isWalking(actor.data)) {
+//      if (Math.random() < .1) {
+//        // TODO HERE
+//      }
+//    }
+  }
+}
+
+class EatFoodBehavior extends MobileBehavior {
   // TODO
 }
 
-// Create all the behavior subclasses to register them (side-effects of their constructor)
-new WanderBehavior(true)
+// Create all the behavior subclass instances to register them (side-effects of their constructor)
+new FoodBehavior()
+new EggBehavior()
+new WanderBehavior()
 new EatFoodBehavior()
 
 /**
  * Return a new ActorData, mostly blank. */
 function newActorData (
-  kind? :ActorKind,
-  locProps? :Located,
-  action = ActorAction.Idle
+  id :UUID,
+  config :ActorConfig,
+  loc :Located,
+  action = ActorAction.Idle // TODO: remove
 ) :ActorData {
-  let x = 0, y = 0, z = 0
-  const hp = kind ? ActorKindAttributes.initialHealth(kind) : 1
-  if (locProps) ({x, y, z} = locProps)
-  return {
-    x, y, z,
-    hp,
-    action,
+  const data :ActorData = {
+    x: loc.x,
+    y: loc.y,
+    z: loc.z,
+    hp: ActorKindAttributes.initialHealth(config.kind),
     hunger: 0,
     scale: 1,
     orient: 0,
@@ -188,7 +265,14 @@ function newActorData (
 
     instant: ActorInstant.None,
     counter: 0,
+
+    action, // TODO: remove, probably
   }
+  const actor :Actor = { id, config, data }
+  const behavior = Behavior.getBehavior(actor)
+  behavior.init(actor)
+
+  return data
 }
 
 /**
@@ -221,7 +305,7 @@ function addActor (
 //  }
 
   const uuid = uuidv1()
-  const data = newActorData(config.kind, locProps, action)
+  const data = newActorData(uuid, config, locProps, action)
   const update = actorDataToUpdate(data)
   ctx.obj.actorConfigs.set(uuid, config)
   ctx.obj.actorData.set(uuid, data)
@@ -246,8 +330,13 @@ function tickRanch (
   // tick every actor
   ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
     const config = ctx.obj.actorConfigs.get(key)
-    if (config) tickActor(ctx, dt, key, config, data)
-    else log.warn("Missing actor config?", "key", key)
+    if (!config) {
+       log.warn("Missing actor config?", "key", key) // this simply shouldn't happen
+       return
+    }
+    const actor :Actor = {id: key, config, data}
+    const behavior :Behavior = Behavior.getBehavior(actor)
+    behavior.tick(ctx, dt, actor)
   })
 
   // publish changes (after ticking EVERY actor. Actors may modify each other.)
@@ -260,55 +349,15 @@ function tickRanch (
   })
 }
 
-function tickActor (
-  ctx :RanchContext,
-  dt :number,
-  key :UUID,
-  config :ActorConfig,
-  data :ActorData,
-) :void {
-  switch (config.kind) {
-  case ActorKind.Food:
-    data.hp -= .01 // food decays
-    break
-
-  case ActorKind.Egg:
-    switch (data.action) {
-    case ActorAction.Idle:
-      if (--data.hp < 20 * MONSTER_ACCELERANT) {
-        data.action = ActorAction.ReadyToHatch
-      }
-      break
-
-    case ActorAction.Hatching:
-      --data.hp // subtract health until we're dead
-      break
-
-    default: break
-    }
-    break
-
-  case ActorKind.Lobber:
-  case ActorKind.Runner:
-    tickMonster(ctx, dt, key, config, data)
-    break
-
-  default:
-    log.warn("Unhandled actor kind in tickActor", "kind", config.kind)
-    break
-  }
-}
-
 /**
  * Handle monster tick (for now) */
 function tickMonster (
   ctx :RanchContext,
   dt :number,
-  key :UUID,
-  config :ActorConfig,
-  data :ActorData,
+  actor :Actor,
 ) :void {
   // clear any "instant"
+  const data = actor.data
   data.instant = ActorInstant.None
 
   switch (data.action) {
@@ -324,32 +373,8 @@ function tickMonster (
 
   case ActorAction.Walking:
   case ActorAction.Sleepy:
-  case ActorAction.SeekingFood:
-    // advance along our path positions
-    let path = data.path
-    while (path) {
-      if (dt < path.timeLeft) {
-        path.timeLeft -= dt
-        // update our position along this path piece
-        const perc = path.timeLeft / path.duration
-        data.x = (path.dest.x - path.src.x) * perc + path.src.x
-        data.y = (path.dest.y - path.src.y) * perc + path.src.y
-        data.z = (path.dest.z - path.src.z) * perc + path.src.z
-        return
-      }
-      // otherwise we used-up a path segment
-      if (path.next) {
-        dt -= path.timeLeft
-      } else {
-        // otherwise we have finished!
-        data.x = path.dest.x
-        data.y = path.dest.y
-        data.z = path.dest.z
-        setAction(ctx, data, popState(data), data.counter)
-        // proceed to assign path to undefined, and fall out of the while
-      }
-      path = data.path = path.next
-    }
+  case ActorAction.SeekingFood: // NOTE: these have moved to Behavior now
+    // TODO: clean up!
     break
 
   case ActorAction.Eating:
@@ -361,7 +386,7 @@ function tickMonster (
         setAction(ctx, data, ActorAction.Sleepy)
         pushState(data, ActorAction.Sleeping)
         data.counter = 100 / MONSTER_ACCELERANT
-        walkTo(ctx, key, data, newpos, .5)
+        walkTo(ctx, actor, newpos, .5)
       } else {
         setAction(ctx, data, ActorAction.Sleeping, 100 / MONSTER_ACCELERANT)
       }
@@ -382,17 +407,16 @@ function tickMonster (
 
   case ActorAction.Idle:
     if (++data.hunger > 100 / MONSTER_ACCELERANT) {
-      const isFood = (key :UUID, config :ActorConfig, data :ActorData) :boolean =>
-      (config.kind === ActorKind.Food)
+      const isFood = (actor :Actor) :boolean => (actor.config.kind === ActorKind.Food)
       const food = getNearestActor(ctx, data, isFood)
       if (food) {
-        const foodData = food[2]
+        const foodData = food.data
         if (getDistance(data, foodData) < .1) {
           foodData.hp -= 10
           setAction(ctx, data, ActorAction.Eating, 10 / MONSTER_ACCELERANT)
         } else {
           setAction(ctx, data, ActorAction.SeekingFood)
-          walkTo(ctx, key, data, foodData, 1.5)
+          walkTo(ctx, actor, foodData, 1.5)
         }
         break
       }
@@ -401,17 +425,15 @@ function tickMonster (
 
     // Maybe go visit a nice egg
     if (Math.random() < .2) {
-      const isEgg = (key :UUID, config :ActorConfig, data :ActorData) :boolean =>
-          (config.kind === ActorKind.Egg)
-      const isReadyEgg = (key :UUID, config :ActorConfig, data :ActorData) :boolean =>
-          (isEgg(key, config, data) && (data.action === ActorAction.ReadyToHatch))
+      const isEgg = (actor :Actor) :boolean => (actor.config.kind === ActorKind.Egg)
+      const isReadyEgg = (actor :Actor) :boolean =>
+          isEgg(actor) && (actor.data.action === ActorAction.ReadyToHatch)
       const egg = getNearestActor(ctx, data, isReadyEgg) ||
           getNearestActor(ctx, data, isEgg)
       if (egg) {
-        const eggData = egg[2]
-        const nearEgg = getRandomPositionFrom(ctx, eggData, 5)
+        const nearEgg = getRandomPositionFrom(ctx, egg.data, 5)
         if (nearEgg) {
-          walkTo(ctx, key, data, nearEgg, 1.2)
+          walkTo(ctx, actor, nearEgg, 1.2)
         }
       }
       break
@@ -421,7 +443,7 @@ function tickMonster (
     if (Math.random() < .075) {
       const newpos = getRandomPositionFrom(ctx, data, 10)
       if (newpos) {
-        walkTo(ctx, key, data, newpos)
+        walkTo(ctx, actor, newpos)
       }
     }
     break
@@ -511,21 +533,22 @@ function setAction (
 function getNearestActor (
   ctx :RanchContext,
   loc :Located,
-  predicate :(key :UUID, config :ActorConfig, data :ActorData) => boolean,
+  predicate :(actor :Actor) => boolean,
   maxDist :number = Infinity
-) :[ UUID, ActorConfig, ActorData ]|undefined {
+) :Actor|undefined {
   let nearest = undefined
-  ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
-    const config = ctx.obj.actorConfigs.get(key)
+  ctx.obj.actorData.forEach((data :ActorData, id :UUID) => {
+    const config = ctx.obj.actorConfigs.get(id)
     if (!config) {
-      log.warn("Missing actor config?", "key", key)
+      log.warn("Missing actor config?", "id", id)
       return
     }
-    if (predicate(key, config, data)) {
+    const oActor :Actor = {id, config, data}
+    if (predicate(oActor)) {
       const dd = getDistance(loc, data)
       if (dd < maxDist) {
         maxDist = dd
-        nearest = [ key, config, data ]
+        nearest = oActor
       }
     }
   })
@@ -549,40 +572,38 @@ function getDistance (one :Located, two :Located) :number {
   return Math.sqrt(dx*dx + dy*dy + dz*dz)
 }
 
-function getSpeed (ctx :RanchContext, key :UUID, data :ActorData) :number {
-  const cfg = ctx.obj.actorConfigs.get(key)!
-  return ActorKindAttributes.baseMovementSpeed(cfg.kind) * data.scale
+function getSpeed (ctx :RanchContext, actor :Actor) :number {
+  return ActorKindAttributes.baseMovementSpeed(actor.config.kind) * actor.data.scale
 }
 
 function walkTo (
   ctx :RanchContext,
-  key: UUID,
-  data :ActorData,
+  actor :Actor,
   newPos :Located,
   speedFactor = 1
 ) :void {
-  const path = findPath(ctx, data, newPos)
+  const path = findPath(ctx, actor.data, newPos)
   if (!path) {
     log.warn("Unable to find path",
-      "src", data,
+      "src", actor.data,
       "dest", newPos)
-    setAction(ctx, data, ActorAction.Unknown)
+    setAction(ctx, actor.data, ActorAction.Unknown)
     return
   }
 
   // TEMP!?
   // make sure we can path-back
-  const pathBack = findPath(ctx, newPos, data)
+  const pathBack = findPath(ctx, newPos, actor.data)
   if (!pathBack) {
     log.warn("Unable to find a path BACK from a point. Skipping",
       "point", newPos)
-    setAction(ctx, data, ActorAction.Unknown)
+    setAction(ctx, actor.data, ActorAction.Unknown)
     return
   }
   // END TEMP
 
   let info :PathInfo|undefined = undefined
-  const speed = 1000 / (getSpeed(ctx, key, data) * speedFactor)
+  const speed = 1000 / (getSpeed(ctx, actor) * speedFactor)
   while (path.length > 1) {
     const dest = path.pop()!
     const src = path[path.length - 1]
@@ -591,12 +612,12 @@ function walkTo (
     info = { src: vec2loc(src), dest: vec2loc(dest), orient, duration, timeLeft: duration,
         next: info }
   }
-  data.path = info
-  if (!isWalkingState(data.action)) {
-    setAction(ctx, data, ActorAction.Walking)
+  actor.data.path = info
+  if (!isWalkingState(actor.data.action)) {
+    setAction(ctx, actor.data, ActorAction.Walking)
   }
   // set our final angle to something wacky
-  data.orient = Math.random() * Math.PI * 2
+  actor.data.orient = Math.random() * Math.PI * 2
 }
 
 function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|undefined {
@@ -612,7 +633,7 @@ function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|un
   return foundPath
 }
 
-function isWalkingState (act :ActorAction) :boolean {
+function isWalkingState (act :ActorAction) :boolean { // TODO: will be nixed
   switch (act) {
   case ActorAction.Walking:
   case ActorAction.Sleepy:
