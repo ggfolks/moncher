@@ -9,6 +9,8 @@ import {FirebaseDataStore} from "tfw/data/firebase"
 import {FirebaseAuthValidator} from "tfw/auth/firebase"
 import {ServerObject} from "./data"
 import {ZonedPathfinding} from "./zonedpathfinding"
+import {SERVER_FUNCS} from "./moncher"
+import {handleRanchReq} from "./ranchserver"
 
 setTextCodec(() => new TextEncoder() as any, () => new TextDecoder() as any)
 
@@ -29,6 +31,10 @@ server.state.onValue(ss => {
   console.log(`Server state: ${ss}`)
 })
 
+/** Configure serverside handlers in a special global object to hide from the client. */
+global[SERVER_FUNCS] = {
+    handleRanchReq,
+  }
 
 // Load the navmesh GLB and put our pathfinder into global
 global["Blob"] = require("web-blob").constructor

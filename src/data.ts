@@ -3,9 +3,7 @@ import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
 import {Auth, DObject, MetaMsg} from "tfw/data/data"
 import {dcollection, dmap, dobject, dqueue, dset, dtable, dvalue, dview,
         orderBy} from "tfw/data/meta"
-import {
-  ActorConfig, ActorData, ActorUpdate, RanchReq, handleRanchReq,
-} from "./moncher"
+import {ActorConfig, ActorData, ActorUpdate, SERVER_FUNCS} from "./moncher"
 
 const guestName = (id :UUID) => `Guest ${id.substring(0, 4)}`
 const guestPhoto = (id :UUID) => "ui/DefaultAvatar.png"
@@ -147,7 +145,24 @@ export class RanchObject extends DObject {
   canSubscribe (auth :Auth) { return true /* TODO: ranch membership */ }
 }
 
-export const ranchQ = (id :UUID) => RanchObject.queueAddr(["ranches", id], "ranchq")
+/** Player requests to the ranch. */
+export type RanchReq =
+    /** A request to "touch" a particular actor. */
+    {type :"touch", id :UUID} |
+    /** Drop an egg at the specified location. */
+    {type :"dropEgg", x :number, y :number, z :number} |
+    /** Drop food at the specified location. */
+    {type :"dropFood", x :number, y :number, z :number} |
+    /** Set the name of the ranch. (TEMP?) */
+    {type :"setName", name :string} |
+    /** A client-initiated tick (TEMP) */
+    {type :"tick"}
+
+//const ranchQ = (id :UUID) => RanchObject.queueAddr(["ranches", id], "ranchq")
+
+function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
+  global[SERVER_FUNCS].handleRanchReq(obj, req, auth)
+}
 
 function handleMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth) {
   switch (msg.type) {

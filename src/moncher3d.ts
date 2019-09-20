@@ -76,10 +76,10 @@ import {
   PathInfo,
   blankActorUpdate,
 } from "./moncher"
+import {loc2vec} from "./ranchutil"
 import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
-import {loc2vec} from "./moncher"
 import {RanchObject} from "./data"
 
 class ActorInfo {
