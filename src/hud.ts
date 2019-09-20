@@ -3,7 +3,7 @@ import {Disposable, Disposer, log} from "tfw/core/util"
 import {Renderer} from "tfw/scene2/gl"
 import {ElementConfig, Host, Root, RootConfig} from "tfw/ui/element"
 import {Model, ModelData} from "tfw/ui/model"
-import {RanchMode} from "./moncher3d"
+import {RanchMode} from "./moncher"
 import {App} from "./app"
 
 export const enum UiState {

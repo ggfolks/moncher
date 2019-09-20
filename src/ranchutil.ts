@@ -1,5 +1,5 @@
 import {Vector3} from "three"
-import {Located} from "./moncher"
+import {Located} from "./ranchdata"
 
 export function loc2vec (loc :Located, into? :Vector3) :Vector3 {
   return (into || new Vector3()).set(loc.x, loc.y, loc.z)

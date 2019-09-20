@@ -75,7 +75,7 @@ import {
   ActorUpdate,
   PathInfo,
   blankActorUpdate,
-} from "./moncher"
+} from "./ranchdata"
 import {loc2vec} from "./ranchutil"
 import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"

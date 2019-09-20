@@ -9,7 +9,7 @@ import {FirebaseDataStore} from "tfw/data/firebase"
 import {FirebaseAuthValidator} from "tfw/auth/firebase"
 import {ServerObject} from "./data"
 import {ZonedPathfinding} from "./zonedpathfinding"
-import {SERVER_FUNCS} from "./moncher"
+import {SERVER_FUNCS} from "./ranchdata"
 import {handleRanchReq} from "./ranchserver"
 
 setTextCodec(() => new TextEncoder() as any, () => new TextDecoder() as any)

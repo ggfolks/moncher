@@ -1,4 +1,4 @@
-import {ActorConfig, ActorKind, ActorModel} from "./moncher"
+import {ActorConfig, ActorKind, ActorModel} from "./ranchdata"
 
 export class MonsterDb {
 

@@ -15,7 +15,7 @@ import {
   ActorUpdate,
   Located,
   PathInfo,
-} from "./moncher"
+} from "./ranchdata"
 import {loc2vec, vec2loc} from "./ranchutil"
 import {MONSTER_ACCELERANT} from "./debug"
 

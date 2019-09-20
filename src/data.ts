@@ -3,7 +3,7 @@ import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
 import {Auth, DObject, MetaMsg} from "tfw/data/data"
 import {dcollection, dmap, dobject, dqueue, dset, dtable, dvalue, dview,
         orderBy} from "tfw/data/meta"
-import {ActorConfig, ActorData, ActorUpdate, SERVER_FUNCS} from "./moncher"
+import {ActorConfig, ActorData, ActorUpdate, SERVER_FUNCS} from "./ranchdata"
 
 const guestName = (id :UUID) => `Guest ${id.substring(0, 4)}`
 const guestPhoto = (id :UUID) => "ui/DefaultAvatar.png"

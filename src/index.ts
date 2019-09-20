@@ -1,7 +1,5 @@
 import {App} from "./app"
-import {RanchMode} from "./moncher3d"
-//import {Vector3} from "three"
-//import {MonsterDb} from "./monsterdb"
+import {RanchMode} from "./moncher"
 
 const root = document.getElementById("root")
 if (!root) throw new Error(`No root?`)
