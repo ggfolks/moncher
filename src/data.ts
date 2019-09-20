@@ -31,6 +31,9 @@ export class UserObject extends DObject {
   @dvalue("uuid")
   ranch = this.value<UUID>(UUID0)
 
+  @dset("string", true)
+  tokens = this.set<string>()
+
   @dqueue(handleUserReq)
   userq = this.queue<UserReq>()
 
@@ -46,7 +49,7 @@ type UserReq = {type :"enter", ranch :UUID}
 // }
 
 function handleUserReq (obj :UserObject, req :UserReq, auth :Auth) {
-  log.info("handleUserReq", "auth", auth, "req", req)
+  log.debug("handleUserReq", "auth", auth, "req", req)
   switch (req.type) {
   case "enter":
     if (auth.isSystem) obj.ranch.update(req.ranch)
@@ -58,11 +61,26 @@ export type Message = {
   sender :UUID
   text :string
   sent :Timestamp
-  edited :Timestamp|undefined
+  edited? :Timestamp
+}
+
+const NoMessage = {
+  sender: UUID0,
+  text: "",
+  sent: new Timestamp(0)
 }
 
 @dobject
 export class ChannelObject extends DObject {
+
+  @dvalue("size32")
+  viewers = this.value(0)
+
+  @dset("uuid", true)
+  members = this.set<UUID>()
+
+  @dvalue("record")
+  latestMsg = this.value<Message>(NoMessage)
 
   @dtable()
   msgs = this.table<Message>()
@@ -73,9 +91,13 @@ export class ChannelObject extends DObject {
   @dqueue(handleChannelReq)
   channelq = this.queue<ChannelReq>()
 
+  @dqueue(handleChannelMetaMsg)
+  metaq = this.queue<MetaMsg>()
+
   addMessage (sender :UUID, text :string) {
-    const mid = uuidv1()
-    this.msgs.create(mid, {sender, text, sent: Timestamp.now()})
+    const mid = uuidv1(), msg = {sender, text, sent: Timestamp.now()}
+    this.msgs.create(mid, msg)
+    this.latestMsg.update(msg)
   }
 
   canSubscribe (auth :Auth) { return true /* TODO: ranch/channel membership */ }
@@ -86,7 +108,7 @@ export const channelQ = (id :UUID) => ChannelObject.queueAddr(["channels", id], 
 type ChannelReq = {type :"speak", text :string}
 
 function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
-  log.info("handleChannelReq", "auth", auth, "req", req)
+  log.debug("handleChannelReq", "auth", auth, "req", req)
   switch (req.type) {
   case "speak":
     obj.addMessage(auth.id, req.text)
@@ -101,6 +123,23 @@ function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
   }
 }
 
+function handleChannelMetaMsg (obj :ChannelObject, msg :MetaMsg, auth :Auth) {
+  // log.debug("handleChannelMeta", "auth", auth, "msg", msg)
+  if (!auth.isSystem) return
+  switch (msg.type) {
+  case "subscribed":
+    if (msg.id === UUID0) return // ignore system subscribers
+    if (obj.viewers.current === 0) obj.source.post(serverQ, {type: "channelActive", id: obj.key})
+    obj.viewers.update(obj.viewers.current+1)
+    break
+  case "unsubscribed":
+    if (msg.id === UUID0) return // ignore system subscribers
+    obj.viewers.update(obj.viewers.current-1)
+    if (obj.viewers.current === 0) obj.source.post(serverQ, {type: "channelInactive", id: obj.key})
+    break
+  }
+}
+
 @dobject
 export class RanchObject extends DObject {
 
@@ -109,13 +148,6 @@ export class RanchObject extends DObject {
 
   @dset("uuid")
   occupants = this.set<UUID>()
-
-  @dqueue(handleMetaMsg)
-  metaq = this.queue<MetaMsg>()
-
-  /** The queue on which all client requests are handled. */
-  @dqueue(handleRanchReq)
-  ranchq = this.queue<RanchReq>()
 
   /** The map of actor configs, which is updated prior to the actor being added. */
   @dmap("uuid", "record", false)
@@ -132,6 +164,13 @@ export class RanchObject extends DObject {
   /** Keeps the last time we were ticked, from Date.now() */
   @dvalue("number", false)
   lastTick = this.value(0)
+
+  @dqueue(handleRanchMetaMsg)
+  metaq = this.queue<MetaMsg>()
+
+  /** The queue on which all client requests are handled. */
+  @dqueue(handleRanchReq)
+  ranchq = this.queue<RanchReq>()
 
   canRead (prop :keyof RanchObject, auth :Auth) :boolean {
     switch (prop) {
@@ -164,7 +203,8 @@ function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
   global[SERVER_FUNCS].handleRanchReq(obj, req, auth)
 }
 
-function handleMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth) {
+function handleRanchMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth) {
+  // log.debug("handleRanchMeta", "auth", auth, "msg", msg)
   switch (msg.type) {
   case "subscribed":
     obj.occupants.add(msg.id)
@@ -187,6 +227,32 @@ export class ServerObject extends DObject {
   @dcollection(ChannelObject)
   channels = this.collection<ChannelObject>()
 
+  @dset("uuid")
+  activeChannels = this.set<UUID>()
+
   @dcollection(RanchObject)
   ranches = this.collection<RanchObject>()
+
+  @dqueue(handleServerReq)
+  serverq = this.queue<ServerReq>()
 }
+
+type ServerReq = {type: "channelActive", id :UUID}
+               | {type: "channelInactive", id :UUID}
+
+function handleServerReq (obj :ServerObject, req :ServerReq, auth :Auth) {
+  // log.debug("handleServerReq", "auth", auth, "req", req)
+  if (!auth.isSystem) return
+  // TODO: create meta messages for this sort of super simple "make this change to this standard
+  // distributed object property" machinery
+  switch (req.type) {
+  case "channelActive":
+    obj.activeChannels.add(req.id)
+    break
+  case "channelInactive":
+    obj.activeChannels.delete(req.id)
+    break
+  }
+}
+
+export const serverQ = ServerObject.queueAddr([], "serverq")

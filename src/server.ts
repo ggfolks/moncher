@@ -11,6 +11,7 @@ import {ServerObject} from "./data"
 import {ZonedPathfinding} from "./zonedpathfinding"
 import {SERVER_FUNCS} from "./ranchdata"
 import {handleRanchReq} from "./ranchserver"
+import {Notifier} from "./notifier"
 
 setTextCodec(() => new TextEncoder() as any, () => new TextDecoder() as any)
 
@@ -24,12 +25,17 @@ firebase.initializeApp({
   messagingSenderId: "733313051370",
   appId: "1:733313051370:web:ef572661b45a730f8d8593"
 })
+const adminApp = admin.initializeApp()
 
 const store = new FirebaseDataStore(ServerObject)
 const server = new Server(store, {firebase: new FirebaseAuthValidator()})
 server.state.onValue(ss => {
   console.log(`Server state: ${ss}`)
 })
+
+// this guy sends out FCM notifications for chat channel messages
+const notifier = new Notifier(adminApp, server.store)
+server.state.whenOnce(s => s === "terminated", _ => notifier.dispose())
 
 /** Configure serverside handlers in a special global object to hide from the client. */
 global[SERVER_FUNCS] = {
