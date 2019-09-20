@@ -719,7 +719,45 @@ export class RanchMode extends Mode {
         finishBeforeTransition: true,
         clampWhenFinished: isEgg, // stop the egg hatch on the last frame
       }
-      if (!isEgg) {
+      if (isEgg) {
+        // create a blank animation state that is transitioned to when the egg is "Hatched"
+        animStates.hatched = {url: ""} // TODO blank animation state?
+        anyTransitions.hatched = {condition: "hatchedCond"}
+        graphCfg.controller.hatchedCond = "isHatched"
+
+        graphCfg.isHatched = {
+          type: "equals",
+          x: "action",
+          y: ActorAction.Hatched,
+        }
+
+        // TODO: if I can get a new "invisibilizing animation" from the artists, I can use that
+        // for the 'hatched' animation and then the next 4 nodes can be removed:
+
+        // we don't do anything in that animation state except use it to trigger a visibility change
+        graphCfg.wasHatched = {
+          type: "equals",
+          x: "controller",
+          y: {value: "hatched"},
+        }
+
+        graphCfg.wasEverHatched = {
+          type: "or",
+          inputs: ["wasHatched", "wasEverHatched"],
+        }
+
+        graphCfg.notWasEverHatched = {
+          type: "not",
+          input: "wasEverHatched",
+        }
+
+        graphCfg.setInvisibileOnHatched = {
+          type: "updateVisible",
+          component: "obj",
+          input: "notWasEverHatched",
+        }
+
+      } else {
         animStates.hatch.transitions = { default: {} }
       }
       anyTransitions.hatch = {condition: "hatchCond"}
