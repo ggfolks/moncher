@@ -245,19 +245,19 @@ function tickRanch (
 ) :void {
   // tick every actor
   ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
-      const config = ctx.obj.actorConfigs.get(key)
-      if (config) tickActor(ctx, dt, key, config, data)
-      else log.warn("Missing actor config?", "key", key)
-    })
+    const config = ctx.obj.actorConfigs.get(key)
+    if (config) tickActor(ctx, dt, key, config, data)
+    else log.warn("Missing actor config?", "key", key)
+  })
 
   // publish changes (after ticking EVERY actor. Actors may modify each other.)
   ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
-      if (data.hp <= 0) {
-        removeActor(ctx, key)
-      } else {
-        ctx.obj.actors.set(key, actorDataToUpdate(data))
-      }
-    })
+    if (data.hp <= 0) {
+      removeActor(ctx, key)
+    } else {
+      ctx.obj.actors.set(key, actorDataToUpdate(data))
+    }
+  })
 }
 
 function tickActor (

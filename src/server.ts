@@ -33,8 +33,8 @@ server.state.onValue(ss => {
 
 /** Configure serverside handlers in a special global object to hide from the client. */
 global[SERVER_FUNCS] = {
-    handleRanchReq,
-  }
+  handleRanchReq,
+}
 
 // Load the navmesh GLB and put our pathfinder into global
 global["Blob"] = require("web-blob").constructor

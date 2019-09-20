@@ -263,41 +263,41 @@ export class RanchMode extends Mode {
       // TEMP: debugging for persistence: log everything
       log.debug("Existing actors: " + ranch.actorConfigs.size)
       ranch.actorConfigs.forEach((v, k) => {
-          log.debug("Existing actorConfig",
-            "key", k,
-            "value", v)
-        })
+        log.debug("Existing actorConfig",
+          "key", k,
+          "value", v)
+      })
       ranch.actors.forEach((v, k) => {
-          log.debug("Existing actor",
-            "key", k,
-            "value", v)
-        })
+        log.debug("Existing actor",
+          "key", k,
+          "value", v)
+      })
       ranch.actorData.forEach((v, k) => {
-          log.debug("Existing actorData",
-            "key", k,
-            "value", v)
-        })
+        log.debug("Existing actorData",
+          "key", k,
+          "value", v)
+      })
       this.onDispose.add(ranch.actorConfigs.onChange(ch => {
-          if (ch.type === "set") {
-            log.debug("actor config set",
-              "key", ch.key,
-              "value", ch.value)
-          } else log.debug("actor config delete", "key", ch.key)
-        }))
+        if (ch.type === "set") {
+          log.debug("actor config set",
+            "key", ch.key,
+            "value", ch.value)
+        } else log.debug("actor config delete", "key", ch.key)
+      }))
       this.onDispose.add(ranch.actors.onChange(ch => {
-          if (ch.type === "set") {
-            log.debug("actor set",
-              "key", ch.key,
-              "value", ch.value)
-          } else log.debug("actor delete", "key", ch.key)
-        }))
+        if (ch.type === "set") {
+          log.debug("actor set",
+            "key", ch.key,
+            "value", ch.value)
+        } else log.debug("actor delete", "key", ch.key)
+      }))
       this.onDispose.add(ranch.actorData.onChange(ch => {
-          if (ch.type === "set") {
-            log.debug("actor data set",
-              "key", ch.key,
-              "value", ch.value)
-          } else log.debug("actor data delete", "key", ch.key)
-        }))
+        if (ch.type === "set") {
+          log.debug("actor data set",
+            "key", ch.key,
+            "value", ch.value)
+        } else log.debug("actor data delete", "key", ch.key)
+      }))
     }
   }
 
@@ -982,9 +982,9 @@ export class RanchMode extends Mode {
 
     // Log camera details
     log.debug("Camera",
-        "dist", this._camControl.distance,
-        "target", this._camControl.getTarget(),
-        "angle", this._camControl.angle)
+      "dist", this._camControl.distance,
+      "target", this._camControl.getTarget(),
+      "angle", this._camControl.angle)
   }
 
   /** Tracks all the urls we've preloaded. */
