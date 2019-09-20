@@ -2,7 +2,7 @@ import {log} from "tfw/core/util"
 import {UUID, uuidv1} from "tfw/core/uuid"
 import {Auth} from "tfw/data/data"
 import {Vector3} from "three"
-import {RanchObject} from "./data"
+import {RanchObject, RanchReq} from "./data"
 import {MonsterDb} from "./monsterdb"
 import {ZonedPathfinding} from "./zonedpathfinding"
 import {
@@ -28,6 +28,13 @@ import {MONSTER_ACCELERANT} from "./debug"
 //  config :ActorConfig
 //  data :ActorData
 //}
+
+/**
+ * Context object passed to most request handlers. */
+interface RanchContext {
+  obj :RanchObject
+  path? :ZonedPathfinding
+}
 
 /**
  * The queue handler for client-initiated requests to the ranch. */
@@ -136,7 +143,7 @@ abstract class Behavior {
   protected static readonly _behaviors :Map<number, Behavior> = new Map()
 
   /** The default behavior. */
-  protected static _defaultBehavior :Behavior
+  protected static _defaultBehavior :Behavior // why is it not an error that it's not initialized?
 }
 
 class WanderBehavior extends Behavior {
@@ -197,24 +204,6 @@ function actorDataToUpdate (data :ActorData) :ActorUpdate {
     path,
   }
 }
-
-interface RanchContext {
-  obj :RanchObject
-  path? :ZonedPathfinding
-}
-
-/** Player requests to the ranch. */
-export type RanchReq =
-    /** A request to "touch" a particular actor. */
-    {type :"touch", id :UUID} |
-    /** Drop an egg at the specified location. */
-    {type :"dropEgg", x :number, y :number, z :number} |
-    /** Drop food at the specified location. */
-    {type :"dropFood", x :number, y :number, z :number} |
-    /** Set the name of the ranch. (TEMP?) */
-    {type :"setName", name :string} |
-    /** A client-initiated tick (TEMP) */
-    {type :"tick"}
 
 /**
  * Handle adding an actor. */
