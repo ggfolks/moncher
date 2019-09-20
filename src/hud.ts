@@ -43,92 +43,92 @@ export class Hud
     const BUTTON_WIDTH = 100
 
     switch (uiState) {
-      default:
-        log.warn("Unknown uiState " + uiState)
-        return undefined
+    default:
+      log.warn("Unknown uiState " + uiState)
+      return undefined
 
-      case UiState.Default:
-        contents = {
-          type: "column",
-          constraints: {stretchX: true, stretchY: false},
+    case UiState.Default:
+      contents = {
+        type: "column",
+        constraints: {stretchX: true, stretchY: false},
+        contents: [{
+          type: "row",
           contents: [{
-            type: "row",
-            contents: [{
-              type: "button",
-              onClick: "egg.clicked",
-              contents: {
-                type: "box",
-                contents: {
-                  type: "image",
-                  image: "egg.img",
-                  width: BUTTON_WIDTH,
-                },
-                style: {
-                  background: null,
-                  border: null,
-                },
-              },
-            }, {
-              type: "button",
-              onClick: "food.clicked",
-              contents: {
-                type: "box",
-                contents: {
-                  type: "image",
-                  image: "food.img",
-                  width: BUTTON_WIDTH,
-                },
-                style: {
-                  background: null,
-                  border: null,
-                },
-              },
-            }],
-          }, {
-            type: "box",
+            type: "button",
+            onClick: "egg.clicked",
             contents: {
-              type: "label",
-              text: "status.text",
+              type: "box",
+              contents: {
+                type: "image",
+                image: "egg.img",
+                width: BUTTON_WIDTH,
+              },
+              style: {
+                background: null,
+                border: null,
+              },
             },
-            style: {
-              padding: 10,
-              background: {fill: {type: "color", color: "$transWhite"}},
+          }, {
+            type: "button",
+            onClick: "food.clicked",
+            contents: {
+              type: "box",
+              contents: {
+                type: "image",
+                image: "food.img",
+                width: BUTTON_WIDTH,
+              },
+              style: {
+                background: null,
+                border: null,
+              },
             },
           }],
-        }
-        model.egg = {
-          img: Value.constant("ui/EggButton.png"),
-          clicked: () => this._ranchMode.setUiState(UiState.PlacingEgg),
-        }
-        model.food = {
-          img: Value.constant("ui/AcornButton.png"),
-          clicked: () => this._ranchMode.setUiState(UiState.PlacingFood),
-        }
-        model.status = {
-          text: Value.constant("Hold F1 to see the navmesh"),
-        }
-        break // end: Default
-
-      case UiState.PlacingEgg:
-      case UiState.PlacingFood:
-        contents = {
-          type: "button",
-          onClick: "cancel.clicked",
+        }, {
+          type: "box",
           contents: {
-            type: "box",
-            contents: {
-              type: "label",
-              text: "cancel.text",
-            },
+            type: "label",
+            text: "status.text",
           },
-        }
-        model.cancel = {
-          text: Value.constant((uiState == UiState.PlacingEgg)
-              ? "Cancel egg placement"
-              : "Cancel food drop"),
-          clicked: () => this._ranchMode.setUiState(UiState.Default),
-        }
-        break // end: PlacingEgg & PlacingFood
+          style: {
+            padding: 10,
+            background: {fill: {type: "color", color: "$transWhite"}},
+          },
+        }],
+      }
+      model.egg = {
+        img: Value.constant("ui/EggButton.png"),
+        clicked: () => this._ranchMode.setUiState(UiState.PlacingEgg),
+      }
+      model.food = {
+        img: Value.constant("ui/AcornButton.png"),
+        clicked: () => this._ranchMode.setUiState(UiState.PlacingFood),
+      }
+      model.status = {
+        text: Value.constant("Hold F1 to see the navmesh"),
+      }
+      break // end: Default
+
+    case UiState.PlacingEgg:
+    case UiState.PlacingFood:
+      contents = {
+        type: "button",
+        onClick: "cancel.clicked",
+        contents: {
+          type: "box",
+          contents: {
+            type: "label",
+            text: "cancel.text",
+          },
+        },
+      }
+      model.cancel = {
+        text: Value.constant((uiState == UiState.PlacingEgg)
+            ? "Cancel egg placement"
+            : "Cancel food drop"),
+        clicked: () => this._ranchMode.setUiState(UiState.Default),
+      }
+      break // end: PlacingEgg & PlacingFood
     }
 
     const rootConfig :RootConfig = {

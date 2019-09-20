@@ -135,10 +135,10 @@ export class RanchObject extends DObject {
 
   canRead (prop :keyof RanchObject, auth :Auth) :boolean {
     switch (prop) {
-      default: return super.canRead(prop, auth)
-      case "actorData":
-      case "lastTick":
-        return auth.isSystem
+    default: return super.canRead(prop, auth)
+    case "actorData":
+    case "lastTick":
+      return auth.isSystem
     }
   }
 

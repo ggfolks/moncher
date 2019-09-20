@@ -19,20 +19,20 @@ export class ActorKindAttributes {
    * Is the specified kind a monster? */
   static isMonster (kind :ActorKind) :boolean {
     switch (kind) {
-      case ActorKind.Egg: case ActorKind.Food: return false
-      default: return true
+    case ActorKind.Egg: case ActorKind.Food: return false
+    default: return true
     }
   }
 
   static initialHealth (kind :ActorKind) :number {
     switch (kind) {
-      default: return 50
+    default: return 50
     }
   }
 
   static baseMovementSpeed (kind :ActorKind) :number {
     switch (kind) {
-      default: return .7
+    default: return .7
     }
   }
 }

@@ -1049,53 +1049,53 @@ export class RanchMode extends Mode {
     if (change.type === "deleted") return
     if (!change.value.pressed) return
     switch (this._uiState) {
-      case UiState.PlacingEgg:
-      case UiState.PlacingFood:
-        const loc = this.mouseToLocation(change.value.position)
-        if (loc) this.doPlacement(loc)
-        break
+    case UiState.PlacingEgg:
+    case UiState.PlacingFood:
+      const loc = this.mouseToLocation(change.value.position)
+      if (loc) this.doPlacement(loc)
+      break
 
-      case UiState.Default:
-        // do panning an zooming
-        switch (this._hand.pointers.size) {
-          case 1: // mouse panning
-            if (change.value.movement[0] || change.value.movement[1]) {
-              const MOUSE_FACTOR = -.025
-              this.adjustCameraTarget(
-                  change.value.movement[0] * MOUSE_FACTOR,
-                  change.value.movement[1] * MOUSE_FACTOR)
-            }
-            break
-
-          case 2: // pinchy zoomy
-            const pp = change.value
-            if (pp.movement[0] || pp.movement[1]) {
-              for (const op of this._hand.pointers.values()) {
-                if (op !== pp) {
-                  const newDist = vec2.distance(op.position, pp.position)
-                  const oldDist = vec2.distance(op.position,
-                      [ pp.position[0] - pp.movement[0], pp.position[1] - pp.movement[1] ])
-                  const PINCH_FACTOR = .05
-                  this._camControl.adjustDistance((oldDist - newDist) * PINCH_FACTOR)
-                  break
-                }
-              }
-            }
-            break
-
-          case 3: // three finger zoom: Y movement zooms; all 3 for fast; hold 2 and fine tune index
-            if (change.value.movement[1]) {
-              const THREE_FINGER_FACTOR = -.02
-              this._camControl.adjustDistance(change.value.movement[1] * THREE_FINGER_FACTOR)
-            }
-            break
-
-          default: // do nothing
-            break
+    case UiState.Default:
+      // do panning an zooming
+      switch (this._hand.pointers.size) {
+      case 1: // mouse panning
+        if (change.value.movement[0] || change.value.movement[1]) {
+          const MOUSE_FACTOR = -.025
+          this.adjustCameraTarget(
+              change.value.movement[0] * MOUSE_FACTOR,
+              change.value.movement[1] * MOUSE_FACTOR)
         }
         break
 
-      default: break
+      case 2: // pinchy zoomy
+        const pp = change.value
+        if (pp.movement[0] || pp.movement[1]) {
+          for (const op of this._hand.pointers.values()) {
+            if (op !== pp) {
+              const newDist = vec2.distance(op.position, pp.position)
+              const oldDist = vec2.distance(op.position,
+                  [ pp.position[0] - pp.movement[0], pp.position[1] - pp.movement[1] ])
+              const PINCH_FACTOR = .05
+              this._camControl.adjustDistance((oldDist - newDist) * PINCH_FACTOR)
+              break
+            }
+          }
+        }
+        break
+
+      case 3: // three finger zoom: Y movement zooms; all 3 for fast; hold 2 and fine tune index
+        if (change.value.movement[1]) {
+          const THREE_FINGER_FACTOR = -.02
+          this._camControl.adjustDistance(change.value.movement[1] * THREE_FINGER_FACTOR)
+        }
+        break
+
+      default: // do nothing
+        break
+      }
+      break
+
+    default: break
     }
   }
 }

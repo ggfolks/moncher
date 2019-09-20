@@ -37,11 +37,11 @@ export class CarcTile
   matches (other :CarcTile, direction :Direction) :boolean {
     let dex = 0, oDex, inc
     switch (direction) {
-      case Direction.North: oDex = CarcTile.SIZE * (CarcTile.SIZE - 1); inc = 1; break
-      case Direction.West: oDex = CarcTile.SIZE - 1; inc = CarcTile.SIZE; break
-      case Direction.South: return other.matches(this, Direction.North)
-      case Direction.East: return other.matches(this, Direction.West)
-      default: throw new Error("Invalid direction " + direction)
+    case Direction.North: oDex = CarcTile.SIZE * (CarcTile.SIZE - 1); inc = 1; break
+    case Direction.West: oDex = CarcTile.SIZE - 1; inc = CarcTile.SIZE; break
+    case Direction.South: return other.matches(this, Direction.North)
+    case Direction.East: return other.matches(this, Direction.West)
+    default: throw new Error("Invalid direction " + direction)
     }
     for (let ii = 0; ii < CarcTile.SIZE; ii++, dex += inc, oDex += inc) {
       if (this._base[dex] !== other._base[oDex]) {
@@ -166,10 +166,10 @@ export function generateGridModel (
         for (let dir of directions) {
           let xx = keyX, yy = keyY
           switch (dir) {
-            case Direction.North: yy--; break
-            case Direction.South: yy++; break
-            case Direction.West: xx--; break
-            case Direction.East: xx++; break
+          case Direction.North: yy--; break
+          case Direction.South: yy++; break
+          case Direction.West: xx--; break
+          case Direction.East: xx++; break
           }
           if ((xx < 0) || (xx >= width)) continue
           if ((yy < 0) || (yy >= height)) continue

@@ -41,38 +41,38 @@ interface RanchContext {
 export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
   const ctx :RanchContext = { obj, path: global["_ranchPathfinder"] }
   switch (req.type) {
-    case "touch":
-      touchActor(ctx, req.id)
-      break
+  case "touch":
+    touchActor(ctx, req.id)
+    break
 
-    case "tick":
-      const now = Date.now()
-      const diff = now - obj.lastTick.current
-      if (diff >= 1000) {
-        //log.debug("Tick with delta " + diff)
-        tickRanch(ctx, Math.min(diff, 5000)) // 5s max tick
-        obj.lastTick.update(now)
-      } else {
-        //log.info("Rejecting client-initiated tick (multiple clients connected?)")
-      }
-      break
+  case "tick":
+    const now = Date.now()
+    const diff = now - obj.lastTick.current
+    if (diff >= 1000) {
+      //log.debug("Tick with delta " + diff)
+      tickRanch(ctx, Math.min(diff, 5000)) // 5s max tick
+      obj.lastTick.update(now)
+    } else {
+      //log.info("Rejecting client-initiated tick (multiple clients connected?)")
+    }
+    break
 
-    case "setName":
-      log.debug("Got setname " + req.name)
-      obj.name.update(req.name)
-      break
+  case "setName":
+    log.debug("Got setname " + req.name)
+    obj.name.update(req.name)
+    break
 
-    case "dropEgg":
-      addActor(ctx, MonsterDb.getRandomEgg(), req)
-      break
+  case "dropEgg":
+    addActor(ctx, MonsterDb.getRandomEgg(), req)
+    break
 
-    case "dropFood":
-      addActor(ctx, MonsterDb.getFood(), req)
-      break
+  case "dropFood":
+    addActor(ctx, MonsterDb.getFood(), req)
+    break
 
-    default:
-      log.warn("Unhandled ranch request", "req", req)
-      break
+  default:
+    log.warn("Unhandled ranch request", "req", req)
+    break
   }
 }
 
@@ -268,34 +268,34 @@ function tickActor (
   data :ActorData,
 ) :void {
   switch (config.kind) {
-    case ActorKind.Food:
-      data.hp -= .01 // food decays
-      break
+  case ActorKind.Food:
+    data.hp -= .01 // food decays
+    break
 
-    case ActorKind.Egg:
-      switch (data.action) {
-        case ActorAction.Idle:
-          if (--data.hp < 20 * MONSTER_ACCELERANT) {
-            data.action = ActorAction.ReadyToHatch
-          }
-          break
-
-        case ActorAction.Hatching:
-          --data.hp // subtract health until we're dead
-          break
-
-        default: break
+  case ActorKind.Egg:
+    switch (data.action) {
+    case ActorAction.Idle:
+      if (--data.hp < 20 * MONSTER_ACCELERANT) {
+        data.action = ActorAction.ReadyToHatch
       }
       break
 
-    case ActorKind.Lobber:
-    case ActorKind.Runner:
-      tickMonster(ctx, dt, key, config, data)
+    case ActorAction.Hatching:
+      --data.hp // subtract health until we're dead
       break
 
-    default:
-      log.warn("Unhandled actor kind in tickActor", "kind", config.kind)
-      break
+    default: break
+    }
+    break
+
+  case ActorKind.Lobber:
+  case ActorKind.Runner:
+    tickMonster(ctx, dt, key, config, data)
+    break
+
+  default:
+    log.warn("Unhandled actor kind in tickActor", "kind", config.kind)
+    break
   }
 }
 
@@ -459,41 +459,41 @@ function touchActor (
   // for now do it all here, maybe I'll move this
   let publish = false
   switch (config.kind) {
-    case ActorKind.Egg:
-      if (data.action === ActorAction.ReadyToHatch) {
-        data.action = ActorAction.Hatching
-        addActor(ctx, config.spawn!, data, ActorAction.Hatching)
-        publish = true
-      }
-      break
-
-    case ActorKind.Lobber:
-    case ActorKind.Runner:
-      switch (data.action) {
-        case ActorAction.Sleeping:
-          setAction(ctx, data, ActorAction.Idle)
-          break
-
-        default:
-          data.instant = (Math.random() < .8) ? ActorInstant.Touched :ActorInstant.Hit
-          break
-      }
-      switch (data.action) {
-        case ActorAction.Waiting:
-        case ActorAction.Idle:
-          data.orient = 0 // rotate forward
-          break
-      }
+  case ActorKind.Egg:
+    if (data.action === ActorAction.ReadyToHatch) {
+      data.action = ActorAction.Hatching
+      addActor(ctx, config.spawn!, data, ActorAction.Hatching)
       publish = true
+    }
+    break
+
+  case ActorKind.Lobber:
+  case ActorKind.Runner:
+    switch (data.action) {
+    case ActorAction.Sleeping:
+      setAction(ctx, data, ActorAction.Idle)
       break
 
     default:
-      log.warn("Unhandled actor kind in touchActor " + config.kind)
+      data.instant = (Math.random() < .8) ? ActorInstant.Touched :ActorInstant.Hit
       break
+    }
+    switch (data.action) {
+    case ActorAction.Waiting:
+    case ActorAction.Idle:
+      data.orient = 0 // rotate forward
+      break
+    }
+    publish = true
+    break
 
-    // do nothing cases
-    case ActorKind.Food:
-      break
+  default:
+    log.warn("Unhandled actor kind in touchActor " + config.kind)
+    break
+
+  // do nothing cases
+  case ActorKind.Food:
+    break
   }
 
   if (publish) {
@@ -614,11 +614,11 @@ function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|un
 
 function isWalkingState (act :ActorAction) :boolean {
   switch (act) {
-    case ActorAction.Walking:
-    case ActorAction.Sleepy:
-    case ActorAction.SeekingFood:
-      return true
+  case ActorAction.Walking:
+  case ActorAction.Sleepy:
+  case ActorAction.SeekingFood:
+    return true
 
-    default: return false
+  default: return false
   }
 }
