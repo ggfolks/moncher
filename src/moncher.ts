@@ -29,7 +29,7 @@ import {
   Remover,
   log,
 } from "tfw/core/util"
-import {UUID} from "tfw/core/uuid"
+import {UUID, UUID0} from "tfw/core/uuid"
 import {Hand, Pointer} from "tfw/input/hand"
 import {Keyboard} from "tfw/input/keyboard"
 import {
@@ -208,6 +208,8 @@ export class RanchMode extends Mode {
 
     this.onDispose.add(Keyboard.instance.getKeyState(112 /* F1 */).onEmit(
         v => this.showNavMesh(v)))
+    this.onDispose.add(Keyboard.instance.getKeyState(113 /* F2 */).onEmit(
+        v => {if (v) this.targetNextOwnedMonster()}))
     this.onDispose.add(Keyboard.instance.getKeyState(83 /* S key */).onEmit(v => {
         if (v) {
           const enabled = !this._webGlRenderer.shadowMap.enabled
@@ -961,7 +963,26 @@ export class RanchMode extends Mode {
    * Have the camera follow the specified actor. */
   protected trackActor (id :UUID) :void {
     const actorInfo = this._actors.get(id)
-    if (actorInfo) this._camControl.setTrackedEntity(this._domain.ref(actorInfo.entityId))
+    if (actorInfo) {
+      this._camControl.setTrackedEntity(this._domain.ref(actorInfo.entityId))
+      this._lastTrackedActor = id
+    }
+  }
+
+  /**
+   * Target the next monster that we own. */
+  protected targetNextOwnedMonster () :void {
+    const myId = this._app.client.auth.current.id
+    const ids :UUID[] = []
+    this._ranchObj.actors.forEach((update, id) => {
+      if (update.owner === myId) {
+        ids.push(id)
+      }
+    })
+    if (ids.length === 0) return
+    ids.sort()
+    const needle = this._lastTrackedActor || UUID0
+    this.trackActor(ids[(1 + ids.indexOf(needle)) % ids.length])
   }
 
   /**
@@ -1041,6 +1062,9 @@ export class RanchMode extends Mode {
   protected _uiState :UiState = UiState.Default
 
   protected _ready :boolean = false
+
+  /** The last actor we tracked. */
+  protected _lastTrackedActor? :UUID
 
   // The properties below are all definitely initialized via the constructor
   protected _host! :HTMLHost
