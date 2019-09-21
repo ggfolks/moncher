@@ -209,7 +209,9 @@ export class RanchMode extends Mode {
     this.onDispose.add(Keyboard.instance.getKeyState(112 /* F1 */).onEmit(
         v => this.showNavMesh(v)))
     this.onDispose.add(Keyboard.instance.getKeyState(113 /* F2 */).onEmit(
-        v => {if (v) this.targetNextOwnedMonster()}))
+        v => {if (v) this.targetNextMonster(true)}))
+    this.onDispose.add(Keyboard.instance.getKeyState(114 /* F3 */).onEmit(
+        v => {if (v) this.targetNextMonster(false)}))
     this.onDispose.add(Keyboard.instance.getKeyState(83 /* S key */).onEmit(v => {
         if (v) {
           const enabled = !this._webGlRenderer.shadowMap.enabled
@@ -971,11 +973,11 @@ export class RanchMode extends Mode {
 
   /**
    * Target the next monster that we own. */
-  protected targetNextOwnedMonster () :void {
+  protected targetNextMonster (owned :boolean) :void {
     const myId = this._app.client.auth.current.id
     const ids :UUID[] = []
     this._ranchObj.actors.forEach((update, id) => {
-      if (update.owner === myId) {
+      if (owned ? (update.owner === myId) : (update.owner !== UUID0)) {
         ids.push(id)
       }
     })
