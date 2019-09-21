@@ -1,5 +1,5 @@
 import {log} from "tfw/core/util"
-import {UUID, uuidv1} from "tfw/core/uuid"
+import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
 import {Auth} from "tfw/data/data"
 import {Vector3} from "three"
 import {RanchObject, RanchReq} from "./data"
@@ -24,13 +24,14 @@ import {MONSTER_ACCELERANT} from "./debug"
  * Context object passed to most request handlers. */
 interface RanchContext {
   obj :RanchObject
+  auth :Auth
   path? :ZonedPathfinding
 }
 
 /**
  * The queue handler for client-initiated requests to the ranch. */
 export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
-  const ctx :RanchContext = { obj, path: global["_ranchPathfinder"] }
+  const ctx :RanchContext = { obj, auth, path: global["_ranchPathfinder"] }
   switch (req.type) {
   case "touch":
     touchActor(ctx, req.id)
@@ -54,11 +55,12 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
     break
 
   case "dropEgg":
-    addActor(ctx, MonsterDb.getRandomEgg(), req)
+    addActor(ctx, ctx.auth.id, MonsterDb.getRandomEgg(), req)
     break
 
   case "dropFood":
-    addActor(ctx, MonsterDb.getFood(), req)
+    // food is owned by nobody
+    addActor(ctx, UUID0, MonsterDb.getFood(), req)
     break
 
   default:
@@ -94,7 +96,7 @@ abstract class Behavior {
       hash = ((hash << 5) - hash) + name.charCodeAt(ii)
       hash |= 0 // force to integer
     }
-    //log.debug("Behavior", "name", name, "code", hash)
+    log.debug("Behavior", "name", name, "code", hash)
     this.code = hash
     if (Behavior._byCode.has(hash)) {
       log.warn("Uh-oh, two Behaviors have the same 'code'. Change something!")
@@ -143,6 +145,8 @@ abstract class Behavior {
 }
 
 class FoodBehavior extends Behavior {
+  static INSTANCE = new FoodBehavior()
+
   constructor () {
     super(ActorKind.Food)
   }
@@ -153,6 +157,8 @@ class FoodBehavior extends Behavior {
 }
 
 class EggBehavior extends Behavior {
+  static INSTANCE = new EggBehavior()
+
   constructor () {
     super(ActorKind.Egg)
   }
@@ -220,6 +226,8 @@ abstract class MonsterBehavior extends MobileBehavior {
 }
 
 class WanderBehavior extends MonsterBehavior {
+  static INSTANCE = new WanderBehavior()
+
   constructor () {
     super(...ActorKindAttributes.getAllMonsters())
   }
@@ -236,19 +244,20 @@ class WanderBehavior extends MonsterBehavior {
 }
 
 class EatFoodBehavior extends MobileBehavior {
+  static INSTANCE = new EatFoodBehavior()
   // TODO
 }
 
-// Create all the behavior subclass instances to register them (side-effects of their constructor)
-new FoodBehavior()
-new EggBehavior()
-new WanderBehavior()
-new EatFoodBehavior()
+// mother-fricking compiler doesn't know that the INSTANCES handle it!
+if (false) {
+  log.debug("Gruntle: " + FoodBehavior + EggBehavior + WanderBehavior + EatFoodBehavior)
+}
 
 /**
  * Return a new ActorData, mostly blank. */
 function newActorData (
   id :UUID,
+  owner :UUID,
   config :ActorConfig,
   loc :Located,
   action = ActorAction.Idle // TODO: remove
@@ -262,6 +271,8 @@ function newActorData (
     scale: 1,
     orient: 0,
     stateStack: [],
+
+    owner,
 
     instant: ActorInstant.None,
     counter: 0,
@@ -278,13 +289,14 @@ function newActorData (
 /**
  * Publish an actor update derived from the specified ActorData. */
 function actorDataToUpdate (data :ActorData) :ActorUpdate {
-  const {x, y, z, scale, orient, action, instant, path} = data
+  const {x, y, z, scale, orient, action, instant, owner, path} = data
   return {
     x, y, z,
     scale,
     orient,
     action,
     instant,
+    owner,
     path,
   }
 }
@@ -293,6 +305,7 @@ function actorDataToUpdate (data :ActorData) :ActorUpdate {
  * Handle adding an actor. */
 function addActor (
   ctx :RanchContext,
+  owner :UUID,
   config :ActorConfig,
   locProps :Located,
   action = ActorAction.Idle,
@@ -305,7 +318,7 @@ function addActor (
 //  }
 
   const uuid = uuidv1()
-  const data = newActorData(uuid, config, locProps, action)
+  const data = newActorData(uuid, owner, config, locProps, action)
   const update = actorDataToUpdate(data)
   ctx.obj.actorConfigs.set(uuid, config)
   ctx.obj.actorData.set(uuid, data)
@@ -488,7 +501,8 @@ function touchActor (
   case ActorKind.Egg:
     if (data.action === ActorAction.ReadyToHatch) {
       data.action = ActorAction.Hatching
-      addActor(ctx, config.spawn!, data, ActorAction.Hatching)
+      // spawn the monster with the same owner
+      addActor(ctx, data.owner, config.spawn!, data, ActorAction.Hatching)
       publish = true
     }
     break

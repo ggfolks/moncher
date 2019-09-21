@@ -1,3 +1,4 @@
+import {UUID, UUID0} from "tfw/core/uuid"
 import {PMap} from "tfw/core/util"
 
 /** The name of the magical global object containing serverside request functions. */
@@ -129,6 +130,7 @@ export interface ActorUpdate extends Located {
   orient :number
   action :ActorAction    // rename to "state"
   instant :ActorInstant // TODO: WILL BE REMOVED
+  owner: UUID
   path? :PathInfo
 }
 
@@ -141,6 +143,7 @@ export function blankActorUpdate () :ActorUpdate {
     z: 0,
     scale: 0,
     orient: 0,
+    owner: UUID0,
     action: ActorAction.Idle,
     instant: ActorInstant.None,
     path: undefined,
@@ -159,6 +162,7 @@ export interface ActorData extends Located {
   y :number
   z :number
 
+  owner :UUID
   action :ActorAction
   hunger :number
   counter :number       // TODO: going away, subsumed into new "Behavior" type
