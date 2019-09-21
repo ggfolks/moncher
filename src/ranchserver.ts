@@ -107,7 +107,7 @@ abstract class Behavior {
       hash = ((hash << 5) - hash) + name.charCodeAt(ii)
       hash |= 0 // force to integer
     }
-    log.debug("Behavior", "name", name, "code", hash)
+    //log.debug("Behavior", "name", name, "code", hash)
     this.code = hash
     if (Behavior._byCode.has(hash)) {
       log.warn("Uh-oh, two Behaviors have the same 'code'. Change something!")
