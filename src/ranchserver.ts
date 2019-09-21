@@ -375,6 +375,10 @@ function tickMonster (
   case ActorAction.Sleepy:
   case ActorAction.SeekingFood: // NOTE: these have moved to Behavior now
     // TODO: clean up!
+    // for now we need to ensure we popState
+    if (data.path === undefined) {
+      setAction(ctx, data, popState(data), data.counter)
+    }
     break
 
   case ActorAction.Eating:
