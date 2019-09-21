@@ -75,6 +75,17 @@ interface Actor {
   data :ActorData
 }
 
+function getActor (ctx :RanchContext, id :UUID) :Actor|undefined {
+  const data = ctx.obj.actorData.get(id)
+  if (!data) return undefined
+  const config = ctx.obj.actorConfigs.get(id)
+  if (!config) {
+    log.warn("Missing actor config?", "key", id)
+    return undefined
+  }
+  return { id, config, data }
+}
+
 abstract class Behavior {
   /**
    * Retrieve a Behavior from the code stored in the data's BehaviorData. */
@@ -129,6 +140,14 @@ abstract class Behavior {
     // nothin'
   }
 
+  /**
+   * Handle a client "touching" this actor.
+   * @return true if something changed and we should publish this actor.
+   */
+  touch (ctx :RanchContext, actor :Actor) :boolean {
+    return false
+  }
+
   // TODO: move? Move to MobileBehavior, or just somewhere else entirely
   _isWalking (data :ActorData) :boolean {
     return (data.path !== undefined)
@@ -181,6 +200,17 @@ class EggBehavior extends Behavior {
       break
     }
   }
+
+  touch (ctx :RanchContext, actor :Actor) :boolean {
+    const data = actor.data
+    if ((data.owner === ctx.auth.id) && (data.action === ActorAction.ReadyToHatch)) {
+      data.action = ActorAction.Hatching
+      // spawn monster with the same owner at the same location
+      addActor(ctx, data.owner, actor.config.spawn!, data /*Located*/, ActorAction.Hatching)
+      return true
+    }
+    return false
+  }
 }
 
 abstract class MobileBehavior extends Behavior {
@@ -222,6 +252,28 @@ abstract class MonsterBehavior extends MobileBehavior {
   tick (ctx :RanchContext, dt :number, actor :Actor) :void {
     super.tick(ctx, dt, actor)
     tickMonster(ctx, dt, actor)
+  }
+
+  touch (ctx :RanchContext, actor :Actor) :boolean {
+    // anyone can touch a monster
+    const data = actor.data
+    switch (data.action) {
+    case ActorAction.Sleeping:
+      // wake em up!
+      setAction(ctx, data, ActorAction.Idle)
+      break
+
+    default:
+      data.instant = (Math.random() < .8) ? ActorInstant.Touched : ActorInstant.Hit
+      break
+    }
+    switch (data.action) {
+    case ActorAction.Waiting:
+    case ActorAction.Idle:
+      data.orient = 0 // face forward
+      break
+    }
+    return true // publish!
   }
 }
 
@@ -485,59 +537,14 @@ function touchActor (
   ctx :RanchContext,
   id :UUID,
 ) :void {
-  const data = ctx.obj.actorData.get(id)
-  if (!data) {
-    log.warn("Client asked to touch missing actor", "key", id)
+  const actor = getActor(ctx, id)
+  if (!actor) {
+    log.warn("Client asked to touch missing actor?", "id", id)
     return
   }
-  const config = ctx.obj.actorConfigs.get(id)
-  if (!config) {
-    log.warn("Missing actor config?", "key", id)
-    return
-  }
-  // for now do it all here, maybe I'll move this
-  let publish = false
-  switch (config.kind) {
-  case ActorKind.Egg:
-    if (data.action === ActorAction.ReadyToHatch) {
-      data.action = ActorAction.Hatching
-      // spawn the monster with the same owner
-      addActor(ctx, data.owner, config.spawn!, data, ActorAction.Hatching)
-      publish = true
-    }
-    break
-
-  case ActorKind.Lobber:
-  case ActorKind.Runner:
-    switch (data.action) {
-    case ActorAction.Sleeping:
-      setAction(ctx, data, ActorAction.Idle)
-      break
-
-    default:
-      data.instant = (Math.random() < .8) ? ActorInstant.Touched :ActorInstant.Hit
-      break
-    }
-    switch (data.action) {
-    case ActorAction.Waiting:
-    case ActorAction.Idle:
-      data.orient = 0 // rotate forward
-      break
-    }
-    publish = true
-    break
-
-  default:
-    log.warn("Unhandled actor kind in touchActor " + config.kind)
-    break
-
-  // do nothing cases
-  case ActorKind.Food:
-    break
-  }
-
-  if (publish) {
-    ctx.obj.actors.set(id, actorDataToUpdate(data))
+  const beh = Behavior.getBehavior(actor)
+  if (beh.touch(ctx, actor)) {
+    ctx.obj.actors.set(actor.id, actorDataToUpdate(actor.data))
   }
 }
 
