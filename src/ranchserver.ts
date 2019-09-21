@@ -207,6 +207,7 @@ class EggBehavior extends Behavior {
       data.action = ActorAction.Hatching
       // spawn monster with the same owner at the same location
       addActor(ctx, data.owner, actor.config.spawn!, data /*Located*/, ActorAction.Hatching)
+      data.owner = UUID0 // update to be owned by nobody
       return true
     }
     return false
