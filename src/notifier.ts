@@ -53,14 +53,15 @@ export class Notifier {
 
   protected notifyChannelMsg (channel :ChannelObject, msg :Message) {
     whenActive(this.profile(channel.key), cprofile => {
+      const icon = cprofile.photo.current, title = cprofile.name.current
       whenActive(this.profile(msg.sender), sprofile => {
-        const title = cprofile.name.current, body = `${sprofile.name.current}: ${msg.text}`
+        const body = `${sprofile.name.current}: ${msg.text}`
         for (const uid of channel.members) {
           whenActive(this.user(uid), user => {
             if (user.tokens.size > 0) {
               log.info("Sending notification", "user", uid, "tokens", user.tokens.size,
                        "title", title, "body", body)
-              this.notifyUser(Array.from(user.tokens), title, body)
+              this.sendChannelNotify(Array.from(user.tokens), icon, title, body, channel.key)
             }
           })
         }
@@ -84,15 +85,19 @@ export class Notifier {
     return nprofile
   }
 
-  protected notifyUser (
-    tokens :string[], title :string, body :string
+  protected sendChannelNotify (
+    tokens :string[], iconURL :string, title :string, body :string, cid :UUID
   ) :Promise<admin.messaging.MessagingDevicesResponse> {
     return this.fcm.sendToDevice(tokens, {
       notification: {
         title,
         body,
-        // icon: 'your-icon-url',
+        icon: iconURL, // TODO: I think this doesn't work on mobile devices...
         click_action: 'FLUTTER_NOTIFICATION_CLICK'
+      },
+      data: {
+        type: "3", // person=1 game=2 channel=3 (TODO: put this somewhere)
+        channel: cid
       }
     })
   }
