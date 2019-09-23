@@ -31,20 +31,27 @@ export type Feedback = {
   when :Date
 }
 
-export class FeedbackStore implements Disposable {
+export class UserStore implements Disposable {
   private readonly _onDispose = new Disposer()
-  private readonly _messages = MutableList.local<Feedback>()
+  private readonly _feedback = MutableList.local<Feedback>()
+  private _user :UserObject|undefined
 
-  get messages () :RList<Feedback> { return this._messages }
+  get user () :UserObject {
+    if (this._user) return this._user
+    throw new Error(`UserObject not ready`)
+  }
+
+  get feedback () :RList<Feedback> { return this._feedback }
 
   constructor (readonly app :App) {
     app.client.serverAuth.onValue(id => {
       this._onDispose.dispose()
       const [user, unlisten] = app.client.resolve(["users", id], UserObject)
+      this._user = user
       this._onDispose.add(unlisten)
       this._onDispose.add(user.feedback.onChange(msg => {
         console.log(`Feedback: ${msg}`)
-        this._messages.append({msg, when: new Date()})
+        this._feedback.append({msg, when: new Date()})
       }))
     })
   }
