@@ -11,6 +11,14 @@ import {AuthDialog} from "./auth"
 
 const sausageCorner = 12
 
+// TODO: figure out exactly where Safari is differing from Chrome/Firefox in text metrics and
+// account for that somewhere at a lower level... yay
+const safariTextPadding = [3, 10, 5, 10]
+const otherTextPadding = [5, 10, 3, 10]
+const userAgent = navigator ? navigator.userAgent : ""
+const isSafari = userAgent.includes("Safari/")
+const textPadding = isSafari ? safariTextPadding : otherTextPadding
+
 const chatUiConfig = {
   type: "box",
   style: {
@@ -47,7 +55,7 @@ const chatUiConfig = {
             type: "box",
             style: {
               halign: "left",
-              padding: [5, 10, 3, 10],
+              padding: textPadding,
               // border: {stroke: {type: "color", color: "#999999"}, cornerRadius: sausageCorner},
               background: {fill: "$orange", cornerRadius: sausageCorner},
             },
