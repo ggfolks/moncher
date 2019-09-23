@@ -12,6 +12,7 @@ import {ZonedPathfinding} from "./zonedpathfinding"
 import {SERVER_FUNCS} from "./ranchdata"
 import {handleRanchReq} from "./ranchserver"
 import {Notifier} from "./notifier"
+import {Ticker} from "./ticker"
 
 setTextCodec(() => new TextEncoder() as any, () => new TextDecoder() as any)
 
@@ -36,6 +37,10 @@ server.state.onValue(ss => {
 // this guy sends out FCM notifications for chat channel messages
 const notifier = new Notifier(adminApp, server.store)
 server.state.whenOnce(s => s === "terminated", _ => notifier.dispose())
+
+// this guy ticks active ranches
+const ticker = new Ticker(server.store)
+server.state.whenOnce(s => s === "terminated", _ => ticker.dispose())
 
 /** Configure serverside handlers in a special global object to hide from the client. */
 global[SERVER_FUNCS] = {

@@ -129,13 +129,15 @@ function handleChannelMetaMsg (obj :ChannelObject, msg :MetaMsg, auth :Auth) {
   switch (msg.type) {
   case "subscribed":
     if (msg.id === UUID0) return // ignore system subscribers
-    if (obj.viewers.current === 0) obj.source.post(serverQ, {type: "channelActive", id: obj.key})
+    if (obj.viewers.current === 0) obj.source.post(
+      serverQ, {type: "active", what: "channel", id: obj.key})
     obj.viewers.update(obj.viewers.current+1)
     break
   case "unsubscribed":
     if (msg.id === UUID0) return // ignore system subscribers
     obj.viewers.update(obj.viewers.current-1)
-    if (obj.viewers.current === 0) obj.source.post(serverQ, {type: "channelInactive", id: obj.key})
+    if (obj.viewers.current === 0) obj.source.post(
+      serverQ, {type: "inactive", what: "channel", id: obj.key})
     break
   }
 }
@@ -207,10 +209,16 @@ function handleRanchMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth) {
   // log.debug("handleRanchMeta", "auth", auth, "msg", msg)
   switch (msg.type) {
   case "subscribed":
+    if (msg.id === UUID0) return // ignore system subscribers
+    if (obj.occupants.size === 0) obj.source.post(
+      serverQ, {type: "active", what: "ranch", id: obj.key})
     obj.occupants.add(msg.id)
     break
   case "unsubscribed":
+    if (msg.id === UUID0) return // ignore system subscribers
     obj.occupants.delete(msg.id)
+    if (obj.occupants.size === 0) obj.source.post(
+      serverQ, {type: "inactive", what: "ranch", id: obj.key})
     break
   }
 }
@@ -230,6 +238,9 @@ export class ServerObject extends DObject {
   @dset("uuid")
   activeChannels = this.set<UUID>()
 
+  @dset("uuid")
+  activeRanches = this.set<UUID>()
+
   @dcollection(RanchObject)
   ranches = this.collection<RanchObject>()
 
@@ -237,8 +248,8 @@ export class ServerObject extends DObject {
   serverq = this.queue<ServerReq>()
 }
 
-type ServerReq = {type: "channelActive", id :UUID}
-               | {type: "channelInactive", id :UUID}
+type ServerReq = {type: "active", id :UUID, what :"ranch"|"channel"}
+               | {type: "inactive", id :UUID, what :"ranch"|"channel"}
 
 function handleServerReq (obj :ServerObject, req :ServerReq, auth :Auth) {
   // log.debug("handleServerReq", "auth", auth, "req", req)
@@ -246,11 +257,13 @@ function handleServerReq (obj :ServerObject, req :ServerReq, auth :Auth) {
   // TODO: create meta messages for this sort of super simple "make this change to this standard
   // distributed object property" machinery
   switch (req.type) {
-  case "channelActive":
-    obj.activeChannels.add(req.id)
+  case "active":
+    if (req.what === "channel") obj.activeChannels.add(req.id)
+    else if (req.what === "ranch") obj.activeRanches.add(req.id)
     break
-  case "channelInactive":
-    obj.activeChannels.delete(req.id)
+  case "inactive":
+    if (req.what === "channel") obj.activeChannels.delete(req.id)
+    else if (req.what === "ranch") obj.activeRanches.delete(req.id)
     break
   }
 }

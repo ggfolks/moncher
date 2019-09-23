@@ -193,17 +193,6 @@ export class RanchMode extends Mode {
     this.onDispose.add(this._hud = new Hud(_app, this._host, _app.renderer, this))
     this.setUiState(UiState.Default)
 
-    // TEMP: ticks initiated from the client!
-    let nextTime = 0
-    this.onDispose.add(_app.loop.clock.onEmit(clock => {
-        if (clock.elapsed > nextTime) {
-          this._ranchObj.ranchq.post({type: "tick"})
-          // tick just once, advance a full second. This will all change and I don't
-          // want to flood ticks
-          nextTime = clock.elapsed + 1
-        }
-      }))
-
     this.onDispose.add(this._chat = new ChatView(_app, this._host))
 
     this.onDispose.add(Keyboard.instance.getKeyState(112 /* F1 */).onEmit(
