@@ -13,8 +13,8 @@ const sausageCorner = 12
 
 // TODO: figure out exactly where Safari is differing from Chrome/Firefox in text metrics and
 // account for that somewhere at a lower level... yay
-const safariTextPadding = [3, 10, 5, 10]
-const otherTextPadding = [5, 10, 3, 10]
+const safariTextPadding :[number, number, number, number] = [3, 10, 5, 10]
+const otherTextPadding :[number, number, number, number] = [5, 10, 3, 10]
 const userAgent = navigator ? navigator.userAgent : ""
 const isSafari = userAgent.includes("Safari/")
 const textPadding = isSafari ? safariTextPadding : otherTextPadding
@@ -87,7 +87,7 @@ const chatUiConfig = {
         text: "input",
         onEnter: "sendChat",
         contents: box(label("input", {fill: "$white"}), {
-          padding: [5, 10, 3, 10],
+          padding: textPadding,
           border: undefined,
           background: {fill: "$orange", cornerRadius: sausageCorner},
           halign: "left"
