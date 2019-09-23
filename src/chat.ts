@@ -83,7 +83,7 @@ const chatUiConfig = {
       }, {
         type: "text",
         constraints: {stretch: true},
-        visible: "notGuest",
+        visible: "showChatInput",
         text: "input",
         onEnter: "sendChat",
         contents: box(label("input", {fill: "$white"}), {
@@ -94,7 +94,7 @@ const chatUiConfig = {
         })
       }, {
         type: "button",
-        visible: "notGuest",
+        visible: "showChatInput",
         onClick: "sendChat",
         contents: label(Value.constant("+"), {fill: "$orange", font: "$icon"})
       }]
@@ -139,7 +139,7 @@ export class ChatView implements Disposable {
           modelData.input.update("")
         }
       },
-      notGuest: app.client.auth.map(sess => sess.source !== "guest"),
+      showChatInput: app.notGuest,
       profilePhoto: app.client.auth.switchMap(sess => app.profiles.profile(sess.id).photo),
       showAuth: () => new AuthDialog(app, host),
     }

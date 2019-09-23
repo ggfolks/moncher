@@ -180,9 +180,8 @@ export class Hud
       autoSize: true,
       hintSize: this.renderer.size,
       contents: contents,
-      visible: "notGuest",
+      visible: this.app.notGuest,
     }
-    model.notGuest = this.app.client.auth.map(sess => sess.source !== "guest")
     return this.app.ui.createRoot(rootConfig, new Model(model))
   }
 

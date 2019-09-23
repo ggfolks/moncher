@@ -5,7 +5,7 @@ import {dim2} from "tfw/core/math"
 import {UUID} from "tfw/core/uuid"
 import {Clock, Loop} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
-import {Mutable, Subject} from "tfw/core/react"
+import {Mutable, Subject, Value} from "tfw/core/react"
 import {Renderer, windowSize} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {UniformQuadBatch} from "tfw/scene2/batch"
@@ -42,6 +42,10 @@ export class App implements Disposable {
     // TODO: eventually we'll get the ranch id from the URL, but for now we just hardcode one
     ranchId: Mutable.local<UUID>("5cXg8Tp5WwsuVeO7JflubY"),
   }
+
+  /** A reactive value that is true when we're authed as a real user. */
+  readonly notGuest = Value.join2(this.client.auth, this.client.serverAuth).map(
+    ([sess, sid]) => sess.source !== "guest" && sess.id === sid)
 
   constructor (readonly root :HTMLElement) {
     this.renderer = new Renderer({
