@@ -14,13 +14,16 @@ export const enum UiState {
 
 export class Hud
   implements Disposable {
+  screenWidth :Value<number>
 
   constructor (
     readonly app :App,
     readonly host :Host,
     readonly renderer :Renderer,
     private readonly _ranchMode :RanchMode,
-  ) {}
+  ) {
+    this.screenWidth = app.renderer.size.map(sz => sz[0])
+  }
 
   /**
    * Update to reflect our current UI state. */
@@ -28,10 +31,11 @@ export class Hud
     if (this._stateRoot) {
       this.host.removeRoot(this._stateRoot)
     }
-    this._stateRoot = this.createRoot(uiState)
-    if (this._stateRoot) {
-      this._stateRoot.bindOrigin(this.renderer.size, "right", "bottom", "right", "bottom")
-      this.host.addRoot(this._stateRoot)
+    const root = this._stateRoot = this.createRoot(uiState)
+    if (root) {
+      const pos = (this.screenWidth.current >= 600) ? "bottom" : "top"
+      root.bindOrigin(this.renderer.size, "right", pos, "right", pos)
+      this.host.addRoot(root)
     }
   }
 
@@ -40,7 +44,8 @@ export class Hud
   protected createRoot (uiState :UiState) :Root|undefined {
     let contents :ElementConfig
     const model :ModelData = {}
-    const BUTTON_WIDTH = 100
+    const BUTTON_WIDTH = 64
+    const showTip = this.screenWidth.map(w => w >= 600)
 
     switch (uiState) {
     default:
@@ -86,6 +91,7 @@ export class Hud
           }],
         }, {
           type: "box",
+          visible: showTip,
           contents: {
             type: "label",
             text: "status.text",
