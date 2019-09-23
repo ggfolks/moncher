@@ -174,4 +174,7 @@ export interface ActorData extends Located {
 
   /** Data related to the current behavior, if any. */
   data? :BehaviorData
+
+  /** Has something changed such that we need to republish this object (and an ActorUpdate). */
+  dirty? :boolean
 }

@@ -133,6 +133,7 @@ abstract class Behavior {
     this.initData(actor, data)
     data.code = this.code
     actor.data.data = data
+    actor.data.dirty = true
   }
 
   /**
@@ -179,6 +180,7 @@ class FoodBehavior extends Behavior {
 
   tick (ctx :RanchContext, dt :number, actor :Actor) :void {
     actor.data.hp -= .01 // food decays
+    actor.data.dirty = true
   }
 }
 
@@ -191,6 +193,7 @@ class EggBehavior extends Behavior {
 
   tick (ctx :RanchContext, dt :number, actor :Actor) :void {
     const data = actor.data
+    let dirty = true
     switch (data.action) {
     case ActorAction.Idle:
       if (--data.hp < 20 * MONSTER_ACCELERANT) {
@@ -205,6 +208,14 @@ class EggBehavior extends Behavior {
     case ActorAction.Hatched:
       --data.hp // deplete until removed
       break
+
+    default:
+      dirty = false
+      break
+    }
+
+    if (dirty) {
+      data.dirty = true
     }
   }
 
@@ -215,6 +226,7 @@ class EggBehavior extends Behavior {
       // spawn monster with the same owner at the same location
       addActor(ctx, data.owner, actor.config.spawn!, data /*Located*/, ActorAction.Hatching)
       data.owner = UUID0 // update to be owned by nobody
+      data.dirty = true
       return true
     }
     return false
@@ -236,6 +248,7 @@ abstract class MobileBehavior extends Behavior {
         data.x = (path.dest.x - path.src.x) * perc + path.src.x
         data.y = (path.dest.y - path.src.y) * perc + path.src.y
         data.z = (path.dest.z - path.src.z) * perc + path.src.z
+        data.dirty = true
         return
       }
       // otherwise we used-up a path segment
@@ -249,6 +262,7 @@ abstract class MobileBehavior extends Behavior {
         // proceed to assign path to undefined, and fall out of the while
       }
       path = data.path = path.next
+      data.dirty = true
     }
   }
 }
@@ -281,6 +295,8 @@ abstract class MonsterBehavior extends MobileBehavior {
       data.orient = 0 // face forward
       break
     }
+
+    data.dirty = true
     return true // publish!
   }
 }
@@ -338,6 +354,7 @@ function newActorData (
     counter: 0,
 
     action, // TODO: remove, probably
+    dirty: true, // start dirty!
   }
   const actor :Actor = { id, config, data }
   const behavior = Behavior.getBehavior(actor)
@@ -349,6 +366,7 @@ function newActorData (
 /**
  * Publish an actor update derived from the specified ActorData. */
 function actorDataToUpdate (data :ActorData) :ActorUpdate {
+  delete data.dirty
   const {x, y, z, scale, orient, action, instant, owner, path} = data
   return {
     x, y, z,
@@ -412,12 +430,13 @@ function tickRanch (
     behavior.tick(ctx, dt, actor)
   })
 
-  // publish changes (after ticking EVERY actor. Actors may modify each other.)
+  // After ticking every actor (actors may modify each other), re-publish any that are dirty
   ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
     if (data.hp <= 0) {
       removeActor(ctx, key)
-    } else {
+    } else if (data.dirty) {
       ctx.obj.actors.set(key, actorDataToUpdate(data))
+      ctx.obj.actorData.set(key, data)
     }
   })
 }
@@ -468,18 +487,21 @@ function tickMonster (
         setAction(ctx, data, ActorAction.Sleeping, 100 / MONSTER_ACCELERANT)
       }
     }
+    data.dirty = true
     break
 
   case ActorAction.Sleeping:
     if (--data.counter <= 0) {
       setAction(ctx, data, ActorAction.Waiting, 8 / MONSTER_ACCELERANT)
     }
+    data.dirty = true
     break
 
   case ActorAction.Unknown: // Do nothing for a little while
     if (--data.counter <= 0) {
       setAction(ctx, data, popState(data))
     }
+    data.dirty = true
     break
 
   case ActorAction.Idle:
@@ -523,6 +545,7 @@ function tickMonster (
         walkTo(ctx, actor, newpos)
       }
     }
+    data.dirty = true
     break
 
   default:
@@ -533,10 +556,15 @@ function tickMonster (
 
 function pushState (data :ActorData, state :ActorAction) :void {
   data.stateStack.push(state)
+  data.dirty = true
 }
 
 function popState (data :ActorData) :ActorAction {
-  return data.stateStack.pop() || ActorAction.Idle
+  if (data.stateStack.length) {
+    data.dirty = true
+    return data.stateStack.pop()!
+  }
+  return ActorAction.Idle
 }
 
 /**
@@ -553,6 +581,7 @@ function touchActor (
   const beh = Behavior.getBehavior(actor)
   if (beh.touch(ctx, actor)) {
     ctx.obj.actors.set(actor.id, actorDataToUpdate(actor.data))
+    ctx.obj.actorData.set(actor.id, actor.data)
   }
 }
 
@@ -561,6 +590,7 @@ function setAction (
 ) :void {
   data.action = action
   data.counter = Math.trunc(counterInit)
+  data.dirty = true
 }
 
 function getNearestActor (
@@ -651,6 +681,7 @@ function walkTo (
   }
   // set our final angle to something wacky
   actor.data.orient = Math.random() * Math.PI * 2
+  actor.data.dirty = true
 }
 
 function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|undefined {
