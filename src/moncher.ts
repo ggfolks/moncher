@@ -703,8 +703,8 @@ export class RanchMode extends Mode {
       // set up hatching (nearly the same between eggs and monsters)
       graphCfg.isHatching = {
         type: "equals",
-        x: "action",
-        y: ActorAction.Hatching,
+        a: "action",
+        b: ActorAction.Hatching,
       }
       animStates.hatch = {
         url: cfg.model.hatch,
@@ -720,8 +720,8 @@ export class RanchMode extends Mode {
 
         graphCfg.isHatched = {
           type: "equals",
-          x: "action",
-          y: ActorAction.Hatched,
+          a: "action",
+          b: ActorAction.Hatched,
         }
 
         // TODO: if I can get a new "invisibilizing animation" from the artists, I can use that
@@ -730,8 +730,8 @@ export class RanchMode extends Mode {
         // we don't do anything in that animation state except use it to trigger a visibility change
         graphCfg.wasHatched = {
           type: "equals",
-          x: "controller",
-          y: {value: "hatched"},
+          a: "controller",
+          b: {value: "hatched"},
         }
 
         graphCfg.wasEverHatched = {
@@ -760,8 +760,8 @@ export class RanchMode extends Mode {
     if (isEgg) {
       graphCfg.isReadyToHatch = {
         type: "equals",
-        x: "action",
-        y: ActorAction.ReadyToHatch,
+        a: "action",
+        b: ActorAction.ReadyToHatch,
       }
       // set up the ready-to-hatch state
       animStates.readyToHatch = {
@@ -779,8 +779,8 @@ export class RanchMode extends Mode {
         }
         graphCfg.noPath = {
           type: "equals",
-          x: "readPath",
-          y: undefined,
+          a: "readPath",
+          b: undefined,
         }
         graphCfg.yesPath = {
           type: "not",
@@ -799,8 +799,8 @@ export class RanchMode extends Mode {
       if (cfg.model.eat) {
         graphCfg.isEating = {
           type: "equals",
-          x: "action",
-          y: ActorAction.Eating,
+          a: "action",
+          b: ActorAction.Eating,
         }
         animStates.eat = {
           url: cfg.model.eat,
@@ -815,8 +815,8 @@ export class RanchMode extends Mode {
       if (cfg.model.sleep && cfg.model.faint && cfg.model.wakeUp) {
         graphCfg.isSleeping = {
           type: "equals",
-          x: "action",
-          y: ActorAction.Sleeping,
+          a: "action",
+          b: ActorAction.Sleeping,
         }
         animStates.faint = {
           url: cfg.model.faint,
@@ -835,8 +835,8 @@ export class RanchMode extends Mode {
 
 //        graphCfg.isWaking = {
 //          type: "equals",
-//          x: "action",
-//          y: ActorAction.Waking,
+//          a: "action",
+//          b: ActorAction.Waking,
 //        }
         animStates.wake = {
           url: cfg.model.wakeUp,
@@ -857,13 +857,13 @@ export class RanchMode extends Mode {
         }
         graphCfg.isInstantTouched = {
           type: "equals",
-          x: "getInstant",
-          y: ActorInstant.Touched,
+          a: "getInstant",
+          b: ActorInstant.Touched,
         }
         graphCfg.isInstantHit = {
           type: "equals",
-          x: "getInstant",
-          y: ActorInstant.Hit,
+          a: "getInstant",
+          b: ActorInstant.Hit,
         }
         graphCfg.auxController = {
           type: "animationController",
