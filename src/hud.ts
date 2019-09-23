@@ -62,6 +62,7 @@ export class Hud
           contents: [{
             type: "button",
             onClick: "egg.clicked",
+            visible: "notGuest",
             contents: {
               type: "box",
               contents: {
@@ -159,7 +160,7 @@ export class Hud
             contents: {
               type: "label",
               text: "cancel.text",
-            }
+            },
           },
         }],
       }
@@ -180,7 +181,6 @@ export class Hud
       autoSize: true,
       hintSize: this.renderer.size,
       contents: contents,
-      visible: this.app.notGuest,
     }
     return this.app.ui.createRoot(rootConfig, new Model(model))
   }
