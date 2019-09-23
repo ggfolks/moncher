@@ -34,6 +34,9 @@ export class UserObject extends DObject {
   @dset("string", true)
   tokens = this.set<string>()
 
+  @dvalue("string")
+  feedback = this.value<string>("")
+
   @dqueue(handleUserReq)
   userq = this.queue<UserReq>()
 
@@ -42,7 +45,13 @@ export class UserObject extends DObject {
 
 export const userQ = (id :UUID) => UserObject.queueAddr(["users", id], "userq")
 
+function sendFeedback (from :DObject, uid :UUID, msg :string) {
+  // TODO: this custom message will go away when we have generic set-value meta msgs
+  from.source.post(userQ(uid), {type: "feedback", msg})
+}
+
 type UserReq = {type :"enter", ranch :UUID}
+             | {type: "feedback", msg :string}
 
 // function sendJoined (obj :UserObject, ranch :UUID) {
 //   obj.source.post(ranchQ(ranch), {type: "joined", id: obj.key, name: obj.name.current})
@@ -53,6 +62,9 @@ function handleUserReq (obj :UserObject, req :UserReq, auth :Auth) {
   switch (req.type) {
   case "enter":
     if (auth.isSystem) obj.ranch.update(req.ranch)
+    break
+  case "feedback":
+    if (auth.isSystem) obj.feedback.update(req.msg)
     break
   }
 }
@@ -111,7 +123,8 @@ function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
   log.debug("handleChannelReq", "auth", auth, "req", req)
   switch (req.type) {
   case "speak":
-    obj.addMessage(auth.id, req.text)
+    if (auth.isGuest) sendFeedback(obj, auth.id, "Please login if you wish to chat.")
+    else obj.addMessage(auth.id, req.text)
     break
 
   // case "edit":
@@ -213,6 +226,7 @@ function handleRanchMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth) {
     if (obj.occupants.size === 0) obj.source.post(
       serverQ, {type: "active", what: "ranch", id: obj.key})
     obj.occupants.add(msg.id)
+    sendFeedback(obj, msg.id, `Welcome to ${obj.name.current}`)
     break
   case "unsubscribed":
     if (msg.id === UUID0) return // ignore system subscribers

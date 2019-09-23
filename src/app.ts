@@ -13,7 +13,7 @@ import {Client} from "tfw/data/client"
 import {UI} from "tfw/ui/ui"
 import {initFirebaseAuth, currentUser} from "tfw/auth/firebase"
 
-import {ProfileStore} from "./stores"
+import {ProfileStore, FeedbackStore} from "./stores"
 import {moncherStyles, moncherTheme} from "./uistyles"
 
 const host = window.location.hostname
@@ -34,7 +34,8 @@ export class App implements Disposable {
   readonly loop  = new Loop()
   readonly ui = new UI(moncherTheme, moncherStyles, {resolve: loadImage})
   readonly client = new Client(p => Subject.constant(addr))
-  readonly profiles :ProfileStore
+  readonly profiles = new ProfileStore(this)
+  readonly feedback = new FeedbackStore(this)
 
   // global app "state"
   readonly state = {
@@ -55,7 +56,6 @@ export class App implements Disposable {
     this.mode = new BlankMode(this)
     this.loop = new Loop()
     this.loop.clock.onEmit(clock => this.mode.render(clock))
-    this.profiles = new ProfileStore(this)
 
     initFirebaseAuth()
 
