@@ -28,8 +28,8 @@ export class Ticker {
   protected observeRanch (id :UUID) {
     const ranch = this.store.resolve(["ranches", id]).object as RanchObject
     log.info("Ticking ranch", "id", id)
-    const ticker = setTimeout(() => ranch.ranchq.post({type: "tick"}), 1000)
-    this._ranches.set(id, () => clearTimeout(ticker))
+    const ticker = setInterval(() => ranch.ranchq.post({type: "tick"}), 1000)
+    this._ranches.set(id, () => clearInterval(ticker))
   }
 
   protected clearRanch (id :UUID) {
