@@ -165,15 +165,15 @@ export class RanchObject extends DObject {
   occupants = this.set<UUID>()
 
   /** The map of actor configs, which is updated prior to the actor being added. */
-  @dmap("uuid", "record", false)
+  @dmap("uuid", "record", true)
   actorConfigs = this.map<UUID, ActorConfig>()
 
   /** The latest snapshot of each actor. */
-  @dmap("uuid", "record", false)
+  @dmap("uuid", "record", true)
   actors = this.map<UUID, ActorUpdate>()
 
   /** The "server-side" data about each actor. */
-  @dmap("uuid", "record", false)
+  @dmap("uuid", "record", true)
   actorData = this.map<UUID, ActorData>()
 
   /** Keeps the last time we were ticked, from Date.now() */
@@ -209,6 +209,8 @@ export type RanchReq =
     {type :"dropFood", x :number, y :number, z :number} |
     /** Set the name of the ranch. (TEMP?) */
     {type :"setName", name :string} |
+    /** Reset the ranch to a starting state (DEBUG?) */
+    {type :"reset"} |
     /** A client-initiated tick (TEMP) */
     {type :"tick"}
 

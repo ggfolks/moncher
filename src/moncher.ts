@@ -201,6 +201,8 @@ export class RanchMode extends Mode {
         v => {if (v) this.targetNextActor(true)}))
     this.onDispose.add(Keyboard.instance.getKeyState(114 /* F3 */).onEmit(
         v => {if (v) this.targetNextActor(false)}))
+    this.onDispose.add(Keyboard.instance.getKeyState(115 /* F4 */).onEmit(
+        v => {if (v) this.setUiState(UiState.Debug) }))
     this.onDispose.add(Keyboard.instance.getKeyState(83 /* S key */).onEmit(v => {
         if (v) {
           const enabled = !this._webGlRenderer.shadowMap.enabled
@@ -222,6 +224,12 @@ export class RanchMode extends Mode {
       remover()
     }
     this._preloads.clear()
+  }
+
+  /**
+   * Send a request to the server to reset the entire ranch. */
+  resetRanch () :void {
+    this._ranchObj.ranchq.post({type: "reset"})
   }
 
   protected preloadObj (url :string) :void {

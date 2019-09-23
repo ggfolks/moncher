@@ -10,6 +10,7 @@ export const enum UiState {
   Default = 1,
   PlacingEgg,
   PlacingFood,
+  Debug,
 }
 
 export class Hud
@@ -135,6 +136,42 @@ export class Hud
         clicked: () => this._ranchMode.setUiState(UiState.Default),
       }
       break // end: PlacingEgg & PlacingFood
+
+    case UiState.Debug:
+      contents = {
+        type: "column",
+        constraints: {stretchX: true, stretchY: false},
+        contents: [{
+          type: "button",
+          onClick: "reset.clicked",
+          contents: {
+            type: "box",
+            contents: {
+              type: "label",
+              text: "reset.text",
+            },
+          },
+        }, {
+          type: "button",
+          onClick: "cancel.clicked",
+          contents: {
+            type: "box",
+            contents: {
+              type: "label",
+              text: "cancel.text",
+            }
+          },
+        }],
+      }
+      model.reset = {
+        text: Value.constant("Reset Ranch"),
+        clicked: () => this._ranchMode.resetRanch(),
+      }
+      model.cancel = {
+        text: Value.constant("Exit Debug Menu"),
+        clicked: () => this._ranchMode.setUiState(UiState.Default),
+      }
+      break // end: Debug
     }
 
     const rootConfig :RootConfig = {

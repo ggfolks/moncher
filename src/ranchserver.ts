@@ -70,6 +70,12 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
     addActor(ctx, UUID0, MonsterDb.getFood(), req)
     break
 
+  case "reset":
+    obj.actorData.clear()
+    obj.actors.clear()
+    obj.actorConfigs.clear()
+    break
+
   default:
     log.warn("Unhandled ranch request", "req", req)
     break
@@ -388,13 +394,6 @@ function addActor (
   locProps :Located,
   action = ActorAction.Idle,
 ) :void {
-//  if (true) {
-//    obj.actorConfigs.clear()
-//    obj.actorData.clear()
-//    obj.actors.clear()
-//    return
-//  }
-
   const uuid = uuidv1()
   const data = newActorData(uuid, owner, config, locProps, action)
   const update = actorDataToUpdate(data)
