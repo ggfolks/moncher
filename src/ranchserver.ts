@@ -58,6 +58,10 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
     break
 
   case "dropEgg":
+    if (auth.isGuest) {
+      log.warn("Rejecting egg drop from guest", "auth", auth)
+      return
+    }
     addActor(ctx, ctx.auth.id, MonsterDb.getRandomEgg(), req)
     break
 
