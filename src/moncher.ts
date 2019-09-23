@@ -202,7 +202,7 @@ export class RanchMode extends Mode {
     this.onDispose.add(Keyboard.instance.getKeyState(114 /* F3 */).onEmit(
         v => {if (v) this.targetNextActor(false)}))
     this.onDispose.add(Keyboard.instance.getKeyState(115 /* F4 */).onEmit(
-        v => {if (v) this.setUiState(UiState.Debug) }))
+        v => {if (v) this.setUiState(UiState.Debug)}))
     this.onDispose.add(Keyboard.instance.getKeyState(83 /* S key */).onEmit(v => {
         if (v) {
           const enabled = !this._webGlRenderer.shadowMap.enabled
@@ -1151,10 +1151,8 @@ export class RanchMode extends Mode {
         }
         break
 
-      case 5: // five finger touch to bring-up the debug menu
-        if (change.value.movement[0] || change.value.movement[1]) {
-          this.setUiState(UiState.Debug)
-        }
+      case 6: // six finger tap: let's debug!
+        this.setUiState(UiState.Debug)
         break
 
       default: // do nothing
