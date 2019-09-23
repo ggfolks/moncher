@@ -20,6 +20,9 @@ import {
 import {loc2vec, vec2loc} from "./ranchutil"
 import {MONSTER_ACCELERANT} from "./debug"
 
+/** The name of the pathfinder stuffed in global. */
+export const PATHFINDER_GLOBAL = "_ranchPathfinder"
+
 /**
  * Context object passed to most request handlers. */
 interface RanchContext {
@@ -31,7 +34,7 @@ interface RanchContext {
 /**
  * The queue handler for client-initiated requests to the ranch. */
 export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
-  const ctx :RanchContext = { obj, auth, path: global["_ranchPathfinder"] }
+  const ctx :RanchContext = { obj, auth, path: global[PATHFINDER_GLOBAL] }
   switch (req.type) {
   case "touch":
     touchActor(ctx, req.id)

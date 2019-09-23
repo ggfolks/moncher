@@ -10,7 +10,7 @@ import {FirebaseAuthValidator} from "tfw/auth/firebase"
 import {ServerObject} from "./data"
 import {ZonedPathfinding} from "./zonedpathfinding"
 import {SERVER_FUNCS} from "./ranchdata"
-import {handleRanchReq} from "./ranchserver"
+import {handleRanchReq, PATHFINDER_GLOBAL} from "./ranchserver"
 import {Notifier} from "./notifier"
 import {Ticker} from "./ticker"
 
@@ -75,5 +75,5 @@ function configureNavMesh (gltf :any) :void {
   const navMesh = scene.getObjectByName("NavMesh")
 //  log.debug("I got something: " + navMesh)
 //  log.debug("It's a mesh? " + (navMesh instanceof Mesh))
-  global["_ranchPathfinder"] = new ZonedPathfinding(navMesh.geometry)
+  global[PATHFINDER_GLOBAL] = new ZonedPathfinding(navMesh.geometry)
 }
