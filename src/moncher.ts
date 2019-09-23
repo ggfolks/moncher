@@ -970,7 +970,7 @@ export class RanchMode extends Mode {
 
   /**
    * Target the next actor, possibly constraining to owned ones. */
-  protected targetNextActor (owned :boolean) :void {
+  targetNextActor (owned :boolean) :void {
     const myId = this._app.client.auth.current.id
     const ids :UUID[] = []
     this._ranchObj.actors.forEach((update, id) => {

@@ -78,6 +78,7 @@ export class Hud
           }, {
             type: "button",
             onClick: "food.clicked",
+            visible: "notGuest",
             contents: {
               type: "box",
               contents: {
@@ -154,6 +155,26 @@ export class Hud
           },
         }, {
           type: "button",
+          onClick: "next.clicked",
+          contents: {
+            type: "box",
+            contents: {
+              type: "label",
+              text: "next.text",
+            },
+          },
+        }, {
+          type: "button",
+          onClick: "nextMine.clicked",
+          contents: {
+            type: "box",
+            contents: {
+              type: "label",
+              text: "nextMine.text",
+            },
+          },
+        }, {
+          type: "button",
           onClick: "cancel.clicked",
           contents: {
             type: "box",
@@ -171,6 +192,14 @@ export class Hud
       model.cancel = {
         text: Value.constant("Exit Debug Menu"),
         clicked: () => this._ranchMode.setUiState(UiState.Default),
+      }
+      model.next = {
+        text: Value.constant("Next actor"),
+        clicked: () => this._ranchMode.targetNextActor(false),
+      }
+      model.nextMine = {
+        text: Value.constant("Next actor (mine)"),
+        clicked: () => this._ranchMode.targetNextActor(true),
       }
       break // end: Debug
     }
