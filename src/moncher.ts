@@ -1151,6 +1151,12 @@ export class RanchMode extends Mode {
         }
         break
 
+      case 5: // five finger touch to bring-up the debug menu
+        if (change.value.movement[0] || change.value.movement[1]) {
+          this.setUiState(UiState.Debug)
+        }
+        break
+
       default: // do nothing
         break
       }
