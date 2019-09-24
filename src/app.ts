@@ -23,6 +23,22 @@ firebase.initializeApp({
   appId: "1:733313051370:web:ef572661b45a730f8d8593"
 })
 
+const ranchInviteR = /^([A-Za-z0-9]{22})(\+([A-Za-z0-9]{22}))?$/
+function parseLocation () :[string, string|undefined] {
+  const path = window.location.pathname
+  if (path.startsWith("/")) {
+    const match = path.substring(1).match(ranchInviteR)
+    if (match) return [match[1], match[3]]
+  }
+  const query = window.location.search
+  if (query) {
+    const match = query.substring(1).match(ranchInviteR)
+    if (match) return [match[1], match[3]]
+  }
+  return ["5cXg8Tp5WwsuVeO7JflubY", undefined]
+}
+const [ranchId, inviteId] = parseLocation()
+
 export class App implements Disposable {
   private mode :Mode
 
@@ -35,8 +51,8 @@ export class App implements Disposable {
 
   // global app "state"
   readonly state = {
-    // TODO: eventually we'll get the ranch id from the URL, but for now we just hardcode one
-    ranchId: Mutable.local<UUID>("5cXg8Tp5WwsuVeO7JflubY"),
+    ranchId: Mutable.local<UUID>(ranchId),
+    inviteId: Mutable.local<UUID|undefined>(inviteId),
   }
 
   /** A reactive value that is true when we're authed as a real user. */

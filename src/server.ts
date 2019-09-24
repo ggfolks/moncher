@@ -43,11 +43,12 @@ function mimeType (path :string) :string {
   }
 }
 
-const base62Chars = /^[A-Za-z0-9]+$/
+// a ranch URL is either /{ranchid} or /{ranchid}/{inviteid}
+const ranchUrlR = /^\/[A-Za-z0-9]{22}(\+[A-Za-z0-9]{22})?$/
 function urlToPath (url :string) :string {
   if (url === "/") return "index.html"
   // if there's just a UUID hash as the path, that's the ranch id, return index.html
-  else if (url.length === 23 && url.substring(1).match(base62Chars)) return "index.html"
+  else if (url.match(ranchUrlR)) return "index.html"
   else return url
 }
 
@@ -59,10 +60,10 @@ const httpServer = http.createServer((req, rsp) => {
     if (err) {
       if (err.code == "ENOENT") {
         rsp.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" })
-        rsp.end("Missing index.html")
+        rsp.end(`Not found: ${path}`)
       } else {
         rsp.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" })
-        rsp.end("Internal server error: " + err.code)
+        rsp.end("Internal error: " + err.code)
       }
     } else {
       rsp.setHeader('Access-Control-Allow-Origin', '*')
