@@ -18,7 +18,8 @@ import {moncherStyles, moncherTheme} from "./uistyles"
 
 const host = window.location.hostname
 const port = host === "localhost" ? 8080 : parseInt(window.location.port || "443")
-const addr = {host, port, path: "data"}
+const secure = window.location.protocol === "https"
+const addr = {host, port, secure, path: "data"}
 
 firebase.initializeApp({
   apiKey: "AIzaSyBqGwobKx4ReOufFpoQcKD8qv_jY4lgRSk",
