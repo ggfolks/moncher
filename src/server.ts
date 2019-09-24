@@ -1,5 +1,7 @@
 import * as firebase from "firebase/app"
 import * as admin from "firebase-admin"
+import * as http from "http"
+import * as fs from "fs"
 
 import {TextEncoder, TextDecoder} from "util"
 import {setTextCodec} from "tfw/core/codec"
@@ -28,10 +30,57 @@ firebase.initializeApp({
 })
 const adminApp = admin.initializeApp()
 
+function mimeType (path :string) :string {
+  const ldidx = path.lastIndexOf("."), suff = path.substring(ldidx+1).toLowerCase()
+  switch (suff) {
+  case "html": return "text/html; charset=utf-8"
+  case "js": return "application/javascript; charset=utf-8"
+  case "json": return "application/json; charset=utf-8"
+  case "png": return "image/png"
+  case "jpg": return "image/jpeg"
+  case "gif": return "image/gif"
+  default: return "text/plain; charset=utf-8"
+  }
+}
+
+const base62Chars = /^[A-Za-z0-9]+$/
+function urlToPath (url :string) :string {
+  if (url === "/") return "index.html"
+  // if there's just a UUID hash as the path, that's the ranch id, return index.html
+  else if (url.length === 23 && url.substring(1).match(base62Chars)) return "index.html"
+  else return url
+}
+
+const httpPort = 8080 // TODO: get from env variable?
+const httpServer = http.createServer((req, rsp) => {
+  const path = urlToPath(req.url || "/")
+  log.info("HTTP request", "url", req.url, "path", path)
+  fs.readFile(`dist/${path}`, (err, content) => {
+    if (err) {
+      if (err.code == "ENOENT") {
+        rsp.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" })
+        rsp.end("Missing index.html")
+      } else {
+        rsp.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" })
+        rsp.end("Internal server error: " + err.code)
+      }
+    } else {
+      rsp.setHeader('Access-Control-Allow-Origin', '*')
+      rsp.writeHead(200, { "Content-Type": mimeType(path) })
+      rsp.end(content, "utf-8")
+    }
+  })
+})
+httpServer.listen(httpPort)
+log.info("Listening for connections", "port", httpPort)
+
 const store = new FirebaseDataStore(ServerObject)
-const server = new Server(store, {firebase: new FirebaseAuthValidator()})
+const server = new Server(store, {firebase: new FirebaseAuthValidator()}, {httpServer})
 server.state.onValue(ss => {
-  console.log(`Server state: ${ss}`)
+  log.info(`Server state: ${ss}`)
+})
+server.errors.onEmit(error => {
+  log.warn("HTTP/WS server error", error)
 })
 
 // this guy sends out FCM notifications for chat channel messages
@@ -50,7 +99,6 @@ global[SERVER_FUNCS] = {
 // Load the navmesh GLB and put our pathfinder into global
 global["Blob"] = require("web-blob").constructor
 const Loader = require("three-gltf-loader")
-const fs = require("fs")
 fs.readFile("dist/ranch/RanchNavmesh.glb", (err :any, data :any) => {
     if (err) {
       log.warn("Error reading navmesh GLB file", "err", err)
