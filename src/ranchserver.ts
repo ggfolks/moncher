@@ -482,7 +482,7 @@ function tickMonster (
   case ActorAction.Eating:
     if (--data.counter <= 0) {
       data.hunger = 0
-      data.scale *= 1.2 // TODO
+      growMonster(data)
       const newpos = getRandomPositionFrom(ctx, data, 2)
       if (newpos) {
         setAction(ctx, data, ActorAction.Sleepy)
@@ -559,6 +559,16 @@ function tickMonster (
     log.warn("Unhandled action in Monster.tick", "action", data.action)
     break
   }
+}
+
+function growMonster (data :ActorData) :void {
+  // this could probably be smoother and better
+  const MAX_SCALE = 4
+  const MAX_INCREMENT = .20
+  // get us 1/4th of the way to max size
+  const increment = Math.min(MAX_INCREMENT, Math.max(0, (MAX_SCALE - data.scale)) * .25)
+  data.scale = Math.min(MAX_SCALE, data.scale + increment)
+  data.dirty = true
 }
 
 function pushState (data :ActorData, state :ActorAction) :void {
