@@ -32,7 +32,7 @@ const chatUiConfig = {
     offPolicy: "stretch",
     gap: 5,
     contents: [{
-      type: "list",
+      type: "vlist",
       offPolicy: "stretch",
       gap: 5,
       data: "msgdata",
