@@ -22,7 +22,7 @@ import {Body} from "cannon"
 import {Clock} from "tfw/core/clock"
 import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
-import {Value} from "tfw/core/react"
+import {Mutable, Value} from "tfw/core/react"
 import {
   Noop,
   PMap,
@@ -113,7 +113,8 @@ class PathSystem extends System {
 
   update (clock :Clock) {
     this.onEntities(id => {
-      let path = this.paths.read(id)
+      let thePath = this.paths.read(id)
+      let path = thePath
       // TODO: handle "facing" directions somewhere, either here or the model
       // maybe here since we handle advancing along segments that the model hasn't yet!
       let overtime = 0
@@ -125,19 +126,20 @@ class PathSystem extends System {
         const timeLeft = path.stamp - clock.time
         if (timeLeft <= 0) {
           overtime = -timeLeft
+          path.ended = true
           path = path.next
-          // update our component
-          this.paths.update(id, path)
           if (!path) {
             // if at the end of the paths, update the orient to the state orient
             this.updateOrient(id, this.state.read(id).orient)
+            // update the component with the fact that the last segment is ended!
+            this.paths.update(id, thePath)
           }
         } else {
           // otherwise, there's time left and we should update the position
           scratchV.lerpVectors(loc2vec(path.dest), loc2vec(path.src), timeLeft / path.duration)
           this.setY(scratchV)
           this.trans.updatePosition(id, scratchV)
-          path = undefined
+          break
         }
       }
     })
@@ -538,8 +540,8 @@ export class RanchMode extends Mode {
 
   protected updatePath (actorInfo :ActorInfo, path :PathInfo|undefined) :void {
     if (path) {
-      // resolve objects against stored path to copy-over timestamps. OH LORDY THE HACKS
-      // TODO: make this sane
+      // resolve objects against stored path to copy-over timestamps.
+      // TODO: make this sane?
       let existingPath = this._paths.read(actorInfo.entityId)
       while (existingPath) {
         if (existingPath.src.x === path.src.x &&
@@ -552,6 +554,7 @@ export class RanchMode extends Mode {
           let pathPiece :PathInfo|undefined = path
           while (pathPiece && existingPath) {
             pathPiece.stamp = existingPath.stamp
+            pathPiece.ended = existingPath.ended
             pathPiece = pathPiece.next
             existingPath = existingPath.next
           }
@@ -563,7 +566,6 @@ export class RanchMode extends Mode {
 
     this._paths.update(actorInfo.entityId, path)
   }
-
 
   protected addBubble (monst :Object3D, update :ActorUpdate) :void {
     const bubble = new Sprite(this._bubbleMaterial)
@@ -714,6 +716,7 @@ export class RanchMode extends Mode {
       animStates.default.url = cfg.model.idle
     }
 
+    const isWalking :Mutable<boolean> = Mutable.local<boolean>(false)
     const isEgg = (cfg.kind === ActorKind.Egg)
     if (cfg.model.hatch) {
       // set up hatching (nearly the same between eggs and monsters)
@@ -789,19 +792,23 @@ export class RanchMode extends Mode {
     } else {
       // regular monster
       if (cfg.model.walk) {
-        graphCfg.readPath = {
-          type: "readComponent",
-          component: "paths",
-        }
-        graphCfg.noPath = {
-          type: "equals",
-          a: "readPath",
-          b: undefined,
-        }
-        graphCfg.yesPath = {
-          type: "not",
-          input: "noPath",
-        }
+
+        // Set up a value that knows whether they're on a path
+        graphCfg.controller
+
+//        graphCfg.readPath = {
+//          type: "readComponent",
+//          component: "paths",
+//        }
+//        graphCfg.noPath = {
+//          type: "equals",
+//          a: "readPath",
+//          b: undefined,
+//        }
+//        graphCfg.yesPath = {
+//          type: "not",
+//          input: "noPath",
+//        }
         animStates.walk = {
           url: cfg.model.walk,
           transitions: {
@@ -809,7 +816,7 @@ export class RanchMode extends Mode {
           }
         }
         anyTransitions.walk = {condition: "walkCond"}
-        graphCfg.controller.walkCond = "yesPath"
+        graphCfg.controller.walkCond = isWalking
       } // end: walk
 
       if (cfg.model.eat) {
@@ -933,6 +940,18 @@ export class RanchMode extends Mode {
         graph: graphCfg,
       },
     })
+
+    // now set up a value for walking ohhhh fuck
+    // TODO: This is a memory leak.... what I really want is to just use this value
+    this._paths.getValue(entityId).onEmit(path => {
+      if (!path) {
+        isWalking.update(false)
+      } else {
+        while (path.next) path = path.next
+        isWalking.update(!path.ended)
+      }
+    })
+
     const actorInfo = new ActorInfo(id, entityId, cfg)
     this._actors.set(id, actorInfo)
     return actorInfo

@@ -118,6 +118,7 @@ export interface PathInfo {
   next? :PathInfo
   timeLeft :number // Server value (TBD)
   stamp? :number // CLIENT value (TBD!!)
+  ended? :boolean // CLIENT
 }
 
 /**
