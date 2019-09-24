@@ -510,7 +510,8 @@ function tickMonster (
       if (food) {
         const foodData = food.data
         if (getDistance(data, foodData) < .1) {
-          foodData.hp -= 10
+          foodData.hp -= 50
+          foodData.dirty = true
           setAction(ctx, data, ActorAction.Eating, 10 / MONSTER_ACCELERANT)
         } else {
           setAction(ctx, data, ActorAction.SeekingFood)
