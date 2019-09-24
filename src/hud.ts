@@ -46,8 +46,8 @@ export class Hud
     let contents :ElementConfig
     const model :ModelData = {}
     const BUTTON_WIDTH = 64
-    const notGuest = this.app.client.auth.map(sess => sess.source !== "guest")
-    const showTip = Value.join2(this.screenWidth, notGuest).map(([w, ng]) => (w >= 600) && ng)
+    const showTip = Value.join2(this.screenWidth, this.app.notGuest).map(
+      ([w, ng]) => (w >= 600) && ng)
 
     switch (uiState) {
     default:
@@ -212,7 +212,7 @@ export class Hud
       hintSize: this.renderer.size,
       contents: contents,
     }
-    model.notGuest = notGuest
+    model.notGuest = this.app.notGuest
     return this.app.ui.createRoot(rootConfig, new Model(model))
   }
 
