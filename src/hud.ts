@@ -145,6 +145,7 @@ export class Hud
       contents = {
         type: "column",
         constraints: {stretchX: true, stretchY: false},
+        gap: 5,
         contents: [{
           type: "button",
           onClick: "reset.clicked",
@@ -177,6 +178,7 @@ export class Hud
           },
         }, {
           type: "row",
+          gap: 5,
           contents: [{
             type: "button",
             onClick: "debugOn.clicked",
