@@ -78,6 +78,17 @@ export interface ActorConfig {
   color? :number
 }
 
+export const enum ActorState {
+  Default = 1,
+
+  ReadyToHatch = 101,
+  Hatching = 102,
+  Hatched = 103,
+
+  Hungry = 201,
+  Sleepy = 202,
+}
+
 // ActorAction -> ActorState, probably
 // behind that will be a Behavior, which has its own internal state and moves between states
 // behind that are _joneses_ which trigger different behaviors.
@@ -130,7 +141,7 @@ export interface ActorUpdate extends Located {
   scale :number
   orient :number
   action :ActorAction    // rename to "state"
-  instant :ActorInstant // TODO: WILL BE REMOVED
+  instant :ActorInstant // TODO: WILL BE REMOVED ? Renamed?
   owner: UUID
   path? :PathInfo
 }
@@ -173,8 +184,8 @@ export interface ActorData extends Located {
   instant :ActorInstant // TODO: going away
   stateStack :ActorAction[] // Almost certainly going away because Behavior will handle it
 
-  /** Data related to the current behavior, if any. */
-  data? :BehaviorData
+  /** Data related to the current behavior. */
+  data :BehaviorData
 
   /** Has something changed such that we need to republish this object (and an ActorUpdate). */
   dirty? :boolean
