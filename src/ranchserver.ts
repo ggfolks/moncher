@@ -587,120 +587,6 @@ function tickRanch (
   })
 }
 
-///**
-// * Handle monster tick (for now) */
-//function tickMonster (
-//  ctx :RanchContext,
-//  dt :number,
-//  actor :Actor,
-//) :void {
-//  // clear any "instant"
-//  const data = actor.data
-//  data.instant = ActorInstant.None
-//
-//  switch (data.action) {
-//  case ActorAction.Waiting:
-//    if (--data.counter <= 0) {
-//      setAction(data, ActorAction.Idle)
-//    }
-//    break
-//
-//  case ActorAction.Hatching:
-//    setAction(data, ActorAction.Waiting, 3)
-//    break
-//
-//  case ActorAction.Walking:
-//  case ActorAction.Sleepy:
-//  case ActorAction.SeekingFood: // NOTE: these have moved to Behavior now
-//    // TODO: clean up!
-//    // for now we need to ensure we popState
-//    if (data.path === undefined) {
-//      setAction(data, popState(data), data.counter)
-//    }
-//    break
-//
-//  case ActorAction.Eating:
-//    if (--data.counter <= 0) {
-//      data.hunger = 0
-//      growMonster(data)
-//      const newpos = getRandomPositionFrom(ctx, data, 2)
-//      if (newpos) {
-//        setAction(data, ActorAction.Sleepy)
-//        pushState(data, ActorAction.Sleeping)
-//        data.counter = 100 / MONSTER_ACCELERANT
-//        walkTo(ctx, actor, newpos, .5)
-//      } else {
-//        setAction(data, ActorAction.Sleeping, 100 / MONSTER_ACCELERANT)
-//      }
-//    }
-//    data.dirty = true
-//    break
-//
-//  case ActorAction.Sleeping:
-//    if (--data.counter <= 0) {
-//      setAction(data, ActorAction.Waiting, 8 / MONSTER_ACCELERANT)
-//    }
-//    data.dirty = true
-//    break
-//
-//  case ActorAction.Unknown: // Do nothing for a little while
-//    if (--data.counter <= 0) {
-//      setAction(data, popState(data))
-//    }
-//    data.dirty = true
-//    break
-//
-//  case ActorAction.Idle:
-//    if (++data.hunger > 100 / MONSTER_ACCELERANT) {
-//      const isFood = (actor :Actor) :boolean => (actor.config.kind === ActorKind.Food)
-//      const food = getNearestActor(ctx, data, isFood)
-//      if (food) {
-//        const foodData = food.data
-//        if (getDistance(data, foodData) < .1) {
-//          foodData.hp -= 50
-//          foodData.dirty = true
-//          setAction(data, ActorAction.Eating, 10 / MONSTER_ACCELERANT)
-//        } else {
-//          setAction(data, ActorAction.SeekingFood)
-//          walkTo(ctx, actor, foodData, 1.5)
-//        }
-//        break
-//      }
-//      // no food? Fall back to wandering...
-//    }
-//
-//    // Maybe go visit a nice egg
-//    if (Math.random() < .2) {
-//      const isEgg = (actor :Actor) :boolean => (actor.config.kind === ActorKind.Egg)
-//      const isReadyEgg = (actor :Actor) :boolean =>
-//          isEgg(actor) && (actor.data.action === ActorAction.ReadyToHatch)
-//      const egg = getNearestActor(ctx, data, isReadyEgg) ||
-//          getNearestActor(ctx, data, isEgg)
-//      if (egg) {
-//        const nearEgg = getRandomPositionFrom(ctx, egg.data, 5)
-//        if (nearEgg) {
-//          walkTo(ctx, actor, nearEgg, 1.2)
-//        }
-//      }
-//      break
-//    }
-//
-//    // Wander randomly!
-//    if (Math.random() < .075) {
-//      const newpos = getRandomPositionFrom(ctx, data, 10)
-//      if (newpos) {
-//        walkTo(ctx, actor, newpos)
-//      }
-//    }
-//    data.dirty = true
-//    break
-//
-//  default:
-//    log.warn("Unhandled action in Monster.tick", "action", data.action)
-//    break
-//  }
-//}
-
 function growMonster (data :ActorData) :void {
   // this could probably be smoother and better
   const MAX_SCALE = 4
@@ -710,19 +596,6 @@ function growMonster (data :ActorData) :void {
   data.scale = Math.min(MAX_SCALE, data.scale + increment)
   data.dirty = true
 }
-
-//function pushState (data :ActorData, state :ActorAction) :void {
-//  data.stateStack.push(state)
-//  data.dirty = true
-//}
-//
-//function popState (data :ActorData) :ActorAction {
-//  if (data.stateStack.length) {
-//    data.dirty = true
-//    return data.stateStack.pop()!
-//  }
-//  return ActorAction.Idle
-//}
 
 /**
  * Handle "touching" an actor. */
@@ -831,9 +704,6 @@ function walkTo (
         next: info }
   }
   actor.data.path = info
-  if (!isWalkingState(actor.data.action)) {
-    setAction(actor.data, ActorAction.Walking)
-  }
   // set our final angle to something wacky
   actor.data.orient = Math.random() * Math.PI * 2
   actor.data.dirty = true
@@ -850,15 +720,4 @@ function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|un
   foundPath.unshift(srcVec) // put the damn src back on the start of the list
   //return foundPath.map(v => vec2loc(v))
   return foundPath
-}
-
-function isWalkingState (act :ActorAction) :boolean { // TODO: will be nixed
-  switch (act) {
-  case ActorAction.Walking:
-  case ActorAction.Sleepy:
-  case ActorAction.SeekingFood:
-    return true
-
-  default: return false
-  }
 }
