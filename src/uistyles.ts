@@ -4,6 +4,7 @@ import {Theme} from "tfw/ui/ui"
 
 const buttonCorner = 12
 const textCorner = 2
+const checkBoxCorner = 10
 
 export const moncherStyles :StyleDefs = {
   colors: {
@@ -28,6 +29,7 @@ export const moncherStyles :StyleDefs = {
     textNormal: {stroke: {type: "color", color: "#999999"}, cornerRadius: textCorner},
     textDisabled: {stroke: {type: "color", color: "#666666"}, cornerRadius: textCorner},
     textFocused: {stroke: {type: "color", color: "#6666FF"}, cornerRadius: textCorner},
+    checkBox: {stroke: {type: "color", color: "#999999"}, cornerRadius: checkBoxCorner},
   },
   backgrounds: {
     buttonNormal: {fill: "$white", cornerRadius: buttonCorner},
@@ -60,6 +62,7 @@ export const moncherTheme :Theme = {
       pressed: {border: "$buttonFocused", background: "$buttonPressed"},
     },
   },
+  control: {},
   text: {
     box: {
       padding: 10,

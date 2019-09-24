@@ -40,3 +40,14 @@ export function closeButton (onClick :Spec<Action>, extra? :Object) {
     padding: [4, 8, 4, 8],
   })}, extra)
 }
+
+const Check = "✔︎"
+
+const checkCircle = box({type: "label", text: Value.constant(Check)},
+                        {border: "$checkBox", padding: [3, 5, 0, 5]})
+const emptyCircle = box({type: "label", text: Value.constant(" ")},
+                        {border: "$checkBox", padding: [3, 8, 0, 7]})
+
+export function checkBox (checked :Spec<Value<boolean>>, onClick :Spec<Action>) {
+  return {type: "toggle", checked, onClick, contents: emptyCircle, checkedContents: checkCircle}
+}
