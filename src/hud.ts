@@ -3,6 +3,7 @@ import {Disposable, Disposer, log} from "tfw/core/util"
 import {Renderer} from "tfw/scene2/gl"
 import {ElementConfig, Host, Root, RootConfig} from "tfw/ui/element"
 import {Model, ModelData} from "tfw/ui/model"
+import {label, checkBox} from "./ui"
 import {RanchMode} from "./moncher"
 import {App} from "./app"
 
@@ -179,27 +180,7 @@ export class Hud
         }, {
           type: "row",
           gap: 5,
-          contents: [{
-            type: "button",
-            onClick: "debugOn.clicked",
-            contents: {
-              type: "box",
-              contents: {
-                type: "label",
-                text: "debugOn.text",
-              }
-            },
-          }, {
-            type: "button",
-            onClick: "debugOff.clicked",
-            contents: {
-              type: "box",
-              contents: {
-                type: "label",
-                text: "debugOff.text",
-              }
-            },
-          }],
+          contents: [label("debug.text"), checkBox("debug.active", "debug.toggle")],
         }, {
           type: "button",
           onClick: "cancel.clicked",
@@ -228,13 +209,10 @@ export class Hud
         text: Value.constant("Next actor (mine)"),
         clicked: () => this._ranchMode.targetNextActor(true),
       }
-      model.debugOn = {
-        text: Value.constant("Debug: on"),
-        clicked: () => this._ranchMode.setDebug(true),
-      }
-      model.debugOff = {
-        text: Value.constant("Debug: off"),
-        clicked: () => this._ranchMode.setDebug(false),
+      model.debug = {
+        text: Value.constant("Debug"),
+        active: this._ranchMode.debugMode,
+        toggle: () => this._ranchMode.setDebug(!this._ranchMode.debugMode.current),
       }
       break // end: Debug
     }
