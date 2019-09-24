@@ -1,5 +1,5 @@
 import {App} from "./app"
-import {RanchMode} from "./moncher"
+import {RanchMode} from "./ranchmode"
 
 const root = document.getElementById("root")
 if (!root) throw new Error(`No root?`)

@@ -4,7 +4,7 @@ import {Renderer} from "tfw/scene2/gl"
 import {ElementConfig, Host, Root, RootConfig} from "tfw/ui/element"
 import {Model, ModelData} from "tfw/ui/model"
 import {label, checkBox} from "./ui"
-import {RanchMode} from "./moncher"
+import {RanchMode} from "./ranchmode"
 import {App} from "./app"
 
 export const enum UiState {
