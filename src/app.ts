@@ -9,17 +9,12 @@ import {Mutable, Subject, Value} from "tfw/core/react"
 import {Renderer, windowSize} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {UniformQuadBatch} from "tfw/scene2/batch"
-import {Client} from "tfw/data/client"
+import {Client, addrFromLocation} from "tfw/data/client"
 import {UI} from "tfw/ui/ui"
 import {initFirebaseAuth, currentUser} from "tfw/auth/firebase"
 
 import {ProfileStore, UserStore} from "./stores"
 import {moncherStyles, moncherTheme} from "./uistyles"
-
-const host = window.location.hostname
-const port = host === "localhost" ? 8080 : parseInt(window.location.port || "443")
-const secure = window.location.protocol === "https"
-const addr = {host, port, secure, path: "data"}
 
 firebase.initializeApp({
   apiKey: "AIzaSyBqGwobKx4ReOufFpoQcKD8qv_jY4lgRSk",
@@ -34,7 +29,7 @@ export class App implements Disposable {
   readonly renderer :Renderer
   readonly loop  = new Loop()
   readonly ui = new UI(moncherTheme, moncherStyles, {resolve: loadImage})
-  readonly client = new Client(p => Subject.constant(addr))
+  readonly client = new Client(p => Subject.constant(addrFromLocation("data")))
   readonly profiles = new ProfileStore(this)
   readonly user = new UserStore(this)
 
