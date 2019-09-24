@@ -3,3 +3,5 @@ dist/bundle.js.map
 lib
 node_modules
 tsconfig.tsbuildinfo
+server.pid
+firebase-creds.json
