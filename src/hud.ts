@@ -1,4 +1,4 @@
-import {Value} from "tfw/core/react"
+import {Mutable, Value} from "tfw/core/react"
 import {Disposable, Disposer, log} from "tfw/core/util"
 import {Renderer} from "tfw/scene2/gl"
 import {ElementConfig, Host, Root, RootConfig} from "tfw/ui/element"
@@ -25,6 +25,13 @@ export class Hud
     private readonly _ranchMode :RanchMode,
   ) {
     this.screenWidth = app.renderer.size.map(sz => sz[0])
+
+    let tip = 0
+    const handle = setInterval(() => {
+      tip = (tip + 1) % this._tips.length
+      this._tip.update(this._tips[tip])
+    }, 5000)
+    this._disposer.add(() => {clearInterval(handle)})
   }
 
   /**
@@ -117,7 +124,7 @@ export class Hud
         clicked: () => this._ranchMode.setUiState(UiState.PlacingFood),
       }
       model.status = {
-        text: Value.constant("Hold F1 to see the navmesh"),
+        text: this._tip,
       }
       break // end: Default
 
@@ -241,4 +248,13 @@ export class Hud
   protected _stateRoot? :Root
 
   protected readonly _disposer :Disposer = new Disposer()
+
+  protected readonly _tips :string[] = [
+    "Hold F1 to see the navmesh",
+    "Press F2 for next owned actor",
+    "Press F3 for next actor",
+    "Press F4 (or 6-finger tap) for debug menu",
+  ]
+
+  protected readonly _tip :Mutable<string> = Mutable.local(this._tips[0])
 }
