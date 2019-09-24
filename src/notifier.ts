@@ -57,6 +57,8 @@ export class Notifier {
       whenActive(this.profile(msg.sender), sprofile => {
         const body = `${sprofile.name.current}: ${msg.text}`
         for (const uid of channel.members) {
+          // no need to notify people who are in the game
+          if (channel.viewers.has(uid)) continue
           whenActive(this.user(uid), user => {
             if (user.tokens.size > 0) {
               log.info("Sending notification", "user", uid, "tokens", user.tokens.size,

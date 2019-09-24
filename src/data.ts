@@ -85,8 +85,8 @@ const NoMessage = {
 @dobject
 export class ChannelObject extends DObject {
 
-  @dvalue("size32")
-  viewers = this.value(0)
+  @dset("uuid")
+  viewers = this.set<UUID>()
 
   @dset("uuid", true)
   members = this.set<UUID>()
@@ -142,14 +142,14 @@ function handleChannelMetaMsg (obj :ChannelObject, msg :MetaMsg, auth :Auth) {
   switch (msg.type) {
   case "subscribed":
     if (msg.id === UUID0) return // ignore system subscribers
-    if (obj.viewers.current === 0) obj.source.post(
+    if (obj.viewers.size === 0) obj.source.post(
       serverQ, {type: "active", what: "channel", id: obj.key})
-    obj.viewers.update(obj.viewers.current+1)
+    obj.viewers.add(msg.id)
     break
   case "unsubscribed":
     if (msg.id === UUID0) return // ignore system subscribers
-    obj.viewers.update(obj.viewers.current-1)
-    if (obj.viewers.current === 0) obj.source.post(
+    obj.viewers.delete(msg.id)
+    if (obj.viewers.size === 0) obj.source.post(
       serverQ, {type: "inactive", what: "channel", id: obj.key})
     break
   }
