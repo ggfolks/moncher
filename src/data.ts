@@ -161,6 +161,10 @@ export class RanchObject extends DObject {
   @dvalue("string", true)
   name = this.value(ranchName(this.key))
 
+  /** Is the ranch in debug mode? */
+  @dvalue("boolean")
+  debug = this.value(false)
+
   @dset("uuid")
   occupants = this.set<UUID>()
 
@@ -211,6 +215,8 @@ export type RanchReq =
     {type :"setName", name :string} |
     /** Reset the ranch to a starting state (DEBUG?) */
     {type :"reset"} |
+    /** Turn on or off debug mode. */
+    {type :"debug", value :boolean} |
     /** A client-initiated tick (TEMP) */
     {type :"tick"}
 

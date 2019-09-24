@@ -46,8 +46,9 @@ export class Hud
     let contents :ElementConfig
     const model :ModelData = {}
     const BUTTON_WIDTH = 64
-    const showTip = Value.join2(this.screenWidth, this.app.notGuest).map(
-      ([w, ng]) => (w >= 600) && ng)
+    const notGuest = Value.join2(this.app.notGuest, this._ranchMode.debugMode).map(
+      ([ng, debug]) => ng || debug)
+    const showTip = Value.join2(this.screenWidth, notGuest).map(([w, ng]) => (w >= 600) && ng)
 
     switch (uiState) {
     default:
@@ -175,6 +176,29 @@ export class Hud
             },
           },
         }, {
+          type: "row",
+          contents: [{
+            type: "button",
+            onClick: "debugOn.clicked",
+            contents: {
+              type: "box",
+              contents: {
+                type: "label",
+                text: "debugOn.text",
+              }
+            },
+          }, {
+            type: "button",
+            onClick: "debugOff.clicked",
+            contents: {
+              type: "box",
+              contents: {
+                type: "label",
+                text: "debugOff.text",
+              }
+            },
+          }],
+        }, {
           type: "button",
           onClick: "cancel.clicked",
           contents: {
@@ -202,6 +226,14 @@ export class Hud
         text: Value.constant("Next actor (mine)"),
         clicked: () => this._ranchMode.targetNextActor(true),
       }
+      model.debugOn = {
+        text: Value.constant("Debug: on"),
+        clicked: () => this._ranchMode.setDebug(true),
+      }
+      model.debugOff = {
+        text: Value.constant("Debug: off"),
+        clicked: () => this._ranchMode.setDebug(false),
+      }
       break // end: Debug
     }
 
@@ -212,7 +244,7 @@ export class Hud
       hintSize: this.renderer.size,
       contents: contents,
     }
-    model.notGuest = this.app.notGuest
+    model.notGuest = notGuest
     return this.app.ui.createRoot(rootConfig, new Model(model))
   }
 

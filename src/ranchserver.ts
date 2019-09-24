@@ -58,7 +58,7 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
     break
 
   case "dropEgg":
-    if (auth.isGuest) {
+    if (auth.isGuest && !obj.debug.current) {
       log.warn("Rejecting egg drop from guest", "auth", auth)
       return
     }
@@ -70,7 +70,14 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
     addActor(ctx, UUID0, MonsterDb.getFood(), req)
     break
 
+  case "debug":
+    // TODO: restrict access to debug mode?
+    log.warn("Setting debug mode: " + req.value)
+    obj.debug.update(req.value)
+    break
+
   case "reset":
+    log.info("Resetting ranch due to client request.")
     obj.actorData.clear()
     obj.actors.clear()
     obj.actorConfigs.clear()

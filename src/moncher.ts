@@ -226,6 +226,14 @@ export class RanchMode extends Mode {
     this._preloads.clear()
   }
 
+  get debugMode () :Value<boolean> {
+    return this._ranchObj.debug
+  }
+
+  setDebug (debug :boolean) :void {
+    this._ranchObj.ranchq.post({type: "debug", value: debug})
+  }
+
   /**
    * Send a request to the server to reset the entire ranch. */
   resetRanch () :void {
