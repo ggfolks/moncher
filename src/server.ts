@@ -92,6 +92,11 @@ const signalHandler = () => {
 process.on('SIGTERM', signalHandler)
 process.on('SIGINT', signalHandler)
 
+// write our pid out to a file
+fs.writeFile("server.pid", `${process.pid}`, err => {
+  if (err) log.warn("Failed to write pid file", err)
+})
+
 // this guy sends out FCM notifications for chat channel messages
 const notifier = new Notifier(adminApp, server.store)
 server.state.whenOnce(s => s === "terminated", _ => notifier.dispose())
