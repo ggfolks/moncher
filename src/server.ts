@@ -83,6 +83,15 @@ server.errors.onEmit(error => {
   log.warn("HTTP/WS server error", error)
 })
 
+// shut down when we receive SIGINT or SIGTERM
+const signalHandler = () => {
+  server.shutdown()
+  httpServer.close()
+  // process.exit(0) // TODO: maybe do this after a few seconds in case anything hangs up
+}
+process.on('SIGTERM', signalHandler)
+process.on('SIGINT', signalHandler)
+
 // this guy sends out FCM notifications for chat channel messages
 const notifier = new Notifier(adminApp, server.store)
 server.state.whenOnce(s => s === "terminated", _ => notifier.dispose())
