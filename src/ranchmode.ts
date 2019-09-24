@@ -752,17 +752,14 @@ export class RanchMode extends Mode {
           a: "controller",
           b: {value: "hatched"},
         }
-
         graphCfg.wasEverHatched = {
           type: "or",
           inputs: ["wasHatched", "wasEverHatched"],
         }
-
         graphCfg.notWasEverHatched = {
           type: "not",
           input: "wasEverHatched",
         }
-
         graphCfg.setInvisibileOnHatched = {
           type: "updateVisible",
           component: "obj",
