@@ -22,7 +22,7 @@ import {Body} from "cannon"
 import {Clock} from "tfw/core/clock"
 import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
-import {Mutable, Value} from "tfw/core/react"
+import {Value} from "tfw/core/react"
 import {
   Noop,
   PMap,
@@ -374,7 +374,7 @@ export class RanchMode extends Mode {
         new DenseValueComponent<ActorUpdate>("state", blankActorUpdate())
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
     const paths = this._paths = new SparseValueComponent<PathInfo|undefined>("paths", undefined)
-    const graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
+    const graph = this._graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
 
     const domain = this._domain = new Domain({},
         {trans, obj, mixer, body, state, paths, hovers, graph})
@@ -716,7 +716,6 @@ export class RanchMode extends Mode {
       animStates.default.url = cfg.model.idle
     }
 
-    const isWalking :Mutable<boolean> = Mutable.local<boolean>(false)
     const isEgg = (cfg.kind === ActorKind.Egg)
     if (cfg.model.hatch) {
       // set up hatching (nearly the same between eggs and monsters)
@@ -790,9 +789,6 @@ export class RanchMode extends Mode {
       // regular monster
       if (cfg.model.walk) {
 
-        // Set up a value that knows whether they're on a path
-        graphCfg.controller
-
 //        graphCfg.readPath = {
 //          type: "readComponent",
 //          component: "paths",
@@ -806,6 +802,10 @@ export class RanchMode extends Mode {
 //          type: "not",
 //          input: "noPath",
 //        }
+        graphCfg.hasValidPath = {
+          type: "value",
+          value: Value.constant(false), // placeholder value: will be replaced!
+        }
         animStates.walk = {
           url: cfg.model.walk,
           transitions: {
@@ -813,7 +813,7 @@ export class RanchMode extends Mode {
           }
         }
         anyTransitions.walk = {condition: "walkCond"}
-        graphCfg.controller.walkCond = isWalking
+        graphCfg.controller.walkCond = "hasValidPath"
       } // end: walk
 
       if (cfg.model.eat) {
@@ -938,16 +938,27 @@ export class RanchMode extends Mode {
       },
     })
 
-    // now set up a value for walking ohhhh fuck
-    // TODO: This is a memory leak.... what I really want is to just use this value
-    this._paths.getValue(entityId).onEmit(path => {
-      if (!path) {
-        isWalking.update(false)
-      } else {
+    if (!isEgg && cfg.model.walk) {
+      const realIsWalking = this._paths.getValue(entityId).map(path => {
+        if (!path) return false
         while (path.next) path = path.next
-        isWalking.update(!path.ended)
+        return !path.ended
+      })
+
+//      realIsWalking.onEmit(b => {
+//        log.debug("realIsWalking: " + b)
+//      })
+
+      // get the Graph and update the value
+      const graph :Graph = this._graph.read(entityId)
+      const node = graph.nodes.get("hasValidPath")
+      if (node) {
+        node.getProperty("value").update(realIsWalking)
+        node.reconnect()
+      } else {
+        log.warn("hasValidPath node is missing! Did something change?")
       }
-    })
+    }
 
     const actorInfo = new ActorInfo(id, entityId, cfg)
     this._actors.set(id, actorInfo)
@@ -1097,6 +1108,7 @@ export class RanchMode extends Mode {
   protected _obj! :Component<Object3D>
   protected _state! :Component<ActorUpdate>
   protected _paths! :Component<PathInfo|undefined>
+  protected _graph! :Component<Graph>
   protected _graphsys! :GraphSystem
   protected _pathsys! :PathSystem
   protected _scenesys! :SceneSystem
