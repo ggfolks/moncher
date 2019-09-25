@@ -158,6 +158,7 @@ export class InstallAppView implements Disposable {
       scale: app.renderer.scale,
       autoSize: true,
       contents: installAppUI,
+      visible: app.notGuest,
     }, new Model(modelData))
 
     root.bindOrigin(app.renderer.size, "left", "top", "left", "top")
