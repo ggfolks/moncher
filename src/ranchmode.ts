@@ -4,6 +4,7 @@ import {
   Color,
   DirectionalLight,
   Object3D,
+  Light,
   Mesh,
   MeshStandardMaterial,
   Quaternion,
@@ -169,6 +170,10 @@ function makeSceneShadowy (obj :Object3D) :void {
     obj.receiveShadow = true
   }
   obj.children.forEach(makeSceneShadowy)
+}
+
+function makeLightCastShadows (obj :Object3D) :void {
+  if (obj instanceof Light) obj.castShadow = true
 }
 
 /**
@@ -425,7 +430,8 @@ export class RanchMode extends Mode {
     this._mainLightId = domain.add({
       components: {
         trans: {},
-        obj: {type: "json", url: "ranch/lights/Primary" + mood + ".json"},
+        obj: {type: "json", url: "ranch/lights/Primary" + mood + ".json",
+              onLoad: makeLightCastShadows},
       }
     })
     domain.add({
