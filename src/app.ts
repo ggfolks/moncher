@@ -2,10 +2,9 @@ import * as firebase from "firebase/app"
 
 import {Disposable, Disposer} from "tfw/core/util"
 import {dim2} from "tfw/core/math"
-import {UUID} from "tfw/core/uuid"
 import {Clock, Loop} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
-import {Mutable, Subject, Value} from "tfw/core/react"
+import {Subject, Value} from "tfw/core/react"
 import {Renderer, windowSize} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {UniformQuadBatch} from "tfw/scene2/batch"
@@ -29,7 +28,7 @@ function parseLocation () :[string, string, string|undefined] {
   if (path) {
     const lastSlash = path.lastIndexOf("/")
     if (lastSlash >= 0) {
-      const match = path.substring(lastSlash).match(ranchInviteR)
+      const match = path.substring(lastSlash+1).match(ranchInviteR)
       if (match) return [path.substring(0, lastSlash), match[1], match[3]]
     }
   }
@@ -55,8 +54,8 @@ export class App implements Disposable {
   // global app "state"
   readonly state = {
     appPath: appPath.endsWith("/") ? appPath : `${appPath}/`,
-    ranchId: Mutable.local<UUID>(ranchId),
-    inviteId: Mutable.local<UUID|undefined>(inviteId),
+    ranchId,
+    inviteId,
   }
 
   /** A value that is true when we're authed as a real user. */

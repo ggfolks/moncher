@@ -260,7 +260,7 @@ export class RanchMode extends Mode {
   }
 
   protected subscribeToRanch () :void {
-    const ranchId = this._app.state.ranchId.current // TODO
+    const ranchId = this._app.state.ranchId
     const [ranch, unranch] = this._app.client.resolve(["ranches", ranchId], RanchObject)
     this._ranchObj = ranch
     this.onDispose.add(unranch)
@@ -994,11 +994,11 @@ export class RanchMode extends Mode {
     // TEMP: hackery to require invite to touch/hatch egg
     if (!this._ranchObj.debug.current && config.kind === ActorKind.Egg) {
       if (this._app.user.user.key == update.owner) {
-        showEggInvite(this._app, this._host, this._app.state.ranchId.current, id)
+        showEggInvite(this._app, this._host, this._app.state.ranchId, id)
         return
       }
-      else if (this._app.state.inviteId.current !== id) {
-        log.info("No touchy eggy!", "id", id, "invite", this._app.state.inviteId.current)
+      else if (this._app.state.inviteId !== id) {
+        log.info("No touchy eggy!", "id", id, "invite", this._app.state.inviteId)
         return
       } else if (!this._app.notGuest.current) {
         showEggAuth(this._app, this._host)

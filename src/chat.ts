@@ -116,8 +116,7 @@ export class ChatView implements Disposable {
   private _onDispose = new Disposer()
 
   constructor (readonly app :App, host :Host) {
-    // TODO: ranchId should not be a value, it's not going to change
-    const channelId = app.state.ranchId.current
+    const channelId = app.state.ranchId
     const [channel, unchannel] = app.client.resolve(["channels", channelId], ChannelObject)
     this._onDispose.add(unchannel)
     const [msgs, unmsgs] = app.client.resolveView(channel.msgsBySent)
