@@ -1,3 +1,4 @@
+import {Data} from "tfw/core/data"
 import {Timestamp, log} from "tfw/core/util"
 import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
 import {Auth, DObject, MetaMsg} from "tfw/data/data"
@@ -210,7 +211,7 @@ export class RanchObject extends DObject {
 /** Player requests to the ranch. */
 export type RanchReq =
     /** A request to "touch" a particular actor. */
-    {type :"touch", id :UUID} |
+    {type :"touch", id :UUID, arg? :Data} |
     /** Drop an egg at the specified location. */
     {type :"dropEgg", x :number, y :number, z :number} |
     /** Drop food at the specified location. */

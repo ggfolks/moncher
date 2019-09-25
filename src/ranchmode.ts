@@ -80,7 +80,7 @@ import {loc2vec} from "./ranchutil"
 import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
-import {RanchObject} from "./data"
+import {RanchObject, RanchReq} from "./data"
 import {showEggInvite, showEggAuth} from "./egg"
 
 class ActorInfo {
@@ -1017,7 +1017,11 @@ export class RanchMode extends Mode {
         return
       }
     }
-    this._ranchObj.ranchq.post({type: "touch", id: id})
+    const req :RanchReq = {type: "touch", id: id}
+    if (this._uiState === UiState.Debug) {
+      req.arg = {debug: true}
+    }
+    this._ranchObj.ranchq.post(req)
   }
 
   /**

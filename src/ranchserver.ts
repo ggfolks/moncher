@@ -1,3 +1,4 @@
+import {Data} from "tfw/core/data"
 import {log} from "tfw/core/util"
 import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
 import {Auth} from "tfw/data/data"
@@ -23,7 +24,7 @@ import {loc2vec, vec2loc} from "./ranchutil"
 export const PATHFINDER_GLOBAL = "_ranchPathfinder"
 
 const MAX_MONSTER_SCALE = 4
-//const DEFAULT_MONSTER_SCALE = 1
+const DEFAULT_MONSTER_SCALE = 1
 const MIN_MONSTER_SCALE = .8
 
 // TODO Don't hardcode distances. Sort out something based on the monster's scale maybe?
@@ -58,7 +59,7 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
   const ctx :RanchContext = { obj, auth, path: global[PATHFINDER_GLOBAL] }
   switch (req.type) {
   case "touch":
-    touchActor(ctx, req.id)
+    touchActor(ctx, req.id, req.arg)
     break
 
   case "tick":
@@ -192,7 +193,7 @@ abstract class Behavior {
    * Handle a client "touching" this actor.
    * @return true if something changed and we should publish this actor.
    */
-  touch (ctx :RanchContext, actor :Actor) :boolean {
+  touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
     return false
   }
 
@@ -246,7 +247,7 @@ class EggBehavior extends Behavior {
     }
   }
 
-  touch (ctx :RanchContext, actor :Actor) :boolean {
+  touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
     const data = actor.data
     if ((data.owner === ctx.auth.id) && (data.state === ActorState.ReadyToHatch)) {
       setState(data, ActorState.Hatching)
@@ -340,14 +341,14 @@ abstract class MonsterBehavior extends MobileBehavior {
     }
   }
 
-  touch (ctx :RanchContext, actor :Actor) :boolean {
+  touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
     const data = actor.data
     data.instant = (Math.random() < .8) ? ActorInstant.Touched : ActorInstant.Hit
     data.orient = 0 // face forward
     data.dirty = true
 
     // TEMP: debug sizes
-    if (ctx.obj.debug.current) {
+    if (arg && arg["debug"]) {
       switch (data.scale) {
       default:
         data.scale = MAX_MONSTER_SCALE
@@ -358,7 +359,7 @@ abstract class MonsterBehavior extends MobileBehavior {
         break
 
       case MIN_MONSTER_SCALE:
-        data.scale = 1
+        data.scale = DEFAULT_MONSTER_SCALE
         break
       }
     } // END: TEMP
@@ -493,7 +494,7 @@ class SleepBehavior extends MonsterBehavior {
     }
   }
 
-  touch (ctx :RanchContext, actor :Actor) :boolean {
+  touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
     // wake up early
     WanderBehavior.INSTANCE.init(actor)
     return true
@@ -519,7 +520,7 @@ function newActorData (
     x: loc.x,
     y: loc.y,
     z: loc.z,
-    scale: 1,
+    scale: DEFAULT_MONSTER_SCALE,
     orient: 0,
 
     hp: ActorKindAttributes.initialHealth(config.kind),
@@ -632,6 +633,7 @@ function shrinkMonster (data :ActorData) :void {
 function touchActor (
   ctx :RanchContext,
   id :UUID,
+  arg? :Data,
 ) :void {
   const actor = getActor(ctx, id)
   if (!actor) {
@@ -639,7 +641,7 @@ function touchActor (
     return
   }
   const beh = Behavior.getBehavior(actor)
-  if (beh.touch(ctx, actor)) {
+  if (beh.touch(ctx, actor, arg)) {
     ctx.obj.actors.set(actor.id, actorDataToUpdate(actor.data))
     ctx.obj.actorData.set(actor.id, actor.data)
   }
