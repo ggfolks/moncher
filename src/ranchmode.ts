@@ -461,7 +461,7 @@ export class RanchMode extends Mode {
   protected loadExtras () :void {
     const tl = new TextureLoader()
     this._bubbleMaterial = makeEmoji(tl, "ThoughtBubble.png")
-    //this._emojis.set(ActorAction.VisitingEgg, this.makeEmoji(tl, "EggIcon.png"))
+    //this._emojis.set(ActorState.Default, makeEmoji(tl, "EggIcon.png"))
     this._emojis.set(ActorState.Hungry, makeEmoji(tl, "AcornIcon.png"))
     this._emojis.set(ActorState.Sleepy, makeEmoji(tl, "SleepIcon.png"))
   }
@@ -586,8 +586,8 @@ export class RanchMode extends Mode {
     const emoji = new Sprite()
     emoji.name = "emo"
     bubble.add(emoji)
-    bubble.position.y =  1.2
-    bubble.scale.set(.8, .8, .8)
+    bubble.position.y = 1.0
+    bubble.scale.set(.5, .5, .5)
     monst.add(bubble)
     this.updateBubble2(monst, update)
   }
