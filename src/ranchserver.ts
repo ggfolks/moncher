@@ -220,7 +220,7 @@ class EggBehavior extends Behavior {
     // since eggs only have one behavior, go ahead and use the actor's state for behavior state
     switch (data.state) {
     case ActorState.Default:
-      data.hp -= dt
+      data.hp -= (dt / 1000)
       if (data.hp < 20) {
         data.hp = 20
         setState(data, ActorState.ReadyToHatch)
@@ -233,7 +233,7 @@ class EggBehavior extends Behavior {
       break
 
     case ActorState.Hatched:
-      data.hp -= dt // deplete until removed
+      data.hp -= (dt / 1000) // deplete until removed
       data.dirty = true
       break
     }
@@ -328,7 +328,7 @@ abstract class MonsterBehavior extends MobileBehavior {
     }
 
     if (data.hunger < MAX_HUNGER) {
-      data.hunger += dt
+      data.hunger += (dt / 1000)
       data.dirty = true
     }
   }
@@ -408,6 +408,7 @@ class EatFoodBehavior extends MonsterBehavior {
         // can't find food: we're just going to wait one tick and reset
         bd.phase = 1
       }
+      data.dirty = true
       break
 
     case 1: // we didn't find food
@@ -424,6 +425,7 @@ class EatFoodBehavior extends MonsterBehavior {
         setState(data, ActorState.Sleepy)
         bd.phase = 3
       }
+      data.dirty = true
       break
 
     case 3: // looking for a nap spot
@@ -434,6 +436,7 @@ class EatFoodBehavior extends MonsterBehavior {
       } else {
         // let's just try again next tick?
       }
+      data.dirty = true
       break
 
     case 4: // we are now ready to sleep
