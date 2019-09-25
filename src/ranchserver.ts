@@ -369,7 +369,7 @@ class WanderBehavior extends MonsterBehavior {
     }
 
     if (Math.random() < .5) {
-      const newpos = getRandomPositionFrom(ctx, data, MAX_WANDER_DISTANCE)
+      const newpos = getRandomPositionFrom(ctx, data, MAX_WANDER_DISTANCE * data.scale)
       if (newpos) {
         walkTo(ctx, actor, newpos)
       }
@@ -440,7 +440,7 @@ class EatFoodBehavior extends MonsterBehavior {
       break
 
     case 3: // looking for a nap spot
-      const newpos = getRandomPositionFrom(ctx, data, NAP_NEAR_FOOD_DISTANCE)
+      const newpos = getRandomPositionFrom(ctx, data, NAP_NEAR_FOOD_DISTANCE * data.scale)
       if (newpos) {
         walkTo(ctx, actor, newpos, WALK_TO_NAP_SPEED)
         bd.phase = 4
