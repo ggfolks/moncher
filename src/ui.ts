@@ -1,4 +1,4 @@
-import {Disposer, Remover} from "tfw/core/util"
+import {Disposable, Disposer, Remover} from "tfw/core/util"
 import {Mutable, Value} from "tfw/core/react"
 import {Action, Spec} from "tfw/ui/model"
 import {LabelStyle} from "tfw/ui/text"
@@ -94,4 +94,78 @@ export function createDialog (app :App, host :Host, title :string, contents :Ele
   host.addRoot(root)
 
   return closeDialog
+}
+
+const installAppUI = {
+  type: "box",
+  style: {
+    padding: 5,
+    // TODO: why does 'margin: 5' cause UI to be weirdly smaller?
+  },
+  contents: {
+    type: "button",
+    onClick: "openAppPage",
+    contents: {
+      type: "box",
+      contents: {
+        type: "row",
+        contents: [{
+          type: "image",
+          width: 40,
+          height: 40,
+          image: Value.constant("ui/app@2x.png"),
+        }, {
+          type: "column",
+          contents: [
+            label(Value.constant("Get the")),
+            label(Value.constant("chat app!")),
+          ]
+        }]
+      }
+    },
+  },
+}
+
+// from https://stackoverflow.com/questions/21741841
+function getMobileOperatingSystem () {
+  const userAgent = navigator.userAgent
+  // Windows Phone must come first because its UA also contains "Android"
+  if (/windows phone/i.test(userAgent)) return "windows_phone"
+  if (/android/i.test(userAgent)) return "android"
+  // iOS detection from: https://stackoverflow.com/a/9039885/177710
+  if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) return "ios"
+  return "unknown"
+}
+
+function getAppURL () {
+  switch (getMobileOperatingSystem()) {
+  case "android": return "https://play.google.com/apps/testing/dev.tfw.chatapp"
+  case "ios": return "https://tfw.dev/app.html" // TODO: real URL when we have one
+  default: return "https://tfw.dev/app.html"
+  }
+}
+
+export class InstallAppView implements Disposable {
+  private _onDispose = new Disposer()
+
+  constructor (readonly app :App, host :Host) {
+    const modelData = {
+      openAppPage: () => window.open(getAppURL())
+    }
+
+    const root = app.ui.createRoot({
+      type: "root",
+      scale: app.renderer.scale,
+      autoSize: true,
+      contents: installAppUI,
+    }, new Model(modelData))
+
+    root.bindOrigin(app.renderer.size, "left", "top", "left", "top")
+    host.addRoot(root)
+    this._onDispose.add(() => host.removeRoot(root))
+  }
+
+  dispose () {
+    this._onDispose.dispose()
+  }
 }

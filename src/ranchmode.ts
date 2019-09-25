@@ -82,6 +82,7 @@ import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
 import {RanchObject, RanchReq} from "./data"
+import {InstallAppView} from "./ui"
 import {showEggInvite, showEggAuth} from "./egg"
 
 class ActorInfo {
@@ -202,7 +203,8 @@ export class RanchMode extends Mode {
     this.onDispose.add(this._hud = new Hud(_app, this._host, _app.renderer, this))
     this.setUiState(UiState.Default)
 
-    this.onDispose.add(this._chat = new ChatView(_app, this._host))
+    this.onDispose.add(new ChatView(_app, this._host))
+    this.onDispose.add(new InstallAppView(_app, this._host))
 
     this.onDispose.add(Keyboard.instance.getKeyState(112 /* F1 */).onEmit(
         v => this.showNavMesh(v)))
@@ -1126,9 +1128,6 @@ export class RanchMode extends Mode {
 
   /** Handles our camera positioning. */
   protected _camControl! :Lakitu
-
-  /** Displays the chat UI. */
-  protected _chat :ChatView
 
   protected _uiState :UiState = UiState.Default
 
