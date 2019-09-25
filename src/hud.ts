@@ -253,7 +253,7 @@ export class Hud
     "Hold F1 to see the navmesh",
     "Press F2 for next owned actor",
     "Press F3 for next actor",
-    "Press F4 (or 6-finger tap) for debug menu",
+    "Press F4 (or 5-finger tap) for debug menu",
   ]
 
   protected readonly _tip :Mutable<string> = Mutable.local(this._tips[0])

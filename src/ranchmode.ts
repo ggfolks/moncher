@@ -1202,7 +1202,7 @@ export class RanchMode extends Mode {
         }
         break
 
-      case 6: // six finger tap: let's debug!
+      case 5: // five finger tap: let's debug!
         this.setUiState(UiState.Debug)
         break
 
