@@ -6,12 +6,12 @@ import {RanchObject, RanchReq} from "./data"
 import {MonsterDb} from "./monsterdb"
 import {ZonedPathfinding} from "./zonedpathfinding"
 import {
-  ActorAction,
   ActorData,
   ActorConfig,
   ActorKind,
   ActorKindAttributes,
   ActorInstant,
+  ActorState,
   ActorUpdate,
   BehaviorData,
   Located,
@@ -218,41 +218,32 @@ class EggBehavior extends Behavior {
 
   tick (ctx :RanchContext, dt :number, actor :Actor) :void {
     const data = actor.data
-    let dirty = true
-
-    // since eggs only have one behavior, go ahead and use the action to hold state (for now?)
-    switch (data.action) {
-    case ActorAction.Idle:
+    // since eggs only have one behavior, go ahead and use the actor's state for behavior state
+    switch (data.state) {
+    case ActorState.Default:
       if (--data.hp < 20 * MONSTER_ACCELERANT) {
-        data.action = ActorAction.ReadyToHatch
+        setState(data, ActorState.ReadyToHatch)
       }
       break
 
-    case ActorAction.Hatching: // we are only hatching for a moment
-      data.action = ActorAction.Hatched
+    case ActorState.Hatching: // we are only hatching for a moment
+      setState(data, ActorState.Hatched)
       break
 
-    case ActorAction.Hatched:
+    case ActorState.Hatched:
       --data.hp // deplete until removed
-      break
-
-    default:
-      dirty = false
-      break
-    }
-
-    if (dirty) {
       data.dirty = true
+      break
     }
   }
 
   touch (ctx :RanchContext, actor :Actor) :boolean {
     const data = actor.data
-    if ((data.owner === ctx.auth.id) && (data.action === ActorAction.ReadyToHatch)) {
-      data.action = ActorAction.Hatching
+    if ((data.owner === ctx.auth.id) && (data.state === ActorState.ReadyToHatch)) {
+      setState(data, ActorState.Hatching)
       // spawn monster with the same owner at the same location
       addActor(ctx, data.owner, actor.config.spawn!, data /*Located*/, HatchingBehavior.INSTANCE)
-      data.owner = UUID0 // update to be owned by nobody
+      data.owner = UUID0 // update the EGG to be owned by nobody
       data.dirty = true
       return true
     }
@@ -296,14 +287,15 @@ abstract class MobileBehavior extends Behavior {
   }
 }
 
+/**
+ * Monster hatching behavior. */
 class HatchingBehavior extends Behavior {
   static INSTANCE = new HatchingBehavior()
 
   initData (actor :Actor, data :BehaviorData, arg :any) :void {
     super.initData(actor, data, arg)
-
     data.time = 0
-    setAction(actor.data, ActorAction.Hatching)
+    setState(actor.data, ActorState.Hatching)
   }
 
   tick (ctx :RanchContext, dt :number, actor :Actor) :void {
@@ -314,8 +306,9 @@ class HatchingBehavior extends Behavior {
     if (bd.time >= HATCHING_DURATION) {
       WanderBehavior.INSTANCE.init(actor)
 
-    } else if (data.action === ActorAction.Hatching) {
-      setAction(actor.data, ActorAction.Idle)
+    } else if (data.state === ActorState.Hatching) {
+      // we are only Hatching for a split second
+      setState(actor.data, ActorState.Default)
     }
   }
 }
@@ -352,7 +345,7 @@ class WanderBehavior extends MonsterBehavior {
 
   initData (actor :Actor, data :BehaviorData, arg :any) :void {
     super.initData(actor, data, arg)
-    setAction(actor.data, ActorAction.Idle)
+    setState(actor.data, ActorState.Default)
   }
 
   tick (ctx :RanchContext, dt :number, actor :Actor) :void {
@@ -383,7 +376,7 @@ class EatFoodBehavior extends MonsterBehavior {
 
     // set up the first phase: seeking the food
     data.phase = 0
-    setAction(actor.data, ActorAction.SeekingFood) // sets dirty
+    setState(actor.data, ActorState.Hungry) // sets dirty
   }
 
   tick (ctx :RanchContext, dt :number, actor :Actor) :void {
@@ -404,10 +397,9 @@ class EatFoodBehavior extends MonsterBehavior {
           foodData.dirty = true
           bd.phase = 2
           bd.time = EATING_DURATION
-          setAction(data, ActorAction.Eating)
+          setState(data, ActorState.Eating)
 
         } else {
-          setAction(data, ActorAction.SeekingFood)
           walkTo(ctx, actor, foodData, WALK_TO_FOOD_SPEED)
         }
       } else {
@@ -427,7 +419,7 @@ class EatFoodBehavior extends MonsterBehavior {
         // we've finished eating, let's grow
         data.hunger = 0
         growMonster(data)
-        setAction(data, ActorAction.Sleepy)
+        setState(data, ActorState.Sleepy)
         bd.phase = 3
       }
       break
@@ -455,7 +447,7 @@ class SleepBehavior extends MonsterBehavior {
   initData (actor :Actor, data :BehaviorData, arg :any) :void {
     super.initData(actor, data, arg)
 
-    setAction(actor.data, ActorAction.Sleeping)
+    setState(actor.data, ActorState.Sleeping)
     data.time = (arg !== undefined) ? arg as number : NORMAL_SLEEP_DURATION
   }
 
@@ -494,18 +486,17 @@ function newActorData (
     x: loc.x,
     y: loc.y,
     z: loc.z,
-    hp: ActorKindAttributes.initialHealth(config.kind),
-    hunger: 0,
     scale: 1,
     orient: 0,
-    stateStack: [],
+
+    hp: ActorKindAttributes.initialHealth(config.kind),
+    hunger: 0,
 
     owner,
 
+    state: ActorState.Default,
     instant: ActorInstant.None,
-    counter: 0,
 
-    action: ActorAction.Idle, // TODO: remove from here, probably
     data: {}, // behavior data
     dirty: true, // start dirty!
   }
@@ -520,12 +511,12 @@ function newActorData (
  * Publish an actor update derived from the specified ActorData. */
 function actorDataToUpdate (data :ActorData) :ActorUpdate {
   delete data.dirty
-  const {x, y, z, scale, orient, action, instant, owner, path} = data
+  const {x, y, z, scale, orient, state, instant, owner, path} = data
   return {
     x, y, z,
     scale,
     orient,
-    action,
+    state,
     instant,
     owner,
     path,
@@ -615,9 +606,8 @@ function touchActor (
   }
 }
 
-function setAction (data :ActorData, action :ActorAction, counterInit :number = 0) :void {
-  data.action = action
-  data.counter = Math.trunc(counterInit)
+function setState (data :ActorData, state :ActorState) :void {
+  data.state = state
   data.dirty = true
 }
 
@@ -678,7 +668,6 @@ function walkTo (
     log.warn("Unable to find path",
       "src", actor.data,
       "dest", newPos)
-    setAction(actor.data, ActorAction.Unknown)
     return
   }
 
@@ -688,7 +677,6 @@ function walkTo (
   if (!pathBack) {
     log.warn("Unable to find a path BACK from a point. Skipping",
       "point", newPos)
-    setAction(actor.data, ActorAction.Unknown)
     return
   }
   // END TEMP

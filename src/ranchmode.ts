@@ -67,11 +67,11 @@ import {DefaultStyles, DefaultTheme} from "tfw/ui/theme"
 
 import {App, Mode} from "./app"
 import {
-  ActorAction,
   ActorConfig,
   ActorInstant,
   ActorKind,
   ActorKindAttributes,
+  ActorState,
   ActorUpdate,
   PathInfo,
   blankActorUpdate,
@@ -106,7 +106,7 @@ class PathSystem extends System {
     domain :Domain,
     readonly trans :TransformComponent,
     readonly paths :Component<PathInfo|undefined>,
-    readonly state :Component<ActorUpdate>,
+    readonly updates :Component<ActorUpdate>,
     readonly setY :(into :Vector3) => void,
   ) {
     super(domain, Matcher.hasAllC(trans.id, paths.id))
@@ -131,7 +131,7 @@ class PathSystem extends System {
           path = path.next
           if (!path) {
             // if at the end of the paths, update the orient to the state orient
-            this.updateOrient(id, this.state.read(id).orient)
+            this.updateOrient(id, this.updates.read(id).orient)
             // update the component with the fact that the last segment is ended!
             this.paths.update(id, thePath)
           }
@@ -371,15 +371,15 @@ export class RanchMode extends Mode {
     const mixer = new DenseValueComponent<AnimationMixer>("mixer",
         new AnimationMixer(new Object3D()))
     const body = new DenseValueComponent<Body>("body", new Body())
-    const state = this._state =
-        new DenseValueComponent<ActorUpdate>("state", blankActorUpdate())
+    const updates = this._updates =
+        new DenseValueComponent<ActorUpdate>("updates", blankActorUpdate())
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
     const paths = this._paths = new SparseValueComponent<PathInfo|undefined>("paths", undefined)
     const graph = this._graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
 
     const domain = this._domain = new Domain({},
-        {trans, obj, mixer, body, state, paths, hovers, graph})
-    this._pathsys = new PathSystem(domain, trans, paths, state, this.setY.bind(this))
+        {trans, obj, mixer, body, updates, paths, hovers, graph})
+    this._pathsys = new PathSystem(domain, trans, paths, updates, this.setY.bind(this))
     this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
     this._graphsys = new GraphSystem(nodeCtx, domain, graph)
@@ -450,8 +450,8 @@ export class RanchMode extends Mode {
     const tl = new TextureLoader()
     this._bubbleMaterial = makeEmoji(tl, "ThoughtBubble.png")
     //this._emojis.set(ActorAction.VisitingEgg, this.makeEmoji(tl, "EggIcon.png"))
-    this._emojis.set(ActorAction.SeekingFood, makeEmoji(tl, "AcornIcon.png"))
-    this._emojis.set(ActorAction.Sleepy, makeEmoji(tl, "SleepIcon.png"))
+    this._emojis.set(ActorState.Hungry, makeEmoji(tl, "AcornIcon.png"))
+    this._emojis.set(ActorState.Sleepy, makeEmoji(tl, "SleepIcon.png"))
   }
 
   render (clock :Clock) :void {
@@ -527,7 +527,7 @@ export class RanchMode extends Mode {
    * Effect updates received from the RanchModel. */
   protected updateActorSprite (actorInfo :ActorInfo, update :ActorUpdate) :void {
     // store their state in the entity system...
-    this._state.update(actorInfo.entityId, update)
+    this._updates.update(actorInfo.entityId, update)
     this.updatePath(actorInfo, update.path)
     if (!update.path) {
       this._trans.updatePosition(actorInfo.entityId, loc2vec(update, scratchV))
@@ -588,7 +588,7 @@ export class RanchMode extends Mode {
   protected updateBubble2 (monst :Object3D, update :ActorUpdate) :void {
     const bub = monst.getObjectByName("bubble")
     if (!bub) return
-    const material = this._emojis.get(update.action)
+    const material = this._emojis.get(update.state)
     bub.visible = material !== undefined
     if (material) {
       (bub.children[0] as Sprite).material = material
@@ -688,15 +688,15 @@ export class RanchMode extends Mode {
       },
     }
 
-    // set up nodes to read the actor's state / action
-    graphCfg.state = {
+    // set up nodes to read the actor's ActorUpdate, and from that the state
+    graphCfg.update = {
       type: "readComponent",
-      component: "state",
+      component: "updates",
     }
-    graphCfg.action = {
+    graphCfg.state = {
       type: "getProperty",
-      input: "state",
-      name: "action",
+      input: "update",
+      name: "state",
     }
 
     // set up animations
@@ -728,8 +728,8 @@ export class RanchMode extends Mode {
       // set up hatching (nearly the same between eggs and monsters)
       graphCfg.isHatching = {
         type: "equals",
-        a: "action",
-        b: ActorAction.Hatching,
+        a: "state",
+        b: ActorState.Hatching,
       }
       animStates.hatch = {
         url: cfg.model.hatch,
@@ -745,8 +745,8 @@ export class RanchMode extends Mode {
 
         graphCfg.isHatched = {
           type: "equals",
-          a: "action",
-          b: ActorAction.Hatched,
+          a: "state",
+          b: ActorState.Hatched,
         }
 
         // TODO: if I can get a new "invisibilizing animation" from the artists, I can use that
@@ -782,8 +782,8 @@ export class RanchMode extends Mode {
     if (isEgg) {
       graphCfg.isReadyToHatch = {
         type: "equals",
-        a: "action",
-        b: ActorAction.ReadyToHatch,
+        a: "state",
+        b: ActorState.ReadyToHatch,
       }
       // set up the ready-to-hatch state
       animStates.readyToHatch = {
@@ -826,8 +826,8 @@ export class RanchMode extends Mode {
       if (cfg.model.eat) {
         graphCfg.isEating = {
           type: "equals",
-          a: "action",
-          b: ActorAction.Eating,
+          a: "state",
+          b: ActorState.Eating,
         }
         animStates.eat = {
           url: cfg.model.eat,
@@ -842,8 +842,8 @@ export class RanchMode extends Mode {
       if (cfg.model.sleep && cfg.model.faint && cfg.model.wakeUp) {
         graphCfg.isSleeping = {
           type: "equals",
-          a: "action",
-          b: ActorAction.Sleeping,
+          a: "state",
+          b: ActorState.Sleeping,
         }
         animStates.faint = {
           url: cfg.model.faint,
@@ -860,18 +860,12 @@ export class RanchMode extends Mode {
           transitions: {wake: {condition: "!sleepCond"}}
         }
 
-//        graphCfg.isWaking = {
-//          type: "equals",
-//          a: "action",
-//          b: ActorAction.Waking,
-//        }
         animStates.wake = {
           url: cfg.model.wakeUp,
           repetitions: 1,
           finishBeforeTransition: true,
           transitions: {default: {}},
         }
-//        graphCfg.controller.wakeCond = "isWaking"
       } // end: faint / sleep / wakeUp
 
       // Happy-react happens whenever you touch a monster, even if in the other states.
@@ -879,7 +873,7 @@ export class RanchMode extends Mode {
       if (cfg.model.happyReact || cfg.model.hitReact) {
         graphCfg.getInstant = {
           type: "getProperty",
-          input: "state",
+          input: "update",
           name: "instant",
         }
         graphCfg.isInstantTouched = {
@@ -937,7 +931,7 @@ export class RanchMode extends Mode {
         trans: {initial: new Float32Array(
             [update.x, update.y, update.z, 0, 0, 0, 1, 1, 1, 1])},
         obj: objDef,
-        state: {initial: update},
+        updates: {initial: update},
         paths: {},
         hovers: {},
         mixer: {},
@@ -1127,7 +1121,7 @@ export class RanchMode extends Mode {
   protected _hand! :Hand
   protected _trans! :TransformComponent
   protected _obj! :Component<Object3D>
-  protected _state! :Component<ActorUpdate>
+  protected _updates! :Component<ActorUpdate>
   protected _paths! :Component<PathInfo|undefined>
   protected _graph! :Component<Graph>
   protected _graphsys! :GraphSystem
@@ -1147,7 +1141,7 @@ export class RanchMode extends Mode {
   protected _ranchObj! :RanchObject
 
   protected _bubbleMaterial! :SpriteMaterial
-  protected readonly _emojis :Map<ActorAction, SpriteMaterial> = new Map()
+  protected readonly _emojis :Map<ActorState, SpriteMaterial> = new Map()
 
   protected readonly _inspectUiSize :dim2 = dim2.fromValues(1024, 768)
 

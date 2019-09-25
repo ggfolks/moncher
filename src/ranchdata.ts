@@ -86,30 +86,10 @@ export const enum ActorState {
   Hatched = 103,
 
   Hungry = 201,
-  Sleepy = 202,
-}
+  Eating = 202,
 
-// ActorAction -> ActorState, probably
-// behind that will be a Behavior, which has its own internal state and moves between states
-// behind that are _joneses_ which trigger different behaviors.
-// maybe ActorState -> ActorUpdate
-
-export const enum ActorAction {
-  // these are persisted, do not renumber!
-  Idle = 1,
-
-  ReadyToHatch = 101,
-  Hatching = 102,
-  Hatched = 103, // use by eggs once they hatch
-
-  Walking = 201,
-  Waiting = 202,
-  SeekingFood = 203,
-  Eating = 204,
-  Sleepy = 205,
-  Sleeping = 206,
-
-  Unknown = 999,
+  Sleepy = 301,
+  Sleeping = 302,
 }
 
 /**
@@ -140,7 +120,7 @@ export interface ActorUpdate extends Located {
   z :number
   scale :number
   orient :number
-  action :ActorAction    // rename to "state"
+  state :ActorState
   instant :ActorInstant // TODO: WILL BE REMOVED ? Renamed?
   owner: UUID
   path? :PathInfo
@@ -156,7 +136,7 @@ export function blankActorUpdate () :ActorUpdate {
     scale: 0,
     orient: 0,
     owner: UUID0,
-    action: ActorAction.Idle,
+    state: ActorState.Default,
     instant: ActorInstant.None,
     path: undefined,
   }
@@ -174,15 +154,14 @@ export interface ActorData extends Located {
   y :number
   z :number
 
-  owner :UUID
-  action :ActorAction
+  /** Hunger... not applicable for some actors. Sigh. Maybe get more entity-like on the server? */
   hunger :number
-  counter :number       // TODO: going away, subsumed into new "Behavior" type
+  owner :UUID
+  state :ActorState
   scale :number
   path? :PathInfo
   orient :number
   instant :ActorInstant // TODO: going away
-  stateStack :ActorAction[] // Almost certainly going away because Behavior will handle it
 
   /** Data related to the current behavior. */
   data :BehaviorData
