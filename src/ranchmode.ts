@@ -113,6 +113,7 @@ class PathSystem extends System {
   }
 
   update (clock :Clock) {
+    const timestamp = clock.time / 1000
     this.onEntities(id => {
       let thePath = this.paths.read(id)
       let path = thePath
@@ -121,10 +122,10 @@ class PathSystem extends System {
       let overtime = 0
       while (path) {
         if (!path.stamp) {
-          path.stamp = clock.time + path.duration - overtime
+          path.stamp = timestamp + path.duration - overtime
           this.updateOrient(id, path.orient)
         }
-        const timeLeft = path.stamp - clock.time
+        const timeLeft = path.stamp - timestamp
         if (timeLeft <= 0) {
           overtime = -timeLeft
           path.ended = true

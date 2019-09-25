@@ -33,9 +33,9 @@ const WALK_TO_NAP_SPEED = .5
 
 const MAX_HUNGER = 100
 
-const EATING_DURATION = 5000
-const HATCHING_DURATION = 6000
-const NORMAL_SLEEP_DURATION = 5 * 60 * 1000
+const EATING_DURATION = 5
+const HATCHING_DURATION = 6
+const NORMAL_SLEEP_DURATION = 5 * 60
 
 /**
  * Context object passed to most request handlers. */
@@ -59,7 +59,7 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
     const diff = now - obj.lastTick.current
     if (diff >= 1000) {
       //log.debug("Tick with delta " + diff)
-      tickRanch(ctx, Math.min(diff, 5000)) // 5s max tick
+      tickRanch(ctx, Math.min(diff, 5000) / 1000) // 5s max tick
       obj.lastTick.update(now)
     } else {
       //log.info("Rejecting client-initiated tick (multiple clients connected?)")
@@ -205,7 +205,7 @@ class FoodBehavior extends Behavior {
   static INSTANCE = new FoodBehavior(ActorKind.Food)
 
   tick (ctx :RanchContext, dt :number, actor :Actor) :void {
-    actor.data.hp -= .01 // food decays
+    actor.data.hp -= (dt / 100) // food decays
     actor.data.dirty = true
   }
 }
@@ -220,7 +220,7 @@ class EggBehavior extends Behavior {
     // since eggs only have one behavior, go ahead and use the actor's state for behavior state
     switch (data.state) {
     case ActorState.Default:
-      data.hp -= (dt / 1000)
+      data.hp -= dt
       if (data.hp < 20) {
         data.hp = 20
         setState(data, ActorState.ReadyToHatch)
@@ -233,7 +233,7 @@ class EggBehavior extends Behavior {
       break
 
     case ActorState.Hatched:
-      data.hp -= (dt / 1000) // deplete until removed
+      data.hp -= dt // deplete until removed
       data.dirty = true
       break
     }
@@ -328,7 +328,7 @@ abstract class MonsterBehavior extends MobileBehavior {
     }
 
     if (data.hunger < MAX_HUNGER) {
-      data.hunger += (dt / 1000)
+      data.hunger += dt
       data.dirty = true
     }
   }
@@ -558,7 +558,7 @@ function removeActor (
 
 function tickRanch (
   ctx :RanchContext,
-  dt :number,
+  dt :number, // in seconds
 ) :void {
   // tick every actor
   ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
@@ -687,11 +687,11 @@ function walkTo (
   // END TEMP
 
   let info :PathInfo|undefined = undefined
-  const speed = 1000 / (getSpeed(ctx, actor) * speedFactor)
+  const speed = getSpeed(ctx, actor) * speedFactor
   while (path.length > 1) {
     const dest = path.pop()!
     const src = path[path.length - 1]
-    const duration = src.distanceTo(dest) * speed
+    const duration = src.distanceTo(dest) / speed
     const orient = Math.atan2(dest.x - src.x, dest.z - src.z)
     info = { src: vec2loc(src), dest: vec2loc(dest), orient, duration, timeLeft: duration,
         next: info }
