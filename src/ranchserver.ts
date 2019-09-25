@@ -266,34 +266,7 @@ class EggBehavior extends Behavior {
 abstract class MobileBehavior extends Behavior {
   tick (ctx :RanchContext, dt :number, actor :Actor) :void {
     super.tick(ctx, dt, actor)
-
-    // process any walking
-    const data = actor.data
-    let path = data.path
-    while (path) {
-      if (dt < path.timeLeft) {
-        path.timeLeft -= dt
-        // update our position along this path piece
-        const perc = path.timeLeft / path.duration
-        data.x = (path.dest.x - path.src.x) * perc + path.src.x
-        data.y = (path.dest.y - path.src.y) * perc + path.src.y
-        data.z = (path.dest.z - path.src.z) * perc + path.src.z
-        data.dirty = true
-        return
-      }
-      // otherwise we used-up a path segment
-      if (path.next) {
-        dt -= path.timeLeft
-      } else {
-        // otherwise we have finished!
-        data.x = path.dest.x
-        data.y = path.dest.y
-        data.z = path.dest.z
-        // proceed to assign path to undefined, and fall out of the while
-      }
-      path = data.path = path.next
-      data.dirty = true
-    }
+    advanceWalk(ctx, actor, dt)
   }
 }
 
@@ -349,6 +322,7 @@ abstract class MonsterBehavior extends MobileBehavior {
 
     // TEMP: debug sizes
     if (arg && arg["debug"]) {
+      stopWalkingOutsideTick(ctx, actor)
       switch (data.scale) {
       default:
         data.scale = MAX_MONSTER_SCALE
@@ -365,6 +339,9 @@ abstract class MonsterBehavior extends MobileBehavior {
     } // END: TEMP
     return true // publish!
   }
+}
+
+class ChatCircleBehavior extends MonsterBehavior {
 }
 
 class WanderBehavior extends MonsterBehavior {
@@ -504,7 +481,7 @@ class SleepBehavior extends MonsterBehavior {
 // mother-fricking compiler doesn't know that the INSTANCES handle it!
 if (false) {
   log.debug("Gruntle: " + FoodBehavior + EggBehavior + WanderBehavior +
-      EatFoodBehavior + SleepBehavior)
+      ChatCircleBehavior + EatFoodBehavior + SleepBehavior)
 }
 
 /**
@@ -698,6 +675,42 @@ function getSpeed (ctx :RanchContext, actor :Actor) :number {
   return ActorKindAttributes.baseMovementSpeed(actor.config.kind) * actor.data.scale
 }
 
+/**
+ * Stop a monster walking dead in its tracks. Should be called after super.tick() on a mobile
+ * behavior so that the location in the monster's data is up-to-date.
+ *
+ * Note that this method isn't necessary.
+ * - if you want to start a new walk you can just call walkTo().
+ * - if you want to stop the actor but let them face any direction, just clear the path.
+ */
+function stopWalking (
+  ctx :RanchContext,
+  actor :Actor,
+) :void {
+  if (actor.data.path) {
+    // override their ending orientation with the current path segment's orientation
+    actor.data.orient = actor.data.path.orient
+    actor.data.path = undefined
+    actor.data.dirty = true
+  }
+}
+
+/**
+ * Stop walking, outside of tick().
+ * Because we don't have timestamps we have deltas, we need to advance the walk before
+ * stopping it. */
+function stopWalkingOutsideTick (
+  ctx :RanchContext,
+  actor :Actor,
+) :void {
+  if (!actor.data.path) return
+
+  // fake like we received a tick, but just for this walk
+  const dt = Date.now() - ctx.obj.lastTick.current
+  advanceWalk(ctx, actor, dt)
+  stopWalking(ctx, actor)
+}
+
 function walkTo (
   ctx :RanchContext,
   actor :Actor,
@@ -736,6 +749,35 @@ function walkTo (
   // set our final angle to something wacky
   actor.data.orient = Math.random() * Math.PI * 2
   actor.data.dirty = true
+}
+
+function advanceWalk (ctx :RanchContext, actor :Actor, dt :number) :void {
+  const data = actor.data
+  let path = data.path
+  while (path) {
+    if (dt < path.timeLeft) {
+      path.timeLeft -= dt
+      // update our position along this path piece
+      const perc = path.timeLeft / path.duration // percentage towards src
+      data.x = (path.src.x - path.dest.x) * perc + path.dest.x
+      data.y = (path.src.y - path.dest.y) * perc + path.dest.y
+      data.z = (path.src.z - path.dest.z) * perc + path.dest.z
+      data.dirty = true
+      return
+    }
+    // otherwise we used-up a path segment
+    if (path.next) {
+      dt -= path.timeLeft
+    } else {
+      // otherwise we have finished!
+      data.x = path.dest.x
+      data.y = path.dest.y
+      data.z = path.dest.z
+      // proceed to assign path to undefined, and fall out of the while
+    }
+    path = data.path = path.next
+    data.dirty = true
+  }
 }
 
 function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|undefined {
