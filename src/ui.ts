@@ -99,8 +99,7 @@ export function createDialog (app :App, host :Host, title :string, contents :Ele
 const installAppUI = {
   type: "box",
   style: {
-    padding: 5,
-    // TODO: why does 'margin: 5' cause UI to be weirdly smaller?
+    margin: 5,
   },
   contents: {
     type: "button",

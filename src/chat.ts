@@ -24,7 +24,6 @@ const chatUiConfig = {
   style: {
     halign: "stretch",
     valign: "bottom",
-    padding: 10,
     margin: 10,
   },
   contents: {
