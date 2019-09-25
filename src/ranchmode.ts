@@ -992,7 +992,7 @@ export class RanchMode extends Mode {
 
   protected actorTouched (id :UUID, config :ActorConfig, update :ActorUpdate) :void {
     // TEMP: hackery to require invite to touch/hatch egg
-    if (config.kind === ActorKind.Egg) {
+    if (!this._ranchObj.debug.current && config.kind === ActorKind.Egg) {
       if (this._app.user.user.key == update.owner) {
         showEggInvite(this._app, this._host, this._app.state.ranchId.current, id)
         return
