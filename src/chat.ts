@@ -25,7 +25,7 @@ const chatUiConfig = {
     halign: "stretch",
     valign: "bottom",
     padding: 10,
-    // TODO: why does 'margin: 10' cause UI to disappear
+    margin: 10,
   },
   contents: {
     type: "column",
