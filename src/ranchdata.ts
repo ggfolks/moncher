@@ -90,6 +90,8 @@ export const enum ActorState {
 
   Sleepy = 301,
   Sleeping = 302,
+
+  RandomMeet = 401,
 }
 
 /**

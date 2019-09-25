@@ -472,6 +472,7 @@ export class RanchMode extends Mode {
     //this._emojis.set(ActorState.Default, makeEmoji(tl, "EggIcon.png"))
     this._emojis.set(ActorState.Hungry, makeEmoji(tl, "AcornIcon.png"))
     this._emojis.set(ActorState.Sleepy, makeEmoji(tl, "SleepIcon.png"))
+    this._emojis.set(ActorState.RandomMeet, makeEmoji(tl, "PalIcon.png"))
   }
 
   render (clock :Clock) :void {

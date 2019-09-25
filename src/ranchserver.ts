@@ -31,6 +31,7 @@ const MIN_MONSTER_SCALE = .8
 const CLOSE_EAT_DISTANCE = .1
 const NAP_NEAR_FOOD_DISTANCE = 3
 const MAX_WANDER_DISTANCE = 12
+const RANDOM_MEET_DISTANCE = 5 // when one monster is walking past another, they might meet-up!
 
 // walk speed variations
 const WALK_TO_FOOD_SPEED = 1.4
@@ -44,6 +45,10 @@ const STARVING_HUNGER = 1.5 * 24 * 60 * 60 // 1.5 days
 const EATING_DURATION = 5
 const HATCHING_DURATION = 6
 const NORMAL_SLEEP_DURATION = 5 * 60
+const CHAT_CIRCLE_MAX_DURATION = 30 * 60 // 30 minutes
+
+/** How often do monsters act happy together? */
+const CHAT_BOUNCE_INTERVAL = 4.8
 
 /**
  * Context object passed to most request handlers. */
@@ -163,6 +168,16 @@ abstract class Behavior {
     for (const kind of defaultForKinds) {
       Behavior._byKind.set(kind, this)
     }
+  }
+
+  /**
+   * Is the specified actor using this behavior? */
+  isBehaved (actor :Actor) :boolean {
+    return (this.code === actor.data.data.code)
+  }
+
+  maybeInit (actor :Actor, arg? :any) :void {
+    if (!this.isBehaved(actor)) this.init(actor, arg)
   }
 
   /**
@@ -342,6 +357,43 @@ abstract class MonsterBehavior extends MobileBehavior {
 }
 
 class ChatCircleBehavior extends MonsterBehavior {
+  static INSTANCE = new ChatCircleBehavior()
+
+  initData (actor :Actor, data :BehaviorData, arg :any) :void {
+    super.initData(actor, data, arg)
+    data.bounce = 0
+    data.counter = 0
+    setState(actor.data, ActorState.RandomMeet)
+  }
+
+  tick (ctx :RanchContext, actor :Actor, dt :number) :void {
+    super.tick(ctx, actor, dt)
+
+    if (isWalking(actor.data)) return
+
+    const data = actor.data
+    const bd = data.data
+    bd.bounce += dt
+    if (bd.bounce > CHAT_BOUNCE_INTERVAL) {
+      data.instant = ActorInstant.Touched
+      bd.bounce -= (Math.random() * CHAT_BOUNCE_INTERVAL)
+    }
+
+    bd.counter += dt
+    if (bd.counter > CHAT_CIRCLE_MAX_DURATION) {
+      // break it up!
+      // find all monsters nearby in this "Same circle" (TODO: same circle?)
+      // TODO: or just do a hacky distance check. But I think we could possibly have a behavior
+      // data arg that gives each chat circle a custom id or something...
+      visitActors(ctx, actor => {
+        if (this.isBehaved(actor)) {
+          // it's ok if a chatter is still walking, they'll finish the walk in Wander
+          WanderBehavior.INSTANCE.init(actor)
+        }
+      })
+    }
+    data.dirty = true // oh yeah, you like it when I mark dirty, don't you?
+  }
 }
 
 class WanderBehavior extends MonsterBehavior {
@@ -356,6 +408,29 @@ class WanderBehavior extends MonsterBehavior {
     super.tick(ctx, actor, dt)
 
     const data = actor.data
+
+    // see if we're passing near another monster
+    if (Math.random() < .1) {
+      const isStandingMonst = (other :Actor) :boolean =>
+          ActorKindAttributes.isMonster(other.config.kind) &&
+          !isWalking(other.data) &&
+          (WanderBehavior.INSTANCE.isBehaved(other) ||
+            ChatCircleBehavior.INSTANCE.isBehaved(other))
+      const monst = getNearestActor(ctx, data, isStandingMonst, RANDOM_MEET_DISTANCE * data.scale)
+      if (monst) {
+        // TODO: circle up?
+        const nearMonst = getRandomPositionFrom(ctx, monst.data,
+            RANDOM_MEET_DISTANCE * data.scale)
+        if (nearMonst) {
+          walkTo(ctx, actor, nearMonst)
+          // put them both into ChatCircle mode
+          ChatCircleBehavior.INSTANCE.init(actor)
+          ChatCircleBehavior.INSTANCE.maybeInit(monst)
+          return
+        }
+      }
+    }
+
     if (isWalking(data)) return
 
     if (data.hunger >= HUNGRY_HUNGER && Math.random() < .2) {
@@ -629,13 +704,7 @@ function setState (data :ActorData, state :ActorState) :void {
   data.dirty = true
 }
 
-function getNearestActor (
-  ctx :RanchContext,
-  loc :Located,
-  predicate :(actor :Actor) => boolean,
-  maxDist :number = Infinity
-) :Actor|undefined {
-  let nearest = undefined
+function visitActors (ctx :RanchContext, visitor :(actor :Actor) => void) :void {
   ctx.obj.actorData.forEach((data :ActorData, id :UUID) => {
     const config = ctx.obj.actorConfigs.get(id)
     if (!config) {
@@ -643,11 +712,23 @@ function getNearestActor (
       return
     }
     const oActor :Actor = {id, config, data}
-    if (predicate(oActor)) {
-      const dd = getDistance(loc, data)
+    visitor(oActor)
+  })
+}
+
+function getNearestActor (
+  ctx :RanchContext,
+  loc :Located,
+  predicate :(actor :Actor) => boolean,
+  maxDist :number = Infinity
+) :Actor|undefined {
+  let nearest = undefined
+  visitActors(ctx, actor => {
+    if (predicate(actor)) {
+      const dd = getDistance(loc, actor.data)
       if (dd < maxDist) {
         maxDist = dd
-        nearest = oActor
+        nearest = actor
       }
     }
   })
