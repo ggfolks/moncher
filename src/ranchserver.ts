@@ -185,7 +185,7 @@ abstract class Behavior {
 
   /**
    * Tick an actor's behavior. */
-  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
+  tick (ctx :RanchContext, actor :Actor, dt :number) :void {
     // nothin'
   }
 
@@ -212,7 +212,7 @@ abstract class Behavior {
 class FoodBehavior extends Behavior {
   static INSTANCE = new FoodBehavior(ActorKind.Food)
 
-  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
+  tick (ctx :RanchContext, actor :Actor, dt :number) :void {
     actor.data.hp -= (dt / 100) // food decays
     actor.data.dirty = true
   }
@@ -223,7 +223,7 @@ class FoodBehavior extends Behavior {
 class EggBehavior extends Behavior {
   static INSTANCE = new EggBehavior(ActorKind.Egg)
 
-  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
+  tick (ctx :RanchContext, actor :Actor, dt :number) :void {
     const data = actor.data
     // since eggs only have one behavior, go ahead and use the actor's state for behavior state
     switch (data.state) {
@@ -264,8 +264,8 @@ class EggBehavior extends Behavior {
 /**
  * Behavior for things that move along paths. */
 abstract class MobileBehavior extends Behavior {
-  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
-    super.tick(ctx, dt, actor)
+  tick (ctx :RanchContext, actor :Actor, dt :number) :void {
+    super.tick(ctx, actor, dt)
     advanceWalk(ctx, actor, dt)
   }
 }
@@ -281,7 +281,7 @@ class HatchingBehavior extends Behavior {
     setState(actor.data, ActorState.Hatching)
   }
 
-  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
+  tick (ctx :RanchContext, actor :Actor, dt :number) :void {
     const data = actor.data
 
     const bd = data.data
@@ -299,8 +299,8 @@ class HatchingBehavior extends Behavior {
 /**
  * Behavior common to all monsters. */
 abstract class MonsterBehavior extends MobileBehavior {
-  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
-    super.tick(ctx, dt, actor)
+  tick (ctx :RanchContext, actor :Actor, dt :number) :void {
+    super.tick(ctx, actor, dt)
 
     const data = actor.data
     if (data.instant !== ActorInstant.None) {
@@ -352,8 +352,8 @@ class WanderBehavior extends MonsterBehavior {
     setState(actor.data, ActorState.Default)
   }
 
-  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
-    super.tick(ctx, dt, actor)
+  tick (ctx :RanchContext, actor :Actor, dt :number) :void {
+    super.tick(ctx, actor, dt)
 
     const data = actor.data
     if (isWalking(data)) return
@@ -383,8 +383,8 @@ class EatFoodBehavior extends MonsterBehavior {
     setState(actor.data, ActorState.Hungry) // sets dirty
   }
 
-  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
-    super.tick(ctx, dt, actor)
+  tick (ctx :RanchContext, actor :Actor, dt :number) :void {
+    super.tick(ctx, actor, dt)
 
     const data = actor.data
     if (isWalking(data)) return
@@ -462,7 +462,7 @@ class SleepBehavior extends MonsterBehavior {
     data.time = (arg !== undefined) ? arg as number : NORMAL_SLEEP_DURATION
   }
 
-  tick (ctx :RanchContext, dt :number, actor :Actor) :void {
+  tick (ctx :RanchContext, actor :Actor, dt :number) :void {
     const bd = actor.data.data!
     bd.time -= dt
     actor.data.dirty = true
@@ -575,7 +575,7 @@ function tickRanch (
     }
     const actor :Actor = {id: key, config, data}
     const behavior :Behavior = Behavior.getBehavior(actor)
-    behavior.tick(ctx, dt, actor)
+    behavior.tick(ctx, actor, dt)
   })
 
   // After ticking every actor (actors may modify each other), re-publish any that are dirty
