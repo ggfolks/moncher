@@ -1,7 +1,12 @@
+import {Disposer, Remover} from "tfw/core/util"
 import {Mutable, Value} from "tfw/core/react"
 import {Action, Spec} from "tfw/ui/model"
 import {LabelStyle} from "tfw/ui/text"
 import {BoxStyle} from "tfw/ui/box"
+import {ElementConfig, Host} from "tfw/ui/element"
+import {Model, ModelData} from "tfw/ui/model"
+
+import {App} from "./app"
 
 function mergeExtra<T extends Object> (config :T, extra? :Object) :T {
   // TODO: deal with all the inevitable edge cases
@@ -42,7 +47,6 @@ export function closeButton (onClick :Spec<Action>, extra? :Object) {
 }
 
 const Check = "✔︎"
-
 const checkCircle = box({type: "label", text: Value.constant(Check)},
                         {border: "$checkBox", padding: [3, 5, 0, 5]})
 const emptyCircle = box({type: "label", text: Value.constant(" ")},
@@ -50,4 +54,44 @@ const emptyCircle = box({type: "label", text: Value.constant(" ")},
 
 export function checkBox (checked :Spec<Value<boolean>>, onClick :Spec<Action>) {
   return {type: "toggle", checked, onClick, contents: emptyCircle, checkedContents: checkCircle}
+}
+
+const sausageCorner = 12
+
+export function createDialog (app :App, host :Host, title :string, contents :ElementConfig[],
+                              data :ModelData) :Remover {
+  const config = box({
+    type: "column",
+    offPolicy: "stretch",
+    gap: 10,
+    contents: [{
+      type: "row",
+      gap: 10,
+      contents: [
+        label(Value.constant(title), {font: "$header"}, {constraints: {stretch: true}}),
+        closeButton("closeDialog")
+      ]
+    }, ...contents]
+  }, {
+    padding: 10,
+    background: {fill: "$orange", cornerRadius: sausageCorner},
+  })
+
+  const disposer = new Disposer()
+  const closeDialog = () => disposer.dispose()
+
+  const root = app.ui.createRoot({
+    type: "root",
+    scale: app.renderer.scale,
+    autoSize: true,
+    hintSize: app.renderer.size,
+    // TODO: allow subclass to specify?
+    // minSize: Value.constant(dim2.fromValues(300, 0)),
+    contents: config,
+  }, new Model({...data, closeDialog}))
+  disposer.add(() => host.removeRoot(root))
+  root.bindOrigin(app.renderer.size, "center", "center", "center", "center")
+  host.addRoot(root)
+
+  return closeDialog
 }

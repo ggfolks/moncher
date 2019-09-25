@@ -81,6 +81,7 @@ import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
 import {RanchObject} from "./data"
+import {showEggInvite, showEggAuth} from "./egg"
 
 class ActorInfo {
 
@@ -664,11 +665,17 @@ export class RanchMode extends Mode {
           timeoutHandle = undefined
         }
         if (nv) {
-          this.actorTouched(id)
-          timeoutHandle = window.setTimeout(() => {
+          const config = this._ranchObj.actorConfigs.get(id)
+          const update = this._ranchObj.actors.get(id)
+          if (config && update) {
+            this.actorTouched(id, config, update)
+            timeoutHandle = window.setTimeout(() => {
               this.trackActor(id)
               timeoutHandle = undefined
             }, 800)
+          }
+          else log.warn("Missing data for touched actor",
+                        "id", id, "config", config, "update", update)
 //0          const time = Date.now()
 //0          if (time - touchTime <= 1000) {
 //0            triggerInspect.update(true)
@@ -989,7 +996,21 @@ export class RanchMode extends Mode {
     return undefined
   }
 
-  protected actorTouched (id :UUID) :void {
+  protected actorTouched (id :UUID, config :ActorConfig, update :ActorUpdate) :void {
+    // TEMP: hackery to require invite to touch/hatch egg
+    if (config.kind === ActorKind.Egg) {
+      if (this._app.user.user.key == update.owner) {
+        showEggInvite(this._app, this._host, this._app.state.ranchId.current, id)
+        return
+      }
+      else if (this._app.state.inviteId.current !== id) {
+        log.info("No touchy eggy!", "id", id, "invite", this._app.state.inviteId.current)
+        return
+      } else if (!this._app.notGuest.current) {
+        showEggAuth(this._app, this._host)
+        return
+      }
+    }
     this._ranchObj.ranchq.post({type: "touch", id: id})
   }
 

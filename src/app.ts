@@ -24,20 +24,23 @@ firebase.initializeApp({
 })
 
 const ranchInviteR = /^([A-Za-z0-9]{22})(\+([A-Za-z0-9]{22}))?$/
-function parseLocation () :[string, string|undefined] {
+function parseLocation () :[string, string, string|undefined] {
   const path = window.location.pathname
-  if (path.startsWith("/")) {
-    const match = path.substring(1).match(ranchInviteR)
-    if (match) return [match[1], match[3]]
+  if (path) {
+    const lastSlash = path.lastIndexOf("/")
+    if (lastSlash >= 0) {
+      const match = path.substring(lastSlash).match(ranchInviteR)
+      if (match) return [path.substring(0, lastSlash), match[1], match[3]]
+    }
   }
   const query = window.location.search
   if (query) {
     const match = query.substring(1).match(ranchInviteR)
-    if (match) return [match[1], match[3]]
+    if (match) return [path, match[1], match[3]]
   }
-  return ["5cXg8Tp5WwsuVeO7JflubY", undefined]
+  return [path, "5cXg8Tp5WwsuVeO7JflubY", undefined]
 }
-const [ranchId, inviteId] = parseLocation()
+const [appPath, ranchId, inviteId] = parseLocation()
 
 export class App implements Disposable {
   private mode :Mode
@@ -51,11 +54,12 @@ export class App implements Disposable {
 
   // global app "state"
   readonly state = {
+    appPath: appPath.endsWith("/") ? appPath : `${appPath}/`,
     ranchId: Mutable.local<UUID>(ranchId),
     inviteId: Mutable.local<UUID|undefined>(inviteId),
   }
 
-  /** A reactive value that is true when we're authed as a real user. */
+  /** A value that is true when we're authed as a real user. */
   readonly notGuest = Value.join2(this.client.auth, this.client.serverAuth).map(
     ([sess, sid]) => sess.source !== "guest" && sess.id === sid)
 
@@ -73,8 +77,6 @@ export class App implements Disposable {
     this.loop = new Loop()
     this.loop.clock.onEmit(clock => this.mode.render(clock))
 
-    initFirebaseAuth()
-
     // when we're authed as a Google user, slurp our profile info
     this.client.serverAuth.onValue(id => {
       if (this.client.auth.current.source === "firebase") {
@@ -88,6 +90,8 @@ export class App implements Disposable {
         }
       }
     })
+
+    initFirebaseAuth()
   }
 
   start () {

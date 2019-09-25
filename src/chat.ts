@@ -7,7 +7,7 @@ import {Model, mapProvider} from "tfw/ui/model"
 import {App} from "./app"
 import {ChannelObject, Message} from "./data"
 import {box, label} from "./ui"
-import {AuthDialog} from "./auth"
+import {showAuthDialog} from "./auth"
 
 const sausageCorner = 12
 
@@ -141,7 +141,7 @@ export class ChatView implements Disposable {
       },
       showChatInput: app.notGuest,
       profilePhoto: app.client.auth.switchMap(sess => app.profiles.profile(sess.id).photo),
-      showAuth: () => new AuthDialog(app, host),
+      showAuth: () => showAuthDialog(app, host),
     }
 
     const root = app.ui.createRoot({
