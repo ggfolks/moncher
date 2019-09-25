@@ -439,6 +439,12 @@ export class RanchMode extends Mode {
         obj: {type: "json", url: "ranch/lights/Hemisphere" + mood + ".json"},
       },
     })
+//    domain.add({
+//      components: {
+//        trans: {},
+//        obj: {type: "json", url: "ranch/lights/Campfire.json"},
+//      },
+//    })
 
     // add the ranch terrain
     /*const ranchTerrainId =*/ this._terrainId = domain.add({
