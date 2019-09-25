@@ -22,6 +22,10 @@ import {loc2vec, vec2loc} from "./ranchutil"
 /** The name of the pathfinder stuffed in global. */
 export const PATHFINDER_GLOBAL = "_ranchPathfinder"
 
+const MAX_MONSTER_SCALE = 4
+//const DEFAULT_MONSTER_SCALE = 1
+const MIN_MONSTER_SCALE = .8
+
 // TODO Don't hardcode distances. Sort out something based on the monster's scale maybe?
 const CLOSE_EAT_DISTANCE = .1
 const NAP_NEAR_FOOD_DISTANCE = 3
@@ -31,7 +35,10 @@ const MAX_WANDER_DISTANCE = 12
 const WALK_TO_FOOD_SPEED = 1.4
 const WALK_TO_NAP_SPEED = .5
 
-const MAX_HUNGER = 100
+/** The hunger level at which a monster is ready to eat. */
+const HUNGRY_HUNGER = 100
+/** The hunger level at which a monster shrinks due to lack of food. */
+const STARVING_HUNGER = 1.5 * 24 * 60 * 60 // 1.5 days
 
 const EATING_DURATION = 5
 const HATCHING_DURATION = 6
@@ -327,7 +334,7 @@ abstract class MonsterBehavior extends MobileBehavior {
       data.dirty = true
     }
 
-    if (data.hunger < MAX_HUNGER) {
+    if (data.hunger < STARVING_HUNGER) {
       data.hunger += dt
       data.dirty = true
     }
@@ -356,7 +363,7 @@ class WanderBehavior extends MonsterBehavior {
     const data = actor.data
     if (isWalking(data)) return
 
-    if (data.hunger >= MAX_HUNGER && Math.random() < .2) {
+    if (data.hunger >= HUNGRY_HUNGER && Math.random() < .2) {
       EatFoodBehavior.INSTANCE.init(actor)
       return
     }
@@ -412,6 +419,10 @@ class EatFoodBehavior extends MonsterBehavior {
       break
 
     case 1: // we didn't find food
+      if (data.hunger >= STARVING_HUNGER) {
+        shrinkMonster(data)
+        data.hunger = HUNGRY_HUNGER // still hungry after shrinking
+      }
       // let's just immediately transition to a new behavior for next time
       WanderBehavior.INSTANCE.init(actor)
       break
@@ -585,11 +596,17 @@ function tickRanch (
 
 function growMonster (data :ActorData) :void {
   // this could probably be smoother and better
-  const MAX_SCALE = 4
   const MAX_INCREMENT = .20
   // get us 1/4th of the way to max size
-  const increment = Math.min(MAX_INCREMENT, Math.max(0, (MAX_SCALE - data.scale)) * .25)
-  data.scale = Math.min(MAX_SCALE, data.scale + increment)
+  const increment = Math.min(MAX_INCREMENT, Math.max(0, (MAX_MONSTER_SCALE - data.scale)) * .25)
+  data.scale = Math.min(MAX_MONSTER_SCALE, data.scale + increment)
+  data.dirty = true
+}
+
+function shrinkMonster (data :ActorData) :void {
+  const SHRINKAGE_FACTOR = .1
+  const decrement = data.scale * SHRINKAGE_FACTOR
+  data.scale = Math.max(MIN_MONSTER_SCALE, data.scale - decrement)
   data.dirty = true
 }
 
