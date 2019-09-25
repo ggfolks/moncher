@@ -345,6 +345,23 @@ abstract class MonsterBehavior extends MobileBehavior {
     data.instant = (Math.random() < .8) ? ActorInstant.Touched : ActorInstant.Hit
     data.orient = 0 // face forward
     data.dirty = true
+
+    // TEMP: debug sizes
+    if (ctx.obj.debug.current) {
+      switch (data.scale) {
+      default:
+        data.scale = MAX_MONSTER_SCALE
+        break
+
+      case MAX_MONSTER_SCALE:
+        data.scale = MIN_MONSTER_SCALE
+        break
+
+      case MIN_MONSTER_SCALE:
+        data.scale = 1
+        break
+      }
+    } // END: TEMP
     return true // publish!
   }
 }
