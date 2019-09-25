@@ -66,10 +66,14 @@ export class Hud
     case UiState.Default:
       contents = {
         type: "column",
+        offPolicy: "stretch",
         constraints: {stretchX: true, stretchY: false},
         contents: [{
           type: "row",
           contents: [{
+            type: "spacer",
+            constraints: {stretch: true},
+          }, {
             type: "button",
             onClick: "egg.clicked",
             visible: "notGuest",
