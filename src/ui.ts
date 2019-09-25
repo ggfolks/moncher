@@ -3,6 +3,7 @@ import {Mutable, Value} from "tfw/core/react"
 import {Action, Spec} from "tfw/ui/model"
 import {LabelStyle} from "tfw/ui/text"
 import {BoxStyle} from "tfw/ui/box"
+import {Insets} from "tfw/ui/style"
 import {ElementConfig, Host} from "tfw/ui/element"
 import {Model, ModelData} from "tfw/ui/model"
 
@@ -58,8 +59,18 @@ export function checkBox (checked :Spec<Value<boolean>>, onClick :Spec<Action>) 
 
 const sausageCorner = 12
 
+type Pos = "top" | "left" | "right" | "bottom" | "center"
+
 export function createDialog (app :App, host :Host, title :string, contents :ElementConfig[],
-                              data :ModelData) :Remover {
+                              data :ModelData, pos :Pos = "center") :Remover {
+  const margin :Insets = [0, 0, 0, 0]
+  switch (pos) {
+  case "top": margin[0] = 20 ; break
+  case "left": margin[3] = 20 ; break
+  case "right": margin[1] = 20 ; break
+  case "bottom": margin[2] = 20 ; break
+  }
+
   const config = box({
     type: "column",
     offPolicy: "stretch",
@@ -74,6 +85,7 @@ export function createDialog (app :App, host :Host, title :string, contents :Ele
     }, ...contents]
   }, {
     padding: 10,
+    margin,
     background: {fill: "$orange", cornerRadius: sausageCorner},
   })
 
@@ -90,7 +102,14 @@ export function createDialog (app :App, host :Host, title :string, contents :Ele
     contents: config,
   }, new Model({...data, closeDialog}))
   disposer.add(() => host.removeRoot(root))
-  root.bindOrigin(app.renderer.size, "center", "center", "center", "center")
+
+  switch (pos) {
+  case    "top": root.bindOrigin(app.renderer.size, "center", "top", "center", "top") ; break
+  case   "left": root.bindOrigin(app.renderer.size, "left", "center", "left", "center") ; break
+  case "bottom": root.bindOrigin(app.renderer.size, "center", "bottom", "center", "bottom") ; break
+  case  "right": root.bindOrigin(app.renderer.size, "right", "center", "right", "center") ; break
+  case "center": root.bindOrigin(app.renderer.size, "center", "center", "center", "center") ; break
+  }
   host.addRoot(root)
 
   return closeDialog
