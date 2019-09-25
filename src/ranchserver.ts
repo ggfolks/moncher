@@ -18,7 +18,6 @@ import {
   PathInfo,
 } from "./ranchdata"
 import {loc2vec, vec2loc} from "./ranchutil"
-import {MONSTER_ACCELERANT} from "./debug"
 
 /** The name of the pathfinder stuffed in global. */
 export const PATHFINDER_GLOBAL = "_ranchPathfinder"
@@ -221,9 +220,12 @@ class EggBehavior extends Behavior {
     // since eggs only have one behavior, go ahead and use the actor's state for behavior state
     switch (data.state) {
     case ActorState.Default:
-      if (--data.hp < 20 * MONSTER_ACCELERANT) {
+      data.hp -= dt
+      if (data.hp < 20) {
+        data.hp = 20
         setState(data, ActorState.ReadyToHatch)
       }
+      data.dirty = true
       break
 
     case ActorState.Hatching: // we are only hatching for a moment
@@ -231,7 +233,7 @@ class EggBehavior extends Behavior {
       break
 
     case ActorState.Hatched:
-      --data.hp // deplete until removed
+      data.hp -= dt // deplete until removed
       data.dirty = true
       break
     }
