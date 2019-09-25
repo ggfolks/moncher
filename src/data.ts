@@ -118,6 +118,7 @@ export class ChannelObject extends DObject {
 export const channelQ = (id :UUID) => ChannelObject.queueAddr(["channels", id], "channelq")
 
 type ChannelReq = {type :"speak", text :string}
+                | {type :"join"}
 
 function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
   log.debug("handleChannelReq", "auth", auth, "req", req)
@@ -126,7 +127,10 @@ function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
     if (auth.isGuest) sendFeedback(obj, auth.id, "Please login if you wish to chat.")
     else obj.addMessage(auth.id, req.text)
     break
-
+  case "join":
+    if (!auth.isGuest) obj.members.add(auth.id)
+    else log.warn("Rejecting channel join by guest", "auth", auth)
+    break
   // case "edit":
   //   const msg = obj.messages.get(req.mid)
   //   if (msg && msg.sender === auth.id) {

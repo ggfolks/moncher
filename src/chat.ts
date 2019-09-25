@@ -123,13 +123,18 @@ export class ChatView implements Disposable {
     const [msgs, unmsgs] = app.client.resolveView(channel.msgsBySent)
     this._onDispose.add(unmsgs)
 
+    // once we have the channel data, if we're not a guest, and haven't joined the channel, do so
+    this._onDispose.add(Value.join3(channel.state, app.notGuest, app.client.serverAuth).onValue(
+      ([cs, ng, id]) => {
+        if (cs === "active" && ng && !channel.members.has(id)) channel.channelq.post({type: "join"})
+      }))
+
     const modelData = {
       msgdata: mapProvider(msgs, msg => ({
         text: msg.map(m => m.text),
         speaker: msg.switchMap(m => app.profiles.profile(m.sender).name),
         photo: msg.switchMap(m => app.profiles.profile(m.sender).photo),
       })),
-      // TODO: sort these by timestamp?
       msgkeys: msgs.map(msgs => latestMsgs(msgs, 6)),
       input: Mutable.local(""),
       sendChat: () => {
