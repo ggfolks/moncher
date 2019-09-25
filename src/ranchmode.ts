@@ -983,6 +983,8 @@ export class RanchMode extends Mode {
 
     const actorInfo = new ActorInfo(id, entityId, cfg)
     this._actors.set(id, actorInfo)
+
+    this.actorAdded(id)
     return actorInfo
   }
 
@@ -1008,6 +1010,11 @@ export class RanchMode extends Mode {
       }
     }
     return undefined
+  }
+
+  protected actorAdded (id :UUID) {
+    // if we arrived via an egg invite, "track" the egg so the camera focuses on it
+    if (this._app.state.inviteId === id) this.trackActor(id)
   }
 
   protected actorTouched (id :UUID, config :ActorConfig, update :ActorUpdate) :void {
