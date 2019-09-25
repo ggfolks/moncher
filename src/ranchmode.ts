@@ -416,22 +416,27 @@ export class RanchMode extends Mode {
     this.onDispose.add(kb.getKeyState(ArrowKey.Down).onEmit(
         p => { if (p) this.adjustCameraTarget(0, ARROW_KEY_FACTOR) } ))
 
-    domain.add({
-      components: {
-        trans: {},
-        obj: {type: "hemisphereLight", color: 0x00aaff, groundColor: 0xffaa00},
-      },
-    })
+    // TODO: a lightlerper that slowly modifies the lighting between the 4 mood-modes
+    const LIGHT_MOODS = ["Sunrise", "Day", "Sunset", "Night"]
+    const mood = LIGHT_MOODS[Math.trunc(Math.random() * LIGHT_MOODS.length)]
+
+    log.debug("Mood lighting: " + mood)
     this._mainLightId = domain.add({
       components: {
         trans: {},
-        obj: {type: "json", url: "ranch/MainLight.json"},
+        obj: {type: "json", url: "ranch/lights/Primary" + mood + ".json"},
       }
     })
     domain.add({
       components: {
         trans: {},
-        obj: {type: "json", url: "ranch/RimLight.json"},
+        obj: {type: "json", url: "ranch/lights/Rim" + mood + ".json"},
+      },
+    })
+    domain.add({
+      components: {
+        trans: {},
+        obj: {type: "json", url: "ranch/lights/Hemisphere" + mood + ".json"},
       },
     })
 

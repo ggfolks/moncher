@@ -1,0 +1,17 @@
+{
+	"metadata": {
+		"version": 4.5,
+		"type": "Object",
+		"generator": "Object3D.toJSON"
+	},
+	"object": {
+		"uuid": "7BC6F11B-F00F-4493-A64D-0D3B53053E01",
+		"type": "HemisphereLight",
+		"name": "HemisphereLight",
+		"layers": 1,
+		"matrix": [1,0,0,0,0,1,0,0,0,0,1,0,0,10,0,1],
+		"color": 43775,
+		"intensity": 1,
+		"groundColor": 16755200
+	}
+}
