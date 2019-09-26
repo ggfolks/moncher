@@ -453,24 +453,24 @@ class WanderBehavior extends MonsterBehavior {
       const monst = getNearestActor(ctx, data, isStandingMonst, RANDOM_MEET_DISTANCE * data.scale)
       if (monst) {
         const existingCircle = ChatCircleBehavior.INSTANCE.isBehaved(monst)
-        const arg :Located = existingCircle
+        const loc :Located = existingCircle
             ? monst.data.info as any as Located
             : copyloc(monst.data)
         // find a new position near THAT
-        const nearCircle = getRandomPositionFrom(ctx, arg, CHAT_CIRCLE_RADIUS) || arg
+        const nearCircle = getRandomPositionFrom(ctx, loc, CHAT_CIRCLE_RADIUS) || loc
         walkTo(ctx, actor, nearCircle)
         // face the center of the circle
-        actor.data.orient = Math.atan2(arg.x - nearCircle.x, arg.z - nearCircle.z)
+        actor.data.orient = Math.atan2(loc.x - nearCircle.x, loc.z - nearCircle.z)
         // put them both into ChatCircle mode
-        ChatCircleBehavior.INSTANCE.init(actor, arg)
+        ChatCircleBehavior.INSTANCE.init(actor, loc)
         if (!existingCircle) {
           // walk the other monster over to a good spot too
-          const near2 = getRandomPositionFrom(ctx, arg, CHAT_CIRCLE_RADIUS)
+          const near2 = getRandomPositionFrom(ctx, loc, CHAT_CIRCLE_RADIUS)
           if (near2) {
             walkTo(ctx, monst, near2)
-            monst.data.orient = Math.atan2(arg.x - near2.x, arg.z - near2.z)
+            monst.data.orient = Math.atan2(loc.x - near2.x, loc.z - near2.z)
           }
-          ChatCircleBehavior.INSTANCE.maybeInit(monst, arg)
+          ChatCircleBehavior.INSTANCE.maybeInit(monst, loc)
         }
         return
       }
