@@ -864,7 +864,7 @@ function stopWalkingOutsideTick (
   if (!actor.data.path) return
 
   // fake like we received a tick, but just for this walk
-  const dt = Date.now() - ctx.obj.lastTick.current
+  const dt = (Date.now() - ctx.obj.lastTick.current) / 1000
   advanceWalk(ctx, actor, dt)
   stopWalking(ctx, actor)
 }
