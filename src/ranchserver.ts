@@ -273,7 +273,7 @@ class EggBehavior extends Behavior {
 
   touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
     const data = actor.data
-    if ((data.owner === ctx.auth.id) && (data.state === ActorState.ReadyToHatch)) {
+    if (data.state === ActorState.ReadyToHatch) {
       setState(data, ActorState.Hatching)
       // spawn monster with the same owner at the same location
       addActor(ctx, data.owner, actor.config.spawn!, data /*Located*/, HatchingBehavior.INSTANCE)
