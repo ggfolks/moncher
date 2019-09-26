@@ -1224,6 +1224,7 @@ export class RanchMode extends Mode {
       break
 
     case UiState.Default:
+    case UiState.Debug:
       // do panning an zooming
       switch (this._hand.pointers.size) {
       case 1: // mouse panning
