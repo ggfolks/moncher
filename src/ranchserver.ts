@@ -3,7 +3,7 @@ import {log} from "tfw/core/util"
 import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
 import {Auth} from "tfw/data/data"
 import {Vector3} from "three"
-import {RanchObject, RanchReq} from "./data"
+import {RanchObject, RanchReq, ProfileType, profileQ, channelQ} from "./data"
 import {MonsterDb} from "./monsterdb"
 import {ZonedPathfinding} from "./zonedpathfinding"
 import {
@@ -65,6 +65,10 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
   switch (req.type) {
   case "touch":
     touchActor(ctx, req.id, req.arg)
+    break
+
+  case "setActorName":
+    setActorName(ctx, auth.id, req.id, req.name)
     break
 
   case "tick":
@@ -615,7 +619,7 @@ function newActorData (
  * Publish an actor update derived from the specified ActorData. */
 function actorDataToUpdate (data :ActorData) :ActorUpdate {
   delete data.dirty
-  const {x, y, z, scale, orient, state, instant, owner, path} = data
+  const {x, y, z, scale, orient, state, instant, owner, name, path} = data
   return {
     x, y, z,
     scale,
@@ -623,6 +627,7 @@ function actorDataToUpdate (data :ActorData) :ActorUpdate {
     state,
     instant,
     owner,
+    name,
     path,
   }
 }
@@ -714,6 +719,32 @@ function touchActor (
   if (beh.touch(ctx, actor, arg)) {
     ctx.obj.actors.set(actor.id, actorDataToUpdate(actor.data))
     ctx.obj.actorData.set(actor.id, actor.data)
+  }
+}
+
+// hackity hack hack
+function actorPhotoURL (config :ActorConfig) {
+  return `https://demo1.tfw.dev/moncher/monsters/photo/${config.photo}`
+}
+
+function setActorName (ctx :RanchContext, ownerId :UUID, id :UUID, name :string) {
+  const actor = getActor(ctx, id)
+  if (!actor) log.warn("Client asked to name missing actor?", "id", id)
+  else if (actor.data.owner !== ownerId) log.warn(
+    "Non-owner asked to name actor?", "asker", ownerId, "id", id)
+  else {
+    log.info("Renaming actor", "id", id, "name", name)
+    const oname = actor.data.name
+    actor.data.name = name
+    actor.data.dirty = true
+    // TODO: push an immediate actor update?
+
+    // update this monster's profile
+    if (name !== oname) ctx.obj.source.post(profileQ(id), {
+      type: "update", name, photo: actorPhotoURL(actor.config), ptype: ProfileType.npc})
+    // if this is the first time the name is set, send a welcome message to the channel
+    if (!oname) ctx.obj.source.post(
+      channelQ(ctx.obj.key), {type: "post", sender: id, text: "Hi everybody!"})
   }
 }
 

@@ -77,6 +77,7 @@ export interface ActorConfig {
   model :ActorModel
   spawn? :ActorConfig
   color? :number
+  photo? :string
 }
 
 export const enum ActorState {
@@ -125,7 +126,8 @@ export interface ActorUpdate extends Located {
   orient :number
   state :ActorState
   instant :ActorInstant // TODO: WILL BE REMOVED ? Renamed?
-  owner: UUID
+  owner :UUID
+  name? :string
   path? :PathInfo
 }
 
@@ -141,7 +143,6 @@ export function blankActorUpdate () :ActorUpdate {
     owner: UUID0,
     state: ActorState.Default,
     instant: ActorInstant.None,
-    path: undefined,
   }
 }
 
@@ -163,6 +164,7 @@ export interface ActorData extends Located {
   /** Hunger... not applicable for some actors. Sigh. Maybe get more entity-like on the server? */
   hunger :number
   owner :UUID
+  name? :string
   state :ActorState
   scale :number
   path? :PathInfo

@@ -10,6 +10,11 @@ const guestName = (id :UUID) => `Guest ${id.substring(0, 4)}`
 const guestPhoto = (id :UUID) => "ui/DefaultAvatar.png"
 const ranchName = (id :UUID) => `Ranch ${id.substring(0, 4)}`
 
+// these must correspond to ProfileType in the chatapp
+export enum ProfileType { pending = 0, person, game, channel, npc }
+
+type ProfileReq = {type :"update", name :string, photo :string, ptype? :ProfileType}
+
 @dobject
 export class ProfileObject extends DObject {
 
@@ -20,10 +25,26 @@ export class ProfileObject extends DObject {
   photo = this.value(guestPhoto(this.key))
 
   @dvalue("number", true)
-  type = this.value(0)
+  type = this.value(ProfileType.pending)
+
+  @dqueue(handleProfileReq)
+  profileq = this.queue<ProfileReq>()
 
   canSubscribe (auth :Auth) { return true }
   canWrite (prop :string, auth :Auth) { return auth.id === this.key || super.canWrite(prop, auth) }
+}
+
+export const profileQ = (id :UUID) => ProfileObject.queueAddr(["profiles", id], "profileq")
+
+function handleProfileReq (obj :ProfileObject, req :ProfileReq, auth :Auth) {
+  if (auth.isSystem || auth.id === obj.key) {
+    switch (req.type) {
+    case "update":
+      obj.name.update(req.name)
+      obj.photo.update(req.photo)
+      if (req.ptype) obj.type.update(req.ptype)
+    }
+  } else log.warn("Rejecting profile update from non-owner", "obj", obj, "req", req, "auth", auth)
 }
 
 @dobject
@@ -74,6 +95,8 @@ export type Message = {
   sender :UUID
   text :string
   sent :Timestamp
+  image? :string
+  link? :string
   edited? :Timestamp
 }
 
@@ -107,8 +130,10 @@ export class ChannelObject extends DObject {
   @dqueue(handleChannelMetaMsg)
   metaq = this.queue<MetaMsg>()
 
-  addMessage (sender :UUID, text :string) {
-    const mid = uuidv1(), msg = {sender, text, sent: Timestamp.now()}
+  addMessage (sender :UUID, text :string, image? :string, link? :string) {
+    const mid = uuidv1(), msg :Message = {sender, text, sent: Timestamp.now()}
+    if (image) msg.image = image
+    if (link) msg.link = link
     this.msgs.create(mid, msg)
     this.latestMsg.update(msg)
   }
@@ -119,6 +144,7 @@ export class ChannelObject extends DObject {
 export const channelQ = (id :UUID) => ChannelObject.queueAddr(["channels", id], "channelq")
 
 type ChannelReq = {type :"speak", text :string}
+                | {type :"post", sender :UUID, text :string, image? :string, link? :string}
                 | {type :"join"}
 
 function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
@@ -128,6 +154,9 @@ function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
     if (auth.isGuest) sendFeedback(obj, auth.id, "Please login if you wish to chat.")
     else obj.addMessage(auth.id, req.text)
     break
+  case "post":
+    if (auth.isSystem) obj.addMessage(req.sender, req.text, req.image, req.link)
+    else log.warn("Rejecting channel post", "auth", auth, "req", req)
   case "join":
     if (!auth.isGuest) obj.members.add(auth.id)
     else log.warn("Rejecting channel join by guest", "auth", auth)
@@ -216,6 +245,8 @@ export type RanchReq =
     {type :"dropEgg", x :number, y :number, z :number} |
     /** Drop food at the specified location. */
     {type :"dropFood", x :number, y :number, z :number} |
+    /** Set the name of an actor. */
+    {type :"setActorName", id :UUID, name :string} |
     /** Set the name of the ranch. (TEMP?) */
     {type :"setName", name :string} |
     /** Reset the ranch to a starting state (DEBUG?) */

@@ -23,7 +23,7 @@ import {Body} from "cannon"
 import {Clock} from "tfw/core/clock"
 import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
-import {Value} from "tfw/core/react"
+import {Mutable, Value} from "tfw/core/react"
 import {
   Noop,
   PMap,
@@ -82,8 +82,8 @@ import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
 import {RanchObject, RanchReq} from "./data"
-import {InstallAppView} from "./ui"
-import {showEggInvite, showEggAuth} from "./egg"
+import {InstallAppView, createDialog, label, button, textBox} from "./ui"
+import {showEggInvite, showEggAuth, generateName} from "./egg"
 
 class ActorInfo {
 
@@ -544,6 +544,25 @@ export class RanchMode extends Mode {
     this.updateActorSprite(actorInfo, update)
   }
 
+  protected showNameEgg (actorId :UUID, currentName? :string) {
+    const name = Mutable.local(currentName || generateName())
+    const dispose = createDialog(this._app, this._host, "Name your new little buddy!", [
+      label(Value.constant("What do you want to call your new friend?")),
+      textBox("name", "putANameOnIt"),
+      label(Value.constant("Don't think too hard, you can change it later.")),
+      button(Value.constant("Make it so!"), "putANameOnIt")
+    ], {
+      name,
+      putANameOnIt: () => {
+        const newName = name.current.trim()
+        if (newName.length > 0) {
+          this._ranchObj.ranchq.post({type: "setActorName", id: actorId, name: newName})
+          dispose()
+        }
+      }
+    }, "top")
+  }
+
   /**
    * Effect updates received from the RanchModel. */
   protected updateActorSprite (actorInfo :ActorInfo, update :ActorUpdate) :void {
@@ -985,7 +1004,7 @@ export class RanchMode extends Mode {
     const actorInfo = new ActorInfo(id, entityId, cfg)
     this._actors.set(id, actorInfo)
 
-    this.actorAdded(id)
+    this.actorAdded(id, update)
     return actorInfo
   }
 
@@ -1013,9 +1032,15 @@ export class RanchMode extends Mode {
     return undefined
   }
 
-  protected actorAdded (id :UUID) {
+  protected actorAdded (id :UUID, update :ActorUpdate) {
     // if we arrived via an egg invite, "track" the egg so the camera focuses on it
     if (this._app.state.inviteId === id) this.trackActor(id)
+
+    // if we see a Hatching monster added and we're the owner, pop up a name it dialog
+    if (update.state === ActorState.Hatching &&
+        update.owner === this._app.client.serverAuth.current) {
+      this.showNameEgg(id, update.name)
+    }
   }
 
   protected actorTouched (id :UUID, config :ActorConfig, update :ActorUpdate) :void {
