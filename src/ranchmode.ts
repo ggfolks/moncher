@@ -876,7 +876,7 @@ export class RanchMode extends Mode {
             default: {condition: "!eatCond"},
           }
         }
-        anyTransitions.eat = {condition: "eatCond"}
+        defaultTransitions.eat = {condition: "eatCond"}
         graphCfg.controller.eatCond = "isEating"
       } // end: eat
 
