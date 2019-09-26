@@ -562,6 +562,7 @@ export class RanchMode extends Mode {
         }
       }
     }, "top")
+    this.trackActor(actorId)
   }
 
   /**
