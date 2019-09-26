@@ -156,6 +156,7 @@ export class Hud
     case UiState.Debug:
       contents = {
         type: "column",
+        offPolicy: "stretch",
         constraints: {stretchX: true, stretchY: false},
         gap: 5,
         contents: [{
