@@ -1,4 +1,5 @@
 import {Disposable, Disposer} from "tfw/core/util"
+import {Mutable, Value} from "tfw/core/react"
 import {MutableList, RList} from "tfw/core/rcollect"
 import {UUID, UUID0} from "tfw/core/uuid"
 
@@ -34,11 +35,15 @@ export type Feedback = {
 export class UserStore implements Disposable {
   private readonly _onDispose = new Disposer()
   private readonly _feedback = MutableList.local<Feedback>()
-  private _user :UserObject|undefined
+  private _user = Mutable.local<UserObject|undefined>(undefined)
 
   get user () :UserObject {
-    if (this._user) return this._user
+    if (this._user.current) return this._user.current
     throw new Error(`UserObject not ready`)
+  }
+
+  get userValue () :Value<UserObject|undefined> {
+    return this._user
   }
 
   get feedback () :RList<Feedback> { return this._feedback }
@@ -48,7 +53,7 @@ export class UserStore implements Disposable {
       this._onDispose.dispose()
       if (id !== UUID0) {
         const [user, unlisten] = app.client.resolve(["users", id], UserObject)
-        this._user = user
+        this._user.update(user)
         this._onDispose.add(unlisten)
         this._onDispose.add(user.feedback.onChange(msg => {
           console.log(`Feedback: ${msg}`)

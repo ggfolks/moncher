@@ -171,12 +171,18 @@ export class InstallAppView implements Disposable {
       openAppPage: () => window.open(getAppURL())
     }
 
+    // only show get the app if we're not a guest but we have no notification tokens (which either
+    // means we've never installed the app or we refused to allow it to send us notifications; so
+    // this is not perfect, but it'll have to do for now)
+    const tokens = app.user.userValue.switchMap(
+      user => user ? user.tokens.sizeValue : Value.constant(0))
+    const visible = Value.join2(app.notGuest, tokens).map(([ng, toks]) => ng && toks === 0)
     const root = app.ui.createRoot({
       type: "root",
       scale: app.renderer.scale,
       autoSize: true,
       contents: installAppUI,
-      visible: app.notGuest,
+      visible,
     }, new Model(modelData))
 
     root.bindOrigin(app.renderer.size, "left", "top", "left", "top")
