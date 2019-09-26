@@ -18,7 +18,7 @@ import {
   Located,
   PathInfo,
 } from "./ranchdata"
-import {loc2vec, vec2loc} from "./ranchutil"
+import {copyloc, loc2vec, locsEqual, vec2loc} from "./ranchutil"
 
 /** The name of the pathfinder stuffed in global. */
 export const PATHFINDER_GLOBAL = "_ranchPathfinder"
@@ -32,6 +32,7 @@ const CLOSE_EAT_DISTANCE = .1
 const NAP_NEAR_FOOD_DISTANCE = 3
 const MAX_WANDER_DISTANCE = 12
 const RANDOM_MEET_DISTANCE = 5 // when one monster is walking past another, they might meet-up!
+const CHAT_CIRCLE_RADIUS = 2
 
 // walk speed variations
 const WALK_TO_FOOD_SPEED = 1.4
@@ -376,6 +377,7 @@ class ChatCircleBehavior extends MonsterBehavior {
 
     if (arg) {
       actor.data.info = arg
+//      log.info("Placed monster in chat circle", "arg", arg)
     }
   }
 
@@ -395,17 +397,35 @@ class ChatCircleBehavior extends MonsterBehavior {
     bd.counter += dt
     if (bd.counter > CHAT_CIRCLE_MAX_DURATION) {
       // break it up!
-      // find all monsters nearby in this "Same circle" (TODO: same circle?)
-      // TODO: or just do a hacky distance check. But I think we could possibly have a behavior
-      // data arg that gives each chat circle a custom id or something...
-      visitActors(ctx, actor => {
-        if (this.isBehaved(actor)) {
-          // it's ok if a chatter is still walking, they'll finish the walk in Wander
-          WanderBehavior.INSTANCE.init(actor)
-        }
-      })
+      this.breakCircle(ctx, data.info as any as Located, true)
     }
     data.dirty = true // oh yeah, you like it when I mark dirty, don't you?
+  }
+
+  touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
+    const circleArg = actor.data.info as any as Located
+    // let's just leave the chat circle
+    WanderBehavior.INSTANCE.init(actor)
+    // if there's only one other actor in the circle, break-it-up?
+    this.breakCircle(ctx, circleArg)
+    return true
+  }
+
+  protected breakCircle (ctx :RanchContext, circleArg :Located, force? :boolean) :void {
+    const isInCircle :(actor :Actor) => boolean =
+        actor => this.isBehaved(actor) && locsEqual(circleArg, actor.data.info as any as Located)
+    if (!force) {
+      let count = 0
+      visitActors(ctx, actor => {
+        if (isInCircle(actor)) count += 1
+      })
+      if (count === 0 || count > 1) return
+    }
+    visitActors(ctx, actor => {
+      if (isInCircle(actor)) {
+        WanderBehavior.INSTANCE.init(actor)
+      }
+    })
   }
 }
 
@@ -432,24 +452,27 @@ class WanderBehavior extends MonsterBehavior {
             ChatCircleBehavior.INSTANCE.isBehaved(other))
       const monst = getNearestActor(ctx, data, isStandingMonst, RANDOM_MEET_DISTANCE * data.scale)
       if (monst) {
-        // TODO: circle up?
-        const nearMonst = getRandomPositionFrom(ctx, monst.data,
-            RANDOM_MEET_DISTANCE * data.scale)
-        if (nearMonst) {
-          const existingCircle = ChatCircleBehavior.INSTANCE.isBehaved(monst)
-          const arg :Located = existingCircle
-              ? monst.data.info as any as Located
-              : nearMonst
-          // find a new position near THAT
-          const nearCircle = getRandomPositionFrom(ctx, arg, RANDOM_MEET_DISTANCE / 2) || nearMonst
-          walkTo(ctx, actor, nearCircle)
-          // face the center of the circle
-          actor.data.orient = Math.atan2(arg.x - nearCircle.x, arg.z - nearCircle.z)
-          // put them both into ChatCircle mode
-          ChatCircleBehavior.INSTANCE.init(actor, arg)
+        const existingCircle = ChatCircleBehavior.INSTANCE.isBehaved(monst)
+        const arg :Located = existingCircle
+            ? monst.data.info as any as Located
+            : copyloc(monst.data)
+        // find a new position near THAT
+        const nearCircle = getRandomPositionFrom(ctx, arg, CHAT_CIRCLE_RADIUS) || arg
+        walkTo(ctx, actor, nearCircle)
+        // face the center of the circle
+        actor.data.orient = Math.atan2(arg.x - nearCircle.x, arg.z - nearCircle.z)
+        // put them both into ChatCircle mode
+        ChatCircleBehavior.INSTANCE.init(actor, arg)
+        if (!existingCircle) {
+          // walk the other monster over to a good spot too
+          const near2 = getRandomPositionFrom(ctx, arg, CHAT_CIRCLE_RADIUS)
+          if (near2) {
+            walkTo(ctx, monst, near2)
+            monst.data.orient = Math.atan2(arg.x - near2.x, arg.z - near2.z)
+          }
           ChatCircleBehavior.INSTANCE.maybeInit(monst, arg)
-          return
         }
+        return
       }
     }
 
@@ -753,6 +776,8 @@ function setState (data :ActorData, state :ActorState) :void {
   data.dirty = true
 }
 
+/**
+ * Visit all actors on the ranch. */
 function visitActors (ctx :RanchContext, visitor :(actor :Actor) => void) :void {
   ctx.obj.actorData.forEach((data :ActorData, id :UUID) => {
     const config = ctx.obj.actorConfigs.get(id)
@@ -765,6 +790,9 @@ function visitActors (ctx :RanchContext, visitor :(actor :Actor) => void) :void 
   })
 }
 
+/**
+ * Find the nearest actor that satisfies the predicate. Note that it checks all actors,
+ * so you may need to exclude "yourself". */
 function getNearestActor (
   ctx :RanchContext,
   loc :Located,

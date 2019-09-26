@@ -13,3 +13,14 @@ export function vec2loc (vec :Vector3, into? :Located) :Located {
   return into
 }
 
+export function copyloc (loc :Located, into? :Located) :Located {
+  if (!into) into = <Located>{}
+  into.x = loc.x
+  into.y = loc.y
+  into.z = loc.z
+  return into
+}
+
+export function locsEqual (loc1 :Located, loc2 :Located) :boolean {
+  return loc1.x === loc2.x && loc1.y === loc2.y && loc1.z === loc2.z
+}
