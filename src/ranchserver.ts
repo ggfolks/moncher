@@ -421,6 +421,7 @@ class WanderBehavior extends MonsterBehavior {
     // see if we're passing near another monster
     if (Math.random() < .1) {
       const isStandingMonst = (other :Actor) :boolean =>
+          (other.data !== actor.data) && // omit self
           ActorKindAttributes.isMonster(other.config.kind) &&
           !isWalking(other.data) &&
           (WanderBehavior.INSTANCE.isBehaved(other) ||
