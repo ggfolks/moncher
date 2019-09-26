@@ -46,7 +46,7 @@ const STARVING_HUNGER = 1.5 * 24 * 60 * 60 // 1.5 days
 const EATING_DURATION = 5
 const HATCHING_DURATION = 6
 const NORMAL_SLEEP_DURATION = 5 * 60
-const CHAT_CIRCLE_MAX_DURATION = 30 //30 * 60 // 30 minutes
+const CHAT_CIRCLE_MAX_DURATION = 2 * 60 // 2 minutes
 
 /** How often do monsters act happy together? */
 const CHAT_BOUNCE_INTERVAL = 4.8
