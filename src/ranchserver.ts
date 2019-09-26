@@ -68,6 +68,10 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
     break
 
   case "tick":
+//    if (!auth.isSystem) {
+//      log.warn("Rejecting tick from client.")
+//      return
+//    }
     const now = Date.now()
     const diff = now - obj.lastTick.current
     if (diff >= 1000) {
@@ -184,6 +188,7 @@ abstract class Behavior {
    * Initialize this actor's when it starts using this Behavior. */
   init (actor :Actor, arg? :any) :void {
     const data :BehaviorData = {}
+    actor.data.info = undefined // clear out any previous "BehaviorInfo"
     this.initData(actor, data, arg)
     data.code = this.code
     actor.data.data = data
@@ -364,6 +369,10 @@ class ChatCircleBehavior extends MonsterBehavior {
     data.bounce = 0
     data.counter = 0
     setState(actor.data, ActorState.RandomMeet)
+
+    if (arg) {
+      actor.data.info = arg
+    }
   }
 
   tick (ctx :RanchContext, actor :Actor, dt :number) :void {
@@ -422,10 +431,18 @@ class WanderBehavior extends MonsterBehavior {
         const nearMonst = getRandomPositionFrom(ctx, monst.data,
             RANDOM_MEET_DISTANCE * data.scale)
         if (nearMonst) {
-          walkTo(ctx, actor, nearMonst)
+          const existingCircle = ChatCircleBehavior.INSTANCE.isBehaved(monst)
+          const arg :Located = existingCircle
+              ? monst.data.info as any as Located
+              : nearMonst
+          // find a new position near THAT
+          const nearCircle = getRandomPositionFrom(ctx, arg, RANDOM_MEET_DISTANCE / 2) || nearMonst
+          walkTo(ctx, actor, nearCircle)
+          // face the center of the circle
+          actor.data.orient = Math.atan2(arg.x - nearCircle.x, arg.z - nearCircle.z)
           // put them both into ChatCircle mode
-          ChatCircleBehavior.INSTANCE.init(actor)
-          ChatCircleBehavior.INSTANCE.maybeInit(monst)
+          ChatCircleBehavior.INSTANCE.init(actor, arg)
+          ChatCircleBehavior.INSTANCE.maybeInit(monst, arg)
           return
         }
       }
@@ -792,6 +809,8 @@ function stopWalkingOutsideTick (
   stopWalking(ctx, actor)
 }
 
+/**
+ * Walk to a location. */
 function walkTo (
   ctx :RanchContext,
   actor :Actor,

@@ -1,3 +1,4 @@
+import {Record} from "tfw/core/data"
 import {UUID, UUID0} from "tfw/core/uuid"
 import {PMap} from "tfw/core/util"
 
@@ -147,6 +148,9 @@ export function blankActorUpdate () :ActorUpdate {
 /** The behavior data for an actor. */
 export type BehaviorData = PMap<number>
 
+/** Extended information about a behavior. Oh god. */
+export type BehaviorInfo = Record
+
 /**
  * An actor's "private" "server-side" data. */
 export interface ActorData extends Located {
@@ -167,6 +171,9 @@ export interface ActorData extends Located {
 
   /** Data related to the current behavior. */
   data :BehaviorData
+
+  /** Unchanging data regarding the behavior. */
+  info? :BehaviorInfo
 
   /** Has something changed such that we need to republish this object (and an ActorUpdate). */
   dirty? :boolean
