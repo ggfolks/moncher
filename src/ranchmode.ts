@@ -82,7 +82,7 @@ import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
 import {RanchObject, RanchReq} from "./data"
-import {InstallAppView, createDialog, label, button, textBox} from "./ui"
+import {InstallAppView, OccupantsView, createDialog, label, button, textBox} from "./ui"
 import {showEggInvite, showEggAuth, generateName} from "./egg"
 
 class ActorInfo {
@@ -205,6 +205,7 @@ export class RanchMode extends Mode {
 
     this.onDispose.add(new ChatView(_app, this._host))
     this.onDispose.add(new InstallAppView(_app, this._host))
+    this.onDispose.add(new OccupantsView(_app, this._host))
 
     this.onDispose.add(Keyboard.instance.getKeyState(112 /* F1 */).onEmit(
         v => this.showNavMesh(v)))

@@ -1,12 +1,14 @@
 import {Disposable, Disposer, Remover} from "tfw/core/util"
+import {UUID} from "tfw/core/uuid"
 import {Mutable, Value} from "tfw/core/react"
 import {Action, Spec} from "tfw/ui/model"
 import {LabelStyle} from "tfw/ui/text"
 import {BoxStyle} from "tfw/ui/box"
 import {Insets} from "tfw/ui/style"
 import {ElementConfig, Host} from "tfw/ui/element"
-import {Model, ModelData} from "tfw/ui/model"
+import {Model, ModelData, makeProvider} from "tfw/ui/model"
 
+import {RanchObject} from "./data"
 import {App} from "./app"
 
 function mergeExtra<T extends Object> (config :T, extra? :Object) :T {
@@ -115,6 +117,34 @@ export function createDialog (app :App, host :Host, title :string, contents :Ele
   return closeDialog
 }
 
+// from https://stackoverflow.com/questions/21741841
+function getMobileOperatingSystem () {
+  const userAgent = navigator.userAgent
+  // Windows Phone must come first because its UA also contains "Android"
+  if (/windows phone/i.test(userAgent)) return "windows_phone"
+  if (/android/i.test(userAgent)) return "android"
+  // iOS detection from: https://stackoverflow.com/a/9039885/177710
+  if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) return "ios"
+  return "unknown"
+}
+
+function getAppURL () {
+  switch (getMobileOperatingSystem()) {
+  case "android": return "https://play.google.com/apps/testing/dev.tfw.chatapp"
+  case "ios": return "https://tfw.dev/app.html" // TODO: real URL when we have one
+  default: return "https://tfw.dev/app.html"
+  }
+}
+
+function showGetApp (app :App) :Value<boolean> {
+  // only show get the app if we're not a guest but we have no notification tokens (which either
+  // means we've never installed the app or we refused to allow it to send us notifications; so this
+  // is not perfect, but it'll have to do for now)
+  const tokens = app.user.userValue.switchMap(
+    user => user ? user.tokens.sizeValue : Value.constant(0))
+  return Value.join2(app.notGuest, tokens).map(([ng, toks]) => ng && toks === 0)
+}
+
 const installAppUI = {
   type: "box",
   style: {
@@ -144,47 +174,67 @@ const installAppUI = {
   },
 }
 
-// from https://stackoverflow.com/questions/21741841
-function getMobileOperatingSystem () {
-  const userAgent = navigator.userAgent
-  // Windows Phone must come first because its UA also contains "Android"
-  if (/windows phone/i.test(userAgent)) return "windows_phone"
-  if (/android/i.test(userAgent)) return "android"
-  // iOS detection from: https://stackoverflow.com/a/9039885/177710
-  if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) return "ios"
-  return "unknown"
-}
-
-function getAppURL () {
-  switch (getMobileOperatingSystem()) {
-  case "android": return "https://play.google.com/apps/testing/dev.tfw.chatapp"
-  case "ios": return "https://tfw.dev/app.html" // TODO: real URL when we have one
-  default: return "https://tfw.dev/app.html"
-  }
-}
-
 export class InstallAppView implements Disposable {
   private _onDispose = new Disposer()
 
   constructor (readonly app :App, host :Host) {
-    const modelData = {
-      openAppPage: () => window.open(getAppURL())
-    }
-
-    // only show get the app if we're not a guest but we have no notification tokens (which either
-    // means we've never installed the app or we refused to allow it to send us notifications; so
-    // this is not perfect, but it'll have to do for now)
-    const tokens = app.user.userValue.switchMap(
-      user => user ? user.tokens.sizeValue : Value.constant(0))
-    const visible = Value.join2(app.notGuest, tokens).map(([ng, toks]) => ng && toks === 0)
     const root = app.ui.createRoot({
       type: "root",
       scale: app.renderer.scale,
       autoSize: true,
       contents: installAppUI,
-      visible,
-    }, new Model(modelData))
+      visible: showGetApp(app),
+    }, new Model({
+      openAppPage: () => window.open(getAppURL())
+    }))
+    root.bindOrigin(app.renderer.size, "left", "top", "left", "top")
+    host.addRoot(root)
+    this._onDispose.add(() => host.removeRoot(root))
+  }
 
+  dispose () {
+    this._onDispose.dispose()
+  }
+}
+
+const occupantsUI = {
+  type: "box",
+  style: {
+    margin: 5,
+  },
+  contents: {
+    type: "hlist",
+    gap: 5,
+    keys: "occkeys",
+    data: "occdata",
+    element: {
+      // TODO: tooltip with person's name...
+      type: "image",
+      image: "photo",
+      height: 20,
+    },
+  },
+}
+
+export class OccupantsView implements Disposable {
+  private _onDispose = new Disposer()
+
+  constructor (readonly app :App, host :Host) {
+    const [ranch, unranch] = app.client.resolve(["ranches", app.state.ranchId], RanchObject)
+    this._onDispose.add(unranch)
+    const root = app.ui.createRoot({
+      type: "root",
+      scale: app.renderer.scale,
+      autoSize: true,
+      contents: occupantsUI,
+      visible: showGetApp(app).map(s => !s),
+    }, new Model({
+      occkeys: ranch.occupants.map(Array.from),
+      occdata: makeProvider<UUID>(key => {
+        const profile = app.profiles.profile(key)
+        return {name: profile.name, photo: profile.photo}
+      }),
+    }))
     root.bindOrigin(app.renderer.size, "left", "top", "left", "top")
     host.addRoot(root)
     this._onDispose.add(() => host.removeRoot(root))
