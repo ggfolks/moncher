@@ -81,6 +81,7 @@ import {loc2vec} from "./ranchutil"
 import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
+import {LightLerper} from "./lightlerper"
 import {RanchObject, RanchReq} from "./data"
 import {InstallAppView, OccupantsView, createDialog, label, button, textBox} from "./ui"
 import {showEggInvite, showEggAuth, generateName} from "./egg"
@@ -425,28 +426,30 @@ export class RanchMode extends Mode {
     this.onDispose.add(kb.getKeyState(ArrowKey.Down).onEmit(
         p => { if (p) this.adjustCameraTarget(0, ARROW_KEY_FACTOR) } ))
 
-    // TODO: a lightlerper that slowly modifies the lighting between the 4 mood-modes
-    const LIGHT_MOODS = ["Sunrise", "Day", "Sunset", "Night"]
-    const mood = LIGHT_MOODS[Math.trunc(Math.random() * LIGHT_MOODS.length)]
-
-    log.debug("Mood lighting: " + mood)
     this._mainLightId = domain.add({
       components: {
         trans: {},
-        obj: {type: "json", url: "ranch/lights/Primary" + mood + ".json",
-              onLoad: makeLightCastShadows},
+        obj: {type: "json", url: "ranch/lights/PrimaryDay.json",
+              onLoad: (light :Object3D) => {
+                makeLightCastShadows(light)
+                this.configureLightLerper(light, "Primary")
+              }}
       }
     })
     domain.add({
       components: {
         trans: {},
-        obj: {type: "json", url: "ranch/lights/Rim" + mood + ".json"},
+        obj: {type: "json", url: "ranch/lights/RimDay.json",
+              onLoad: (light: Object3D) => {this.configureLightLerper(light, "Rim")}
+        },
       },
     })
     domain.add({
       components: {
         trans: {},
-        obj: {type: "json", url: "ranch/lights/Hemisphere" + mood + ".json"},
+        obj: {type: "json", url: "ranch/lights/HemisphereDay.json",
+              onLoad: (light: Object3D) => {this.configureLightLerper(light, "Hemisphere")}
+        },
       },
     })
 //    domain.add({
@@ -476,6 +479,16 @@ export class RanchMode extends Mode {
     this._emojis.set(ActorState.RandomMeet, makeEmoji(tl, "PalIcon.png"))
   }
 
+  protected configureLightLerper (light :Object3D, name :string) :void {
+    if (!(light instanceof Light)) {
+      log.warn("Not a liiight?")
+      return
+    }
+    const LIGHT_MOODS = ["Day", "Sunset", "Night", "Sunrise"]
+    this._lightLerpers.push(new LightLerper(light, 5,
+      ...LIGHT_MOODS.map(mood => "ranch/lights/" + name + mood + ".json")))
+  }
+
   render (clock :Clock) :void {
     this._hand.update()
     this._scenesys.updateHovers(this._webGlRenderer)
@@ -484,6 +497,7 @@ export class RanchMode extends Mode {
     this._pathsys.update(clock)
     this._animsys.update(clock)
     this._camControl.update(clock)
+    this._lightLerpers.forEach(ll => ll.update(clock))
     this._scenesys.update()
     this._scenesys.render(this._webGlRenderer)
   }
@@ -1163,6 +1177,8 @@ export class RanchMode extends Mode {
 
   /** Handles our camera positioning. */
   protected _camControl! :Lakitu
+
+  protected readonly _lightLerpers :LightLerper[] = []
 
   protected _uiState :UiState = UiState.Default
 
