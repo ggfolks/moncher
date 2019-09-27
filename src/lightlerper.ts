@@ -33,6 +33,11 @@ export class LightLerper {
     light.position.lerpVectors(this._vectors[slice], this._vectors[next], perc)
     light.quaternion.copy(this._quats[slice])
     light.quaternion.slerp(this._quats[next], perc)
+
+    light.color.r = this._reds[slice] + ((this._reds[next] - this._reds[slice]) * perc)
+    light.color.g = this._greens[slice] + ((this._greens[next] - this._greens[slice]) * perc)
+    light.color.b = this._blues[slice] + ((this._blues[next] - this._blues[slice]) * perc)
+    light.updateMatrixWorld()
   }
 
   protected configureSlice (light :Object3D, index :number) :void {
@@ -42,6 +47,9 @@ export class LightLerper {
     }
     this._quats[index] = light.quaternion
     this._vectors[index] = light.position
+    this._reds[index] = light.color.r
+    this._greens[index] = light.color.g
+    this._blues[index] = light.color.b
     this._intensities[index] = light.intensity
 
     this._slicesLoaded++
