@@ -56,6 +56,12 @@ export class UserObject extends DObject {
   @dset("string", true)
   tokens = this.set<string>()
 
+  @dset("uuid", true)
+  channels = this.set<UUID>()
+
+  @dmap("uuid", "size8", true)
+  friends = this.map<UUID, number>()
+
   @dvalue("string")
   feedback = this.value<string>("")
 
@@ -73,6 +79,7 @@ function sendFeedback (from :DObject, uid :UUID, msg :string) {
 }
 
 type UserReq = {type :"enter", ranch :UUID}
+             | {type: "joined", channelId :UUID}
              | {type: "feedback", msg :string}
 
 // function sendJoined (obj :UserObject, ranch :UUID) {
@@ -84,6 +91,9 @@ function handleUserReq (obj :UserObject, req :UserReq, auth :Auth) {
   switch (req.type) {
   case "enter":
     if (auth.isSystem) obj.ranch.update(req.ranch)
+    break
+  case "joined":
+    if (auth.isSystem) obj.channels.add(req.channelId)
     break
   case "feedback":
     if (auth.isSystem) obj.feedback.update(req.msg)
@@ -158,8 +168,11 @@ function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
     if (auth.isSystem) obj.addMessage(req.sender, req.text, req.image, req.link)
     else log.warn("Rejecting channel post", "auth", auth, "req", req)
   case "join":
-    if (!auth.isGuest) obj.members.add(auth.id)
-    else log.warn("Rejecting channel join by guest", "auth", auth)
+    if (auth.isGuest) log.warn("Rejecting channel join by guest", "auth", auth)
+    else {
+      obj.members.add(auth.id)
+      obj.source.post(userQ(auth.id), {type: "joined", channelId: obj.key})
+    }
     break
   // case "edit":
   //   const msg = obj.messages.get(req.mid)
