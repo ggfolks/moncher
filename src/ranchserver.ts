@@ -782,8 +782,8 @@ function visitActors (ctx :RanchContext, visitor :(actor :Actor) => void) :void 
       log.warn("Missing actor config?", "id", id)
       return
     }
-    const oActor :Actor = {id, config, data}
-    visitor(oActor)
+    const actor :Actor = {id, config, data}
+    visitor(actor)
   })
 }
 
