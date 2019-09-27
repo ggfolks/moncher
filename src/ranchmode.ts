@@ -150,7 +150,7 @@ class PathSystem extends System {
     })
   }
 
-  updateOrient (id :ID, orient :number) {
+  protected updateOrient (id :ID, orient :number) {
     this.trans.updateQuaternion(id, scratchQ.setFromAxisAngle(unitY, orient))
   }
 }
@@ -432,23 +432,23 @@ export class RanchMode extends Mode {
         obj: {type: "json", url: "ranch/lights/PrimaryDay.json",
               onLoad: (light :Object3D) => {
                 makeLightCastShadows(light)
-                this.configureLightLerper(light, "Primary")
+                this.configureLightLerper(light, this._mainLightId, "Primary")
               }}
       }
     })
-    domain.add({
+    const rimLightId = domain.add({
       components: {
         trans: {},
         obj: {type: "json", url: "ranch/lights/RimDay.json",
-              onLoad: (light: Object3D) => {this.configureLightLerper(light, "Rim")}
+              onLoad: (light: Object3D) => {this.configureLightLerper(light, rimLightId, "Rim")}
         },
       },
     })
-    domain.add({
+    const hemiLightId = domain.add({
       components: {
         trans: {},
         obj: {type: "json", url: "ranch/lights/HemisphereDay.json",
-              onLoad: (light: Object3D) => {this.configureLightLerper(light, "Hemisphere")}
+              onLoad: (light: Object3D) => {this.configureLightLerper(light, hemiLightId, "Hemisphere")}
         },
       },
     })
@@ -479,13 +479,13 @@ export class RanchMode extends Mode {
     this._emojis.set(ActorState.RandomMeet, makeEmoji(tl, "PalIcon.png"))
   }
 
-  protected configureLightLerper (light :Object3D, name :string) :void {
+  protected configureLightLerper (light :Object3D, id :ID, name :string) :void {
     if (!(light instanceof Light)) {
       log.warn("Not a liiight?")
       return
     }
     const LIGHT_MOODS = ["Day", "Sunset", "Night", "Sunrise"]
-    this._lightLerpers.push(new LightLerper(light, 15,
+    this._lightLerpers.push(new LightLerper(this._trans, id, light, 15,
       ...LIGHT_MOODS.map(mood => "ranch/lights/" + name + mood + ".json")))
   }
 

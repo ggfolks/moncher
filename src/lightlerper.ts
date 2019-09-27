@@ -2,8 +2,17 @@ import {Clock} from "tfw/core/clock"
 import {log} from "tfw/core/util"
 import {Light, Object3D, ObjectLoader, Quaternion, Vector3} from "three"
 
+import {ID} from "tfw/entity/entity"
+import {TransformComponent} from "tfw/space/entity"
+
+
+// TODO: make this a real system. much config; lerpfields galore
+const scratchV = new Vector3()
+const scratchQ = new Quaternion()
 export class LightLerper {
   constructor (
+    readonly trans :TransformComponent,
+    protected readonly id :ID,
     protected readonly light :Light,
     protected readonly secondsPerSlice :number,
     ...jsonUrls :string[]
@@ -30,14 +39,14 @@ export class LightLerper {
     const light = this.light
     light.intensity = this._intensities[slice] +
         (this._intensities[next] - this._intensities[slice]) * perc
-    light.position.lerpVectors(this._vectors[slice], this._vectors[next], perc)
-    light.quaternion.copy(this._quats[slice])
-    light.quaternion.slerp(this._quats[next], perc)
-
     light.color.r = this._reds[slice] + ((this._reds[next] - this._reds[slice]) * perc)
     light.color.g = this._greens[slice] + ((this._greens[next] - this._greens[slice]) * perc)
     light.color.b = this._blues[slice] + ((this._blues[next] - this._blues[slice]) * perc)
-    light.updateMatrixWorld()
+
+    this.trans.updatePosition(this.id,
+        scratchV.lerpVectors(this._vectors[slice], this._vectors[next], perc))
+    this.trans.updateQuaternion(this.id,
+        Quaternion.slerp(this._quats[slice], this._quats[next], scratchQ, perc))
   }
 
   protected configureSlice (light :Object3D, index :number) :void {
