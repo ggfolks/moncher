@@ -5,6 +5,8 @@ import { AStar } from './AStar';
 import { Builder } from './Builder';
 import { Channel } from './Channel';
 
+import {TFW_CHECK_POLYGON} from "./TfwMods"
+
 /**
  * Defines an instance of the pathfinding module, with one or more zones.
  */
@@ -139,8 +141,8 @@ class Pathfinding {
   const nodes = this.zones[zoneID].groups[groupID];
   const vertices = this.zones[zoneID].vertices;
 
-  const closestNode = this.getClosestNode(startPosition, zoneID, groupID, true);
-  const farthestNode = this.getClosestNode(targetPosition, zoneID, groupID, true);
+  const closestNode = this.getClosestNode(startPosition, zoneID, groupID, TFW_CHECK_POLYGON);
+  const farthestNode = this.getClosestNode(targetPosition, zoneID, groupID, TFW_CHECK_POLYGON);
 
   // If we can't find any node, just go straight to the target
   if (!closestNode || !farthestNode) {
