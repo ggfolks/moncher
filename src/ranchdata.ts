@@ -77,7 +77,7 @@ export interface ActorConfig {
   model :ActorModel
   spawn? :ActorConfig
   color? :number
-  photo? :string
+  imageBase? :string
 }
 
 export const enum ActorState {
@@ -170,6 +170,7 @@ export interface ActorData extends Located {
   path? :PathInfo
   orient :number
   instant :ActorInstant // TODO: going away
+  lastPost? :number
 
   /** Data related to the current behavior. */
   data :BehaviorData

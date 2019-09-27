@@ -22,24 +22,24 @@ firebase.initializeApp({
   appId: "1:733313051370:web:ef572661b45a730f8d8593"
 })
 
-const ranchInviteR = /^([A-Za-z0-9]{22})(\+([A-Za-z0-9]{22}))?$/
+const ranchFocusR = /^([A-Za-z0-9]{22})(\+([A-Za-z0-9]{22}))?$/
 function parseLocation () :[string, string, string|undefined] {
   const path = window.location.pathname
   if (path) {
     const lastSlash = path.lastIndexOf("/")
     if (lastSlash >= 0) {
-      const match = path.substring(lastSlash+1).match(ranchInviteR)
+      const match = path.substring(lastSlash+1).match(ranchFocusR)
       if (match) return [path.substring(0, lastSlash), match[1], match[3]]
     }
   }
   const query = window.location.search
   if (query) {
-    const match = query.substring(1).match(ranchInviteR)
+    const match = query.substring(1).match(ranchFocusR)
     if (match) return [path, match[1], match[3]]
   }
   return [path, "5cXg8Tp5WwsuVeO7JflubY", undefined]
 }
-const [appPath, ranchId, inviteId] = parseLocation()
+const [appPath, ranchId, focusId] = parseLocation()
 
 export class App implements Disposable {
   private mode :Mode
@@ -55,7 +55,7 @@ export class App implements Disposable {
   readonly state = {
     appPath: appPath.endsWith("/") ? appPath : `${appPath}/`,
     ranchId,
-    inviteId,
+    focusId,
   }
 
   /** A value that is true when we're authed as a real user. */

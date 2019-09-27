@@ -1,4 +1,4 @@
-import {Data} from "tfw/core/data"
+import {Data, Record} from "tfw/core/data"
 import {log} from "tfw/core/util"
 import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
 import {Auth} from "tfw/data/data"
@@ -529,6 +529,8 @@ class EatFoodBehavior extends MonsterBehavior {
       } else {
         // can't find food: we're just going to wait one tick and reset
         bd.phase = 1
+        // if we haven't complained lately, message our owner asking for food
+        if (canPost(actor)) sendActorPost(ctx, actor, "I'm hungry and there's no food!", "hungry")
       }
       data.dirty = true
       break
@@ -743,8 +745,17 @@ function touchActor (
 }
 
 // hackity hack hack
-function actorPhotoURL (config :ActorConfig) {
-  return `https://demo1.tfw.dev/moncher/monsters/photo/${config.photo}`
+function actorImageURL (config :ActorConfig, type :string) {
+  if (!config.imageBase) {
+    log.warn("Requested image URL For actor with no image base", "config", config, "type", type)
+    return `https://demo1.tfw.dev/moncher/monsters/emoji/AcornIcon.png` // TODO: error image?
+  }
+  return `https://demo1.tfw.dev/moncher/monsters/images/${type}_${config.imageBase}.jpg`
+}
+
+function makeRanchLink (ctx :RanchContext, focusId? :UUID) :string {
+  const url = `https://demo1.tfw.dev/moncher/${ctx.obj.key}` // TODO: tell server the URL...
+  return focusId ? `${url}+${focusId}` : url
 }
 
 function setActorName (ctx :RanchContext, ownerId :UUID, id :UUID, name :string) {
@@ -761,11 +772,32 @@ function setActorName (ctx :RanchContext, ownerId :UUID, id :UUID, name :string)
 
     // update this monster's profile
     if (name !== oname) ctx.obj.source.post(profileQ(id), {
-      type: "update", name, photo: actorPhotoURL(actor.config), ptype: ProfileType.npc})
+      type: "update", name, photo: actorImageURL(actor.config, "photo"), ptype: ProfileType.npc})
     // if this is the first time the name is set, send a welcome message to the channel
-    if (!oname) ctx.obj.source.post(
-      channelQ(ctx.obj.key), {type: "post", sender: id, text: "Hi everybody!"})
+    if (!oname) sendActorPost(ctx, actor, "Hi everybody!")
   }
+}
+
+// don't let actors spam the channel more often than once an hour (TODO: probably way less)
+const MIN_POST_INTERVAL = 60 * 60 * 1000
+
+function canPost (actor :Actor) {
+  const now = Date.now()
+  return (actor.data.lastPost === undefined || now - actor.data.lastPost >= MIN_POST_INTERVAL)
+}
+
+function sendActorPost (ctx :RanchContext, actor :Actor, text :string, imageType? :string) {
+  if (!canPost(actor)) {
+    log.debug("Dropping post from chatty actor", "actor", actor.id, "text", text)
+    return
+  }
+  const post :Record = {type: "post", sender: actor.id, text}
+  if (imageType) {
+    post["image"] = actorImageURL(actor.config, imageType)
+    post["link"] = makeRanchLink(ctx)
+  }
+  ctx.obj.source.post(channelQ(ctx.obj.key), post)
+  actor.data.lastPost = Date.now()
 }
 
 function setState (data :ActorData, state :ActorState) :void {

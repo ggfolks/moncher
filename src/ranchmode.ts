@@ -1049,8 +1049,8 @@ export class RanchMode extends Mode {
   }
 
   protected actorAdded (id :UUID, update :ActorUpdate) {
-    // if we arrived via an egg invite, "track" the egg so the camera focuses on it
-    if (this._app.state.inviteId === id) this.trackActor(id)
+    // if we have a "focus" actor, track it with the camera
+    if (this._app.state.focusId === id) this.trackActor(id)
 
     // if we see a Hatching monster added and we're the owner, pop up a name it dialog
     if (update.state === ActorState.Hatching &&
@@ -1066,8 +1066,8 @@ export class RanchMode extends Mode {
         showEggInvite(this._app, this._host, this._app.state.ranchId, id)
         return
       }
-      else if (this._app.state.inviteId !== id) {
-        log.info("No touchy eggy!", "id", id, "invite", this._app.state.inviteId)
+      else if (this._app.state.focusId !== id) {
+        log.info("No touchy eggy!", "id", id, "focus", this._app.state.focusId)
         return
       } else if (!this._app.notGuest.current) {
         showEggAuth(this._app, this._host)
