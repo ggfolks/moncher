@@ -216,7 +216,7 @@ abstract class Behavior {
 
   /**
    * Handle a client "touching" this actor.
-   * @return true if something changed and we should publish this actor.
+   * @return true if something changed and we should publish ALL dirty actors.
    */
   touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
     return false
@@ -683,6 +683,20 @@ function removeActor (
   ctx.obj.actorConfigs.delete(uuid)
 }
 
+/**
+ * Remove dead actors, publish dirty ones. */
+function publishChanges (ctx :RanchContext) :void {
+  // After ticking every actor (actors may modify each other), re-publish any that are dirty
+  ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
+    if (data.hp <= 0) {
+      removeActor(ctx, key)
+    } else if (data.dirty) {
+      ctx.obj.actors.set(key, actorDataToUpdate(data))
+      ctx.obj.actorData.set(key, data)
+    }
+  })
+}
+
 function tickRanch (
   ctx :RanchContext,
   dt :number, // in seconds
@@ -699,15 +713,7 @@ function tickRanch (
     behavior.tick(ctx, actor, dt)
   })
 
-  // After ticking every actor (actors may modify each other), re-publish any that are dirty
-  ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
-    if (data.hp <= 0) {
-      removeActor(ctx, key)
-    } else if (data.dirty) {
-      ctx.obj.actors.set(key, actorDataToUpdate(data))
-      ctx.obj.actorData.set(key, data)
-    }
-  })
+  publishChanges(ctx)
 }
 
 function growMonster (data :ActorData) :void {
@@ -740,8 +746,7 @@ function touchActor (
   }
   const beh = Behavior.getBehavior(actor)
   if (beh.touch(ctx, actor, arg)) {
-    ctx.obj.actors.set(actor.id, actorDataToUpdate(actor.data))
-    ctx.obj.actorData.set(actor.id, actor.data)
+    publishChanges(ctx)
   }
 }
 
