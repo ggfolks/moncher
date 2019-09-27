@@ -136,7 +136,7 @@ function getActor (ctx :RanchContext, id :UUID) :Actor|undefined {
   if (!data) return undefined
   const config = ctx.obj.actorConfigs.get(id)
   if (!config) {
-    log.warn("Missing actor config?", "key", id)
+    log.warn("Missing actor config?", "id", id)
     return undefined
   }
   return { id, config, data }
@@ -687,12 +687,12 @@ function removeActor (
  * Remove dead actors, publish dirty ones. */
 function publishChanges (ctx :RanchContext) :void {
   // After ticking every actor (actors may modify each other), re-publish any that are dirty
-  ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
+  ctx.obj.actorData.forEach((data :ActorData, id :UUID) => {
     if (data.hp <= 0) {
-      removeActor(ctx, key)
+      removeActor(ctx, id)
     } else if (data.dirty) {
-      ctx.obj.actors.set(key, actorDataToUpdate(data))
-      ctx.obj.actorData.set(key, data)
+      ctx.obj.actors.set(id, actorDataToUpdate(data))
+      ctx.obj.actorData.set(id, data)
     }
   })
 }
@@ -701,18 +701,10 @@ function tickRanch (
   ctx :RanchContext,
   dt :number, // in seconds
 ) :void {
-  // tick every actor
-  ctx.obj.actorData.forEach((data :ActorData, key :UUID) => {
-    const config = ctx.obj.actorConfigs.get(key)
-    if (!config) {
-       log.warn("Missing actor config?", "key", key) // this simply shouldn't happen
-       return
-    }
-    const actor :Actor = {id: key, config, data}
+  visitActors(ctx, actor => {
     const behavior :Behavior = Behavior.getBehavior(actor)
     behavior.tick(ctx, actor, dt)
   })
-
   publishChanges(ctx)
 }
 
