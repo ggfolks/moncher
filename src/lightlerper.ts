@@ -1,5 +1,5 @@
 import {Clock} from "tfw/core/clock"
-import {log} from "tfw/core/util"
+import {Noop, log} from "tfw/core/util"
 import {Light, Object3D, ObjectLoader, Quaternion, Vector3} from "three"
 
 import {ID} from "tfw/entity/entity"
@@ -15,38 +15,46 @@ export class LightLerper {
     protected readonly id :ID,
     protected readonly light :Light,
     protected readonly secondsPerSlice :number,
+    protected readonly updateFrequency :number,
     ...jsonUrls :string[]
   ) {
     this._slices = jsonUrls.length
     const loader = new ObjectLoader()
     for (let ii = 0; ii < jsonUrls.length; ii++) {
       const index = ii
-      // TODO: error handling!
-      loader.load(jsonUrls[index], (light :Object3D) => this.configureSlice(light, index))
+      loader.load(jsonUrls[index],
+          (light :Object3D) => this.configureSlice(light, index),
+          Noop /* onProgress */,
+          error => {
+            log.warn("Error loading light slice: " + error)
+          })
     }
   }
 
   // TODO: absolute time of some sort
   update (clock :Clock) :void {
+    this._dt += clock.dt
     if (this._slicesLoaded < this._slices) return
+    if (this._dt < this.updateFrequency) return
 
-    this._timeCount = (this._timeCount + clock.dt) % (this._slices * this.secondsPerSlice)
+    this._timeCount = (this._timeCount + this._dt) % (this._slices * this.secondsPerSlice)
+    this._dt = 0
     const progress = this._timeCount / this.secondsPerSlice
     const slice = Math.trunc(progress)
     const next = (slice + 1) % this._slices
     const perc = progress - slice
 
     const light = this.light
-    light.intensity = this._intensities[slice] +
-        (this._intensities[next] - this._intensities[slice]) * perc
-    light.color.r = this._reds[slice] + ((this._reds[next] - this._reds[slice]) * perc)
-    light.color.g = this._greens[slice] + ((this._greens[next] - this._greens[slice]) * perc)
-    light.color.b = this._blues[slice] + ((this._blues[next] - this._blues[slice]) * perc)
+    const ints = this._intensities, r = this._reds, g = this._greens, b = this._blues
+    light.intensity = ints[slice] + (ints[next] - ints[slice]) * perc
+    light.color.r = r[slice] + ((r[next] - r[slice]) * perc)
+    light.color.g = g[slice] + ((g[next] - g[slice]) * perc)
+    light.color.b = b[slice] + ((b[next] - b[slice]) * perc)
 
-    this.trans.updatePosition(this.id,
-        scratchV.lerpVectors(this._vectors[slice], this._vectors[next], perc))
+    const vecs = this._vectors, quats = this._quats
+    this.trans.updatePosition(this.id, scratchV.lerpVectors(vecs[slice], vecs[next], perc))
     this.trans.updateQuaternion(this.id,
-        Quaternion.slerp(this._quats[slice], this._quats[next], scratchQ, perc))
+        Quaternion.slerp(quats[slice], quats[next], scratchQ, perc))
   }
 
   protected configureSlice (light :Object3D, index :number) :void {
@@ -72,5 +80,6 @@ export class LightLerper {
   protected readonly _blues :number[] = []
   protected readonly _intensities :number[] = []
   protected _slicesLoaded :number = 0
+  protected _dt :number = 0
   protected _timeCount :number = 0
 }

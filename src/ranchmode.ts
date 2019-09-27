@@ -485,7 +485,7 @@ export class RanchMode extends Mode {
       return
     }
     const LIGHT_MOODS = ["Day", "Sunset", "Night", "Sunrise"]
-    this._lightLerpers.push(new LightLerper(this._trans, id, light, 15,
+    this._lightLerpers.push(new LightLerper(this._trans, id, light, 5 * 60, 1.2,
       ...LIGHT_MOODS.map(mood => "ranch/lights/" + name + mood + ".json")))
   }
 
