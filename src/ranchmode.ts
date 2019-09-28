@@ -81,7 +81,7 @@ import {loc2vec} from "./ranchutil"
 import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
-import {LightLerper} from "./lightlerper"
+import {LerpRecord, LerpSystem} from "./lerpsystem"
 import {RanchObject, RanchReq} from "./data"
 import {InstallAppView, OccupantsView, createDialog, label, button, textBox} from "./ui"
 import {showEggInvite, showEggAuth, generateName} from "./egg"
@@ -386,10 +386,12 @@ export class RanchMode extends Mode {
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
     const paths = this._paths = new SparseValueComponent<PathInfo|undefined>("paths", undefined)
     const graph = this._graph = new DenseValueComponent<Graph>("graph", new Graph(nodeCtx, {}))
+    const lerps = new SparseValueComponent<LerpRecord>("lerps", LerpRecord.DUMMY)
 
     const domain = this._domain = new Domain({},
-        {trans, obj, mixer, body, updates, paths, hovers, graph})
+        {trans, obj, mixer, body, updates, paths, hovers, graph, lerps})
     this._pathsys = new PathSystem(domain, trans, paths, updates, this.setY.bind(this))
+    this._lerpsys = new LerpSystem(domain, lerps, trans, obj, 0)
     this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
     this._graphsys = new GraphSystem(nodeCtx, domain, graph)
@@ -426,30 +428,48 @@ export class RanchMode extends Mode {
     this.onDispose.add(kb.getKeyState(ArrowKey.Down).onEmit(
         p => { if (p) this.adjustCameraTarget(0, ARROW_KEY_FACTOR) } ))
 
+    const DAY_NIGHT_CYCLE :number = 20 // 20s!
     this._mainLightId = domain.add({
       components: {
         trans: {},
         obj: {type: "json", url: "ranch/lights/PrimaryDay.json",
-              onLoad: (light :Object3D) => {
-                makeLightCastShadows(light)
-                this.configureLightLerper(light, this._mainLightId, "Primary")
-              }}
+              onLoad: makeLightCastShadows },
+        lerps: {cycleTime: DAY_NIGHT_CYCLE,
+                paths: ["color", "intensity", "position", "quaternion"],
+                sources: [
+                  {type: "json", url: "ranch/lights/PrimaryDay.json"},
+                  {type: "json", url: "ranch/lights/PrimarySunset.json"},
+                  {type: "json", url: "ranch/lights/PrimaryNight.json"},
+                  {type: "json", url: "ranch/lights/PrimarySunrise.json"},
+                ]},
       }
     })
-    const rimLightId = domain.add({
+    domain.add({
       components: {
         trans: {},
-        obj: {type: "json", url: "ranch/lights/RimDay.json",
-              onLoad: (light: Object3D) => {this.configureLightLerper(light, rimLightId, "Rim")}
-        },
+        obj: {type: "json", url: "ranch/lights/RimDay.json"},
+        lerps: {cycleTime: DAY_NIGHT_CYCLE,
+                paths: ["color", "intensity", "position", "quaternion"],
+                sources: [
+                  {type: "json", url: "ranch/lights/RimDay.json"},
+                  {type: "json", url: "ranch/lights/RimSunset.json"},
+                  {type: "json", url: "ranch/lights/RimNight.json"},
+                  {type: "json", url: "ranch/lights/RimSunrise.json"},
+                ]},
       },
     })
-    const hemiLightId = domain.add({
+    domain.add({
       components: {
         trans: {},
-        obj: {type: "json", url: "ranch/lights/HemisphereDay.json",
-              onLoad: (light: Object3D) => {this.configureLightLerper(light, hemiLightId, "Hemisphere")}
-        },
+        obj: {type: "json", url: "ranch/lights/HemisphereDay.json"},
+        lerps: {cycleTime: DAY_NIGHT_CYCLE,
+                paths: ["color", "intensity", "position", "quaternion"],
+                sources: [
+                  {type: "json", url: "ranch/lights/HemisphereDay.json"},
+                  {type: "json", url: "ranch/lights/HemisphereSunset.json"},
+                  {type: "json", url: "ranch/lights/HemisphereNight.json"},
+                  {type: "json", url: "ranch/lights/HemisphereSunrise.json"},
+                ]},
       },
     })
 //    domain.add({
@@ -479,16 +499,6 @@ export class RanchMode extends Mode {
     this._emojis.set(ActorState.RandomMeet, makeEmoji(tl, "PalIcon.png"))
   }
 
-  protected configureLightLerper (light :Object3D, id :ID, name :string) :void {
-    if (!(light instanceof Light)) {
-      log.warn("Not a liiight?")
-      return
-    }
-    const LIGHT_MOODS = ["Day", "Sunset", "Night", "Sunrise"]
-    this._lightLerpers.push(new LightLerper(this._trans, id, light, 5 * 60, 1.2,
-      ...LIGHT_MOODS.map(mood => "ranch/lights/" + name + mood + ".json")))
-  }
-
   render (clock :Clock) :void {
     this._hand.update()
     this._scenesys.updateHovers(this._webGlRenderer)
@@ -497,7 +507,7 @@ export class RanchMode extends Mode {
     this._pathsys.update(clock)
     this._animsys.update(clock)
     this._camControl.update(clock)
-    this._lightLerpers.forEach(ll => ll.update(clock))
+    this._lerpsys.update(clock)
     this._scenesys.update()
     this._scenesys.render(this._webGlRenderer)
   }
@@ -1178,8 +1188,6 @@ export class RanchMode extends Mode {
   /** Handles our camera positioning. */
   protected _camControl! :Lakitu
 
-  protected readonly _lightLerpers :LightLerper[] = []
-
   protected _uiState :UiState = UiState.Default
 
   protected _ready :boolean = false
@@ -1197,6 +1205,7 @@ export class RanchMode extends Mode {
   protected _paths! :Component<PathInfo|undefined>
   protected _graph! :Component<Graph>
   protected _graphsys! :GraphSystem
+  protected _lerpsys! :LerpSystem
   protected _pathsys! :PathSystem
   protected _scenesys! :SceneSystem
   protected _animsys! :AnimationSystem
