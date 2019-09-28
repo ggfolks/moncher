@@ -86,8 +86,9 @@ server.errors.onEmit(error => {
 
 // shut down when we receive SIGINT or SIGTERM
 const signalHandler = () => {
-  server.shutdown()
   httpServer.close()
+  server.shutdown()
+  store.shutdown()
   // process.exit(0) // TODO: maybe do this after a few seconds in case anything hangs up
 }
 process.on('SIGTERM', signalHandler)
