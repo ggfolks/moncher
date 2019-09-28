@@ -391,7 +391,7 @@ export class RanchMode extends Mode {
     const domain = this._domain = new Domain({},
         {trans, obj, mixer, body, updates, paths, hovers, graph, lerps})
     this._pathsys = new PathSystem(domain, trans, paths, updates, this.setY.bind(this))
-    this._lerpsys = new LerpSystem(domain, lerps, trans, obj, 0)
+    this._lerpsys = new LerpSystem(domain, lerps, trans, obj, 1.2)
     this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
     this._graphsys = new GraphSystem(nodeCtx, domain, graph)
@@ -428,7 +428,7 @@ export class RanchMode extends Mode {
     this.onDispose.add(kb.getKeyState(ArrowKey.Down).onEmit(
         p => { if (p) this.adjustCameraTarget(0, ARROW_KEY_FACTOR) } ))
 
-    const DAY_NIGHT_CYCLE :number = 20 // 20s!
+    const DAY_NIGHT_CYCLE :number = 20 * 60 // 20 minutes for now
     this._mainLightId = domain.add({
       components: {
         trans: {},
