@@ -169,6 +169,9 @@ function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
     else log.warn("Rejecting channel post", "auth", auth, "req", req)
   case "join":
     if (auth.isGuest) log.warn("Rejecting channel join by guest", "auth", auth)
+    // TEMP: debug some weirdness I've been seeing
+    else if (auth.isSystem) log.warn("Got channel join by system?", "auth", auth)
+    else if (auth.id === UUID0) log.warn("Got channel join by UUID0?", "auth", auth)
     else {
       obj.members.add(auth.id)
       obj.source.post(userQ(auth.id), {type: "joined", channelId: obj.key})
@@ -216,15 +219,15 @@ export class RanchObject extends DObject {
   occupants = this.set<UUID>()
 
   /** The map of actor configs, which is updated prior to the actor being added. */
-  @dmap("uuid", "record")
+  @dmap("uuid", "record", true)
   actorConfigs = this.map<UUID, ActorConfig>()
 
   /** The latest snapshot of each actor. */
-  @dmap("uuid", "record")
+  @dmap("uuid", "record", true)
   actors = this.map<UUID, ActorUpdate>()
 
   /** The "server-side" data about each actor. */
-  @dmap("uuid", "record")
+  @dmap("uuid", "record", true)
   actorData = this.map<UUID, ActorData>()
 
   /** Keeps the last time we were ticked, from Date.now() */
