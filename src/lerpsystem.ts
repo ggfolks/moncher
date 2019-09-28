@@ -24,9 +24,26 @@ export class LerpRecord {
   ) {}
 }
 
+
 // TODO: Maybe the infrequent-updating is pulled out into a wrapper System that
 // merely maintains its own dt and then fakes-up a Clock object to pass to its
 // contained system(s)
+//export class IntermittentClocker {
+//  constructor (
+//    protected readonly toWrap :(clock :Clock) => void,
+//    protected readonly updateFrequency :number
+//  ) {}
+//
+//  update (clock :Clock) :void {
+//    this._dt += clock.dt
+//    if (this._dt < this.updateFrequency) return
+//    const slowClock :Clock = {time: clock.time, elapsed: clock.elapsed, dt: this._dt}
+//    this.toWrap(slowClock)
+//    this._dt = 0
+//  }
+//
+//  protected _dt :number = 0
+//}
 
 const scratchV = new Vector3()
 const scratchQ = new Quaternion()
@@ -50,7 +67,6 @@ export class LerpSystem extends System {
 
     this.onEntities(id => {
       const rec = this.lerps.read(id)
-
       const stamp = this._timeCount % rec.cycleTime
       const progress = stamp / (rec.cycleTime / rec.sources.length)
       const slice = Math.trunc(progress)
@@ -77,7 +93,6 @@ export class LerpSystem extends System {
     // TODO: full path dot notation for properties? Ha!
     const v1 = src1[path]
     const v2 = src2[path]
-
     if (v1 instanceof Vector3) {
       this.trans.updatePosition(id, scratchV.lerpVectors(v1, v2, perc))
 
@@ -85,14 +100,10 @@ export class LerpSystem extends System {
       this.trans.updateQuaternion(id, Quaternion.slerp(v1, v2, scratchQ, perc))
 
     } else if (v1 instanceof Color) {
-      const color = dest[path] as Color
-      color.copy(v1)
-      color.lerp(v2, perc)
+      (dest[path] as Color).copy(v1).lerp(v2, perc)
 
     } else if (typeof v1 === "number") {
-      // assume it's a number
-      const newValue = v1 + ((v2 - v1) * perc)
-      dest[path] = newValue
+      dest[path] = v1 + ((v2 - v1) * perc)
 
     } else {
       log.warn("Can't lerp unknown type", "path", path, "v1", v1, "v2", v2)
