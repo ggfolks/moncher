@@ -429,47 +429,39 @@ export class RanchMode extends Mode {
         p => { if (p) this.adjustCameraTarget(0, ARROW_KEY_FACTOR) } ))
 
     const DAY_NIGHT_CYCLE :number = 20 * 60 // 20 minutes for now
+    const makeLightLerps = (name :string) => {
+      return {
+        cycleTime: DAY_NIGHT_CYCLE,
+        paths: ["color", "intensity", "position", "quaternion"],
+        sources: [
+          {type: "json", url: "ranch/lights/" + name + "Day.json"},
+          {type: "json", url: "ranch/lights/" + name + "Sunset.json"},
+          {type: "json", url: "ranch/lights/" + name + "Night.json"},
+          {type: "json", url: "ranch/lights/" + name + "Sunrise.json"},
+        ],
+      }
+    }
+
     this._mainLightId = domain.add({
       components: {
         trans: {},
         obj: {type: "json", url: "ranch/lights/PrimaryDay.json",
               onLoad: makeLightCastShadows },
-        lerps: {cycleTime: DAY_NIGHT_CYCLE,
-                paths: ["color", "intensity", "position", "quaternion"],
-                sources: [
-                  {type: "json", url: "ranch/lights/PrimaryDay.json"},
-                  {type: "json", url: "ranch/lights/PrimarySunset.json"},
-                  {type: "json", url: "ranch/lights/PrimaryNight.json"},
-                  {type: "json", url: "ranch/lights/PrimarySunrise.json"},
-                ]},
+        lerps: makeLightLerps("Primary"),
       }
     })
     domain.add({
       components: {
         trans: {},
         obj: {type: "json", url: "ranch/lights/RimDay.json"},
-        lerps: {cycleTime: DAY_NIGHT_CYCLE,
-                paths: ["color", "intensity", "position", "quaternion"],
-                sources: [
-                  {type: "json", url: "ranch/lights/RimDay.json"},
-                  {type: "json", url: "ranch/lights/RimSunset.json"},
-                  {type: "json", url: "ranch/lights/RimNight.json"},
-                  {type: "json", url: "ranch/lights/RimSunrise.json"},
-                ]},
+        lerps: makeLightLerps("Rim"),
       },
     })
     domain.add({
       components: {
         trans: {},
         obj: {type: "json", url: "ranch/lights/HemisphereDay.json"},
-        lerps: {cycleTime: DAY_NIGHT_CYCLE,
-                paths: ["color", "intensity", "position", "quaternion"],
-                sources: [
-                  {type: "json", url: "ranch/lights/HemisphereDay.json"},
-                  {type: "json", url: "ranch/lights/HemisphereSunset.json"},
-                  {type: "json", url: "ranch/lights/HemisphereNight.json"},
-                  {type: "json", url: "ranch/lights/HemisphereSunrise.json"},
-                ]},
+        lerps: makeLightLerps("Hemisphere"),
       },
     })
 //    domain.add({
