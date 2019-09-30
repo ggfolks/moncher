@@ -52,7 +52,7 @@ function urlToPath (url :string) :string {
   else return url
 }
 
-const httpPort = 8080 // TODO: get from env variable?
+const httpPort = parseInt(process.env.HTTP_PORT || "8080")
 const httpServer = http.createServer((req, rsp) => {
   const path = urlToPath(req.url || "/")
   log.info("HTTP request", "url", req.url, "path", path)

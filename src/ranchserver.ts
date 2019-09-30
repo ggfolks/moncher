@@ -20,6 +20,8 @@ import {
 } from "./ranchdata"
 import {copyloc, loc2vec, locsEqual, vec2loc} from "./ranchutil"
 
+const serverUrl = process.env.SERVER_URL || "http://localhost:3000/"
+
 /** The name of the pathfinder stuffed in global. */
 export const PATHFINDER_GLOBAL = "_ranchPathfinder"
 
@@ -748,13 +750,13 @@ function touchActor (
 function actorImageURL (config :ActorConfig, type :string) {
   if (!config.imageBase) {
     log.warn("Requested image URL For actor with no image base", "config", config, "type", type)
-    return `https://demo1.tfw.dev/moncher/monsters/emoji/AcornIcon.png` // TODO: error image?
+    return `${serverUrl}/monsters/emoji/AcornIcon.png` // TODO: error image?
   }
-  return `https://demo1.tfw.dev/moncher/monsters/images/${type}_${config.imageBase}.jpg`
+  return `${serverUrl}/monsters/images/${type}_${config.imageBase}.jpg`
 }
 
 function makeRanchLink (ctx :RanchContext, focusId? :UUID) :string {
-  const url = `https://demo1.tfw.dev/moncher/${ctx.obj.key}` // TODO: tell server the URL...
+  const url = `${serverUrl}/${ctx.obj.key}`
   return focusId ? `${url}+${focusId}` : url
 }
 
