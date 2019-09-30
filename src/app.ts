@@ -2,6 +2,7 @@ import * as firebase from "firebase/app"
 
 import {Disposable, Disposer} from "tfw/core/util"
 import {dim2} from "tfw/core/math"
+import {uuidv1} from "tfw/core/uuid"
 import {Clock, Loop} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
 import {Subject, Value} from "tfw/core/react"
@@ -37,9 +38,21 @@ function parseLocation () :[string, string, string|undefined] {
     const match = query.substring(1).match(ranchFocusR)
     if (match) return [path, match[1], match[3]]
   }
-  return [path, "5cXg8Tp5WwsuVeO7JflubY", undefined]
+  return [path, "", undefined]
 }
 const [appPath, ranchId, focusId] = parseLocation()
+
+// if we have no ranch id, redirect to one
+if (ranchId === "") {
+  if (window.location.hostname === "localhost") {
+    // on localhost, make up a unique ranchid for this developer/browser
+    let ranchId = localStorage.getItem("ranchid")
+    if (!ranchId) localStorage.setItem("ranchid", ranchId = uuidv1())
+    window.location.search = ranchId
+  } else {
+    window.location.pathname = "5cXg8Tp5WwsuVeO7JflubY"
+  }
+}
 
 export class App implements Disposable {
   private mode :Mode
