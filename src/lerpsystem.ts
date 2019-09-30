@@ -14,8 +14,6 @@ export interface LerpComponentConfig {
   paths :string[] // TODO: support real paths with full dot notation?
 }
 
-type LerpFn = (id :ID, dest :any, path :string, v1 :any, v2 :any, perc :number) => void
-
 export class LerpRecord {
   static DUMMY = new LerpRecord(0, [], 0)
 
@@ -88,35 +86,12 @@ export class LerpSystem extends System {
       if (src1 === undefined || src2 === undefined) return // can't lerp yet!
       for (let ii = 0; ii < rec.paths.length; ii++) {
         const path = rec.paths[ii]
-        rec.fns[ii](id, dest, path, src1[path], src2[path], perc)
+        rec.fns[ii](this.trans, id, dest, path, src1[path], src2[path], perc)
       }
     })
   }
 
   /** LerpFn: no-op */
-  static lerpNoop :LerpFn =
-      (id :ID, dest :any, path :string, v1 :any, v2 :any, perc :number) :void => {}
-
-  protected static lerpNumbers :LerpFn =
-      (id :ID, dest :any, path :string, v1 :any, v2 :any, perc :number) :void => {
-    dest[path] = v1 + ((v2 - v1) * perc)
-  }
-
-  protected static lerpColors :LerpFn =
-      (id :ID, dest :any, path :string, v1 :any, v2 :any, perc :number) :void => {
-    (dest[path] as Color).copy(v1).lerp(v2, perc)
-  }
-
-  protected lerpVectors :LerpFn =
-      (id :ID, dest :any, path :string, v1 :any, v2 :any, perc :number) :void => {
-    this.trans.updatePosition(id, scratchV.lerpVectors(v1, v2, perc))
-  }
-
-  protected lerpQuaternions :LerpFn =
-      (id :ID, dest :any, path :string, v1 :any, v2 :any, perc :number) :void => {
-    this.trans.updateQuaternion(id, Quaternion.slerp(v1, v2, scratchQ, perc))
-  }
-
   protected added (id :ID, config :EntityConfig) {
     super.added(id, config)
 
@@ -139,20 +114,32 @@ export class LerpSystem extends System {
     // see if we need to figure out lerpfns
     if (rec.fns[0] !== undefined) return
     for (let ii = 0; ii < rec.paths.length; ii++) {
-      rec.fns[ii] = this.findFn(src[rec.paths[ii]])
+      rec.fns[ii] = findLerpFn(src[rec.paths[ii]])
     }
-  }
-
-  protected findFn (value :any) :LerpFn {
-    if (value instanceof Vector3) return this.lerpVectors
-    else if (value instanceof Quaternion) return this.lerpQuaternions
-    else if (value instanceof Color) return LerpSystem.lerpColors
-    else if (typeof value === "number") return LerpSystem.lerpNumbers
-
-    log.warn("Can't lerp unknown type", "value", value)
-    return LerpSystem.lerpNoop
   }
 
   protected _dt :number = 0
   protected _timeCount :number = 0
+}
+
+type LerpFn = (trans :TransformComponent, id :ID, dest :any, path :string,
+               v1 :any, v2 :any, perc :number) => void
+
+const lerpNoop :LerpFn = (trans, id, dest, path, v1, v2, perc) => {}
+const lerpNumbers :LerpFn = (trans, id, dest, path, v1, v2, perc) =>
+  dest[path] = v1 + ((v2 - v1) * perc)
+const lerpColors :LerpFn = (trans, id, dest, path, v1, v2, perc) =>
+  (dest[path] as Color).copy(v1).lerp(v2, perc)
+const lerpVectors :LerpFn = (trans, id, dest, path, v1, v2, perc) =>
+  trans.updatePosition(id, scratchV.lerpVectors(v1, v2, perc))
+const lerpQuaternions :LerpFn = (trans, id, dest, path, v1, v2, perc) =>
+  trans.updateQuaternion(id, Quaternion.slerp(v1, v2, scratchQ, perc))
+
+function findLerpFn (value :any) :LerpFn {
+  if (value instanceof Vector3) return lerpVectors
+  else if (value instanceof Quaternion) return lerpQuaternions
+  else if (value instanceof Color) return lerpColors
+  else if (typeof value === "number") return lerpNumbers
+  log.warn("Can't lerp unknown type", "value", value)
+  return lerpNoop
 }
