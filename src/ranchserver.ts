@@ -20,7 +20,8 @@ import {
 } from "./ranchdata"
 import {copyloc, loc2vec, locsEqual, vec2loc} from "./ranchutil"
 
-const serverUrl = process.env.SERVER_URL || "http://localhost:3000/"
+const stripTrailingSlash = (url :string) => url.endsWith("/") ? url.substring(0, url.length-1) : url
+const serverUrl = stripTrailingSlash(process.env.SERVER_URL || "http://localhost:3000/")
 
 /** The name of the pathfinder stuffed in global. */
 export const PATHFINDER_GLOBAL = "_ranchPathfinder"
