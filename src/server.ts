@@ -90,7 +90,7 @@ const signalHandler = () => {
   server.shutdown()
   store.shutdown().then(_ => {
     log.info("Server shutdown complete")
-    // process.exit(0)
+    process.exit(0)
   })
 }
 process.on('SIGTERM', signalHandler)
