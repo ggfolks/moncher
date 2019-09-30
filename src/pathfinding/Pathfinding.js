@@ -46,7 +46,7 @@ class Pathfinding {
   * @param  {string} zoneID
   * @param  {number} groupID
   * @param  {THREE.Vector3} nearPosition
-  * @param  {number} nearRange (squared)
+  * @param  {number} nearRange
   * @return {THREE.Vector3}
   */
  getRandomNode (zoneID, groupID, nearPosition, nearRange) {
