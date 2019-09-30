@@ -54,6 +54,8 @@ const CHAT_CIRCLE_MAX_DURATION = 2 * 60 // 2 minutes
 /** How often do monsters act happy together? */
 const CHAT_BOUNCE_INTERVAL = 4.8
 
+const MAX_FIREFLIES = 10 // maximum number of fireflies to have in the scene?
+
 /**
  * Context object passed to most request handlers. */
 interface RanchContext {
@@ -237,8 +239,8 @@ abstract class Behavior {
 
 /**
  * Behavior for food. Still life. */
-class FoodBehavior extends Behavior {
-  static INSTANCE = new FoodBehavior(ActorKind.Food)
+class DecayBehavior extends Behavior {
+  static INSTANCE = new DecayBehavior(ActorKind.Food, ActorKind.Firefly)
 
   tick (ctx :RanchContext, actor :Actor, dt :number) :void {
     actor.data.hp -= (dt / 100) // food decays
@@ -605,7 +607,7 @@ class SleepBehavior extends MonsterBehavior {
 
 // mother-fricking compiler doesn't know that the INSTANCES handle it!
 if (false) {
-  log.debug("Gruntle: " + FoodBehavior + EggBehavior + WanderBehavior +
+  log.debug("Gruntle: " + DecayBehavior + EggBehavior + WanderBehavior +
       ChatCircleBehavior + EatFoodBehavior + SleepBehavior)
 }
 
@@ -706,11 +708,25 @@ function tickRanch (
   ctx :RanchContext,
   dt :number, // in seconds
 ) :void {
+
+  checkFireflies(ctx)
+
   visitActors(ctx, actor => {
     const behavior :Behavior = Behavior.getBehavior(actor)
     behavior.tick(ctx, actor, dt)
   })
   publishChanges(ctx)
+}
+
+function checkFireflies (ctx :RanchContext) :void {
+  if (!ctx.path) return
+  if (Math.random() > .1 ||
+      countActors(ctx, a => (a.config.kind === ActorKind.Firefly)) >= MAX_FIREFLIES) return
+  // add a firefly!
+  const vec = ctx.path.getRandomPositionFrom(new Vector3())
+  if (vec) {
+    addActor(ctx, UUID0, MonsterDb.getFirefly(), vec2loc(vec))
+  }
 }
 
 function growMonster (data :ActorData) :void {
@@ -820,6 +836,12 @@ function visitActors (ctx :RanchContext, visitor :(actor :Actor) => void) :void 
     const actor :Actor = {id, config, data}
     visitor(actor)
   })
+}
+
+function countActors (ctx :RanchContext, pred :(actor :Actor) => boolean) :number {
+  let count = 0
+  visitActors(ctx, a => { if (pred(a)) count++ })
+  return count
 }
 
 /**

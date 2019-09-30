@@ -12,6 +12,8 @@ export const enum ActorKind {
   Food = 2,
   Lobber = 3,
   Runner = 4,
+  Healer = 5,
+  Firefly = 6,
 }
 
 /**
@@ -20,7 +22,7 @@ export class ActorKindAttributes {
   /**
    * Get all the kinds that represent monsters. */
   static getAllMonsters () :ActorKind[] {
-    return [ ActorKind.Lobber, ActorKind.Runner ]
+    return [ ActorKind.Lobber, ActorKind.Runner, ActorKind.Healer ]
   }
 
   /**

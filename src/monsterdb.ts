@@ -15,6 +15,11 @@ export class MonsterDb {
     return { kind: ActorKind.Food, model: { model: "monsters/Acorn.glb" }}
   }
 
+  static getFirefly () :ActorConfig {
+    return { kind: ActorKind.Firefly,
+       model: { model: "ranch/Firefly.glb", idle: "ranch/Firefly.glb#Drift"}}
+  }
+
   static makeEgg (monster :ActorConfig) :ActorConfig {
     const eggModel :ActorModel = {
       model: "monsters/Egg.glb",
