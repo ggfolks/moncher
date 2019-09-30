@@ -14,14 +14,22 @@ export interface LerpComponentConfig {
   paths :string[] // TODO: support real paths with full dot notation?
 }
 
+type LerpFn = (id :ID, dest :any, path :string, v1 :any, v2 :any, perc :number) => void
+
 export class LerpRecord {
-  static DUMMY = new LerpRecord(0, [], [])
+  static DUMMY = new LerpRecord(0, [], 0)
+
+  readonly sources :any[]
+  readonly fns :LerpFn[]
 
   constructor (
     readonly cycleTime :number,
-    readonly sources :any[],
     readonly paths :string[],
-  ) {}
+    sourceCount :number,
+  ) {
+    this.sources = new Array(sourceCount)
+    this.fns = new Array(sourceCount)
+  }
 }
 
 
@@ -78,36 +86,35 @@ export class LerpSystem extends System {
       const src2 = rec.sources[next]
       const dest = this.obj.read(id)
       if (src1 === undefined || src2 === undefined) return // can't lerp yet!
-      for (const path of rec.paths) {
-        this.lerpValue(id, path, src1, src2, dest, perc)
+      for (let ii = 0; ii < rec.paths.length; ii++) {
+        const path = rec.paths[ii]
+        rec.fns[ii](id, dest, path, src1[path], src2[path], perc)
       }
     })
   }
 
-  /**
-   * Lerp a field.
-   * TODO: maybe there can be custom lerping methods specified in the config? */
-  protected lerpValue (
-    id :ID, path :string, src1 :any, src2 :any, dest :any, perc :number
-  ) :void {
-    // TODO: full path dot notation for properties? Ha!
-    const v1 = src1[path]
-    const v2 = src2[path]
-    if (v1 instanceof Vector3) {
-      this.trans.updatePosition(id, scratchV.lerpVectors(v1, v2, perc))
+  /** LerpFn: no-op */
+  static lerpNoop :LerpFn =
+      (id :ID, dest :any, path :string, v1 :any, v2 :any, perc :number) :void => {}
 
-    } else if (v1 instanceof Quaternion) {
-      this.trans.updateQuaternion(id, Quaternion.slerp(v1, v2, scratchQ, perc))
+  protected static lerpNumbers :LerpFn =
+      (id :ID, dest :any, path :string, v1 :any, v2 :any, perc :number) :void => {
+    dest[path] = v1 + ((v2 - v1) * perc)
+  }
 
-    } else if (v1 instanceof Color) {
-      (dest[path] as Color).copy(v1).lerp(v2, perc)
+  protected static lerpColors :LerpFn =
+      (id :ID, dest :any, path :string, v1 :any, v2 :any, perc :number) :void => {
+    (dest[path] as Color).copy(v1).lerp(v2, perc)
+  }
 
-    } else if (typeof v1 === "number") {
-      dest[path] = v1 + ((v2 - v1) * perc)
+  protected lerpVectors :LerpFn =
+      (id :ID, dest :any, path :string, v1 :any, v2 :any, perc :number) :void => {
+    this.trans.updatePosition(id, scratchV.lerpVectors(v1, v2, perc))
+  }
 
-    } else {
-      log.warn("Can't lerp unknown type", "path", path, "v1", v1, "v2", v2)
-    }
+  protected lerpQuaternions :LerpFn =
+      (id :ID, dest :any, path :string, v1 :any, v2 :any, perc :number) :void => {
+    this.trans.updateQuaternion(id, Quaternion.slerp(v1, v2, scratchQ, perc))
   }
 
   protected added (id :ID, config :EntityConfig) {
@@ -115,15 +122,35 @@ export class LerpSystem extends System {
 
     // set-up the LerpRecord
     const cfg :LerpComponentConfig = config.components[this.lerps.id]
-    const count = cfg.sources.length
-    const sources = new Array(count)
-    this.lerps.update(id, new LerpRecord(cfg.cycleTime, sources, cfg.paths))
+    const sourceCount = cfg.sources.length
+    const rec :LerpRecord = new LerpRecord(cfg.cycleTime, cfg.paths, sourceCount)
+    this.lerps.update(id, rec)
 
     // load the sources into the record
-    for (let ii = 0; ii < count; ii++) {
+    for (let ii = 0; ii < sourceCount; ii++) {
       const index = ii
-      createObject3D(cfg.sources[index]).onValue((v :any) => sources[index] = v)
+      createObject3D(cfg.sources[index]).onValue((v :any) => this.configureSource(rec, index, v))
     }
+  }
+
+  protected configureSource (rec :LerpRecord, index :number, src :any) :void {
+    rec.sources[index] = src
+
+    // see if we need to figure out lerpfns
+    if (rec.fns[0] !== undefined) return
+    for (let ii = 0; ii < rec.paths.length; ii++) {
+      rec.fns[ii] = this.findFn(src[rec.paths[ii]])
+    }
+  }
+
+  protected findFn (value :any) :LerpFn {
+    if (value instanceof Vector3) return this.lerpVectors
+    else if (value instanceof Quaternion) return this.lerpQuaternions
+    else if (value instanceof Color) return LerpSystem.lerpColors
+    else if (typeof value === "number") return LerpSystem.lerpNumbers
+
+    log.warn("Can't lerp unknown type", "value", value)
+    return LerpSystem.lerpNoop
   }
 
   protected _dt :number = 0
