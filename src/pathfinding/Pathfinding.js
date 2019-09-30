@@ -88,6 +88,7 @@ class Pathfinding {
 
    const candidates = [];
    const polygons = this.zones[zoneID].groups[groupID];
+   const maxDistSq = maxDist * maxDist
    polygons.forEach((p) => {
       const a = Math.random(), b = Math.random(), c = Math.random();
       const vv = new THREE.Vector3()
@@ -95,7 +96,7 @@ class Pathfinding {
           .addScaledVector(zone.vertices[p.vertexIds[1]], b)
           .addScaledVector(zone.vertices[p.vertexIds[2]], c)
           .divideScalar(a + b + c);
-      if (nearPosition.distanceTo(vv) < maxDist) candidates.push(vv);
+      if (nearPosition.distanceToSquared(vv) < maxDistSq) candidates.push(vv);
    });
 
    return Utils.sample(candidates); // or undefined
