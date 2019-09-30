@@ -23,6 +23,7 @@ firebase.initializeApp({
   appId: "1:733313051370:web:ef572661b45a730f8d8593"
 })
 
+const stripTrailSlash = (url :string) => url.endsWith("/") ? url.substring(0, url.length-1) : url
 const ranchFocusR = /^([A-Za-z0-9]{22})(\+([A-Za-z0-9]{22}))?$/
 function parseLocation () :[string, string, string|undefined] {
   const path = window.location.pathname
@@ -36,9 +37,9 @@ function parseLocation () :[string, string, string|undefined] {
   const query = window.location.search
   if (query) {
     const match = query.substring(1).match(ranchFocusR)
-    if (match) return [path, match[1], match[3]]
+    if (match) return [stripTrailSlash(path), match[1], match[3]]
   }
-  return [path, "", undefined]
+  return [stripTrailSlash(path), "", undefined]
 }
 const [appPath, ranchId, focusId] = parseLocation()
 
@@ -50,7 +51,7 @@ if (ranchId === "") {
     if (!ranchId) localStorage.setItem("ranchid", ranchId = uuidv1())
     window.location.search = ranchId
   } else {
-    window.location.pathname = "5cXg8Tp5WwsuVeO7JflubY"
+    window.location.pathname = `${appPath}/5cXg8Tp5WwsuVeO7JflubY`
   }
 }
 
