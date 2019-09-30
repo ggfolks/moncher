@@ -5,13 +5,13 @@ import {dim2} from "tfw/core/math"
 import {uuidv1} from "tfw/core/uuid"
 import {Clock, Loop} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
-import {Subject, Value} from "tfw/core/react"
+import {Value} from "tfw/core/react"
 import {Renderer, windowSize} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {UniformQuadBatch} from "tfw/scene2/batch"
 import {Client, addrFromLocation} from "tfw/data/client"
 import {UI} from "tfw/ui/ui"
-import {initFirebaseAuth, currentUser} from "tfw/auth/firebase"
+import {currentUser} from "tfw/auth/firebase"
 
 import {ProfileStore, UserStore} from "./stores"
 import {moncherStyles, moncherTheme} from "./uistyles"
@@ -61,7 +61,7 @@ export class App implements Disposable {
   readonly renderer :Renderer
   readonly loop  = new Loop()
   readonly ui = new UI(moncherTheme, moncherStyles, {resolve: loadImage})
-  readonly client = new Client(p => Subject.constant(addrFromLocation("data")))
+  readonly client = new Client(addrFromLocation("data"))
   readonly profiles = new ProfileStore(this)
   readonly user = new UserStore(this)
 
@@ -103,8 +103,6 @@ export class App implements Disposable {
         }
       }
     })
-
-    initFirebaseAuth()
   }
 
   start () {
