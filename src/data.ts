@@ -167,6 +167,7 @@ function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
   case "post":
     if (auth.isSystem) obj.addMessage(req.sender, req.text, req.image, req.link)
     else log.warn("Rejecting channel post", "auth", auth, "req", req)
+    break
   case "join":
     if (auth.isGuest) log.warn("Rejecting channel join by guest", "auth", auth)
     // TEMP: debug some weirdness I've been seeing
