@@ -267,7 +267,7 @@ class EggBehavior extends Behavior {
         data.hp = 20
         setState(data, ActorState.ReadyToHatch)
       }
-      dirtyServer(actor.data)
+      dirtyServer(data)
       break
 
     case ActorState.Hatching: // we are only hatching for a moment
@@ -276,7 +276,7 @@ class EggBehavior extends Behavior {
 
     case ActorState.Hatched:
       data.hp -= dt // deplete until removed
-      dirtyServer(actor.data)
+      dirtyServer(data)
       break
     }
   }
@@ -640,7 +640,6 @@ function newActorData (
     instant: ActorInstant.None,
 
     data: {}, // behavior data
-    dirty: CLIENT_DIRTY, // start dirty!
   }
   const actor :Actor = { id, config, data }
   if (!behavior) behavior = Behavior.getBehavior(actor) // get default
