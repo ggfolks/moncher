@@ -54,6 +54,10 @@ const CHAT_CIRCLE_MAX_DURATION = 2 * 60 // 2 minutes
 /** How often do monsters act happy together? */
 const CHAT_BOUNCE_INTERVAL = 4.8
 
+/** Dirty flags. */
+const SERVER_DIRTY = 1 << 0
+const CLIENT_DIRTY = 1 << 1
+
 const MAX_FIREFLIES = 10 // maximum number of fireflies to have in the scene?
 
 /**
@@ -202,7 +206,7 @@ abstract class Behavior {
     this.initData(actor, data, arg)
     data.code = this.code
     actor.data.data = data
-    actor.data.dirty = true
+    actor.data.dirty = CLIENT_DIRTY
 
     //log.debug("Starting actor on " + this.constructor.name)
   }
@@ -244,7 +248,7 @@ class DecayBehavior extends Behavior {
 
   tick (ctx :RanchContext, actor :Actor, dt :number) :void {
     actor.data.hp -= (dt / 100) // food decays
-    actor.data.dirty = true
+    dirtyServer(actor.data)
   }
 }
 
@@ -263,7 +267,7 @@ class EggBehavior extends Behavior {
         data.hp = 20
         setState(data, ActorState.ReadyToHatch)
       }
-      data.dirty = true
+      dirtyServer(actor.data)
       break
 
     case ActorState.Hatching: // we are only hatching for a moment
@@ -272,7 +276,7 @@ class EggBehavior extends Behavior {
 
     case ActorState.Hatched:
       data.hp -= dt // deplete until removed
-      data.dirty = true
+      dirtyServer(actor.data)
       break
     }
   }
@@ -284,7 +288,7 @@ class EggBehavior extends Behavior {
       // spawn monster with the same owner at the same location
       addActor(ctx, data.owner, actor.config.spawn!, data /*Located*/, HatchingBehavior.INSTANCE)
       data.owner = UUID0 // update the EGG to be owned by nobody
-      data.dirty = true
+      dirtyClient(data)
       return true
     }
     return false
@@ -335,12 +339,12 @@ abstract class MonsterBehavior extends MobileBehavior {
     const data = actor.data
     if (data.instant !== ActorInstant.None) {
       data.instant = ActorInstant.None
-      data.dirty = true
+      dirtyClient(data)
     }
 
     if (data.hunger < STARVING_HUNGER) {
       data.hunger += dt
-      data.dirty = true
+      dirtyServer(data)
     }
   }
 
@@ -348,7 +352,7 @@ abstract class MonsterBehavior extends MobileBehavior {
     const data = actor.data
     data.instant = (Math.random() < .8) ? ActorInstant.Touched : ActorInstant.Hit
     data.orient = 0 // face forward
-    data.dirty = true
+    dirtyClient(data)
 
     // TEMP: debug sizes
     if (arg && arg["debug"]) {
@@ -404,7 +408,7 @@ class ChatCircleBehavior extends MonsterBehavior {
       // break it up!
       this.breakCircle(ctx, data.info as any as Located, true)
     }
-    data.dirty = true // oh yeah, you like it when I mark dirty, don't you?
+    dirtyClient(data)
   }
 
   touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
@@ -523,7 +527,7 @@ class EatFoodBehavior extends MonsterBehavior {
         const foodData = food.data
         if (getDistance(data, foodData) < CLOSE_EAT_DISTANCE) {
           foodData.hp -= 50
-          foodData.dirty = true
+          dirtyServer(foodData)
           bd.phase = 2
           bd.time = EATING_DURATION
           setState(data, ActorState.Eating)
@@ -536,8 +540,8 @@ class EatFoodBehavior extends MonsterBehavior {
         bd.phase = 1
         // if we haven't complained lately, message our owner asking for food
         if (canPost(actor)) sendActorPost(ctx, actor, "I'm hungry and there's no food!", "hungry")
+        dirtyServer(data)
       }
-      data.dirty = true
       break
 
     case 1: // we didn't find food
@@ -558,7 +562,7 @@ class EatFoodBehavior extends MonsterBehavior {
         setState(data, ActorState.Sleepy)
         bd.phase = 3
       }
-      data.dirty = true
+      dirtyServer(data)
       break
 
     case 3: // looking for a nap spot
@@ -566,10 +570,10 @@ class EatFoodBehavior extends MonsterBehavior {
       if (newpos) {
         walkTo(ctx, actor, newpos, WALK_TO_NAP_SPEED)
         bd.phase = 4
+        dirtyServer(data)
       } else {
         // let's just try again next tick?
       }
-      data.dirty = true
       break
 
     case 4: // we are now ready to sleep
@@ -592,7 +596,7 @@ class SleepBehavior extends MonsterBehavior {
   tick (ctx :RanchContext, actor :Actor, dt :number) :void {
     const bd = actor.data.data!
     bd.time -= dt
-    actor.data.dirty = true
+    dirtyServer(actor.data)
     if (bd.time <= 0) {
       WanderBehavior.INSTANCE.init(actor)
     }
@@ -636,7 +640,7 @@ function newActorData (
     instant: ActorInstant.None,
 
     data: {}, // behavior data
-    dirty: true, // start dirty!
+    dirty: CLIENT_DIRTY, // start dirty!
   }
   const actor :Actor = { id, config, data }
   if (!behavior) behavior = Behavior.getBehavior(actor) // get default
@@ -648,7 +652,6 @@ function newActorData (
 /**
  * Publish an actor update derived from the specified ActorData. */
 function actorDataToUpdate (data :ActorData) :ActorUpdate {
-  delete data.dirty
   const {x, y, z, scale, orient, state, instant, owner, name, path} = data
   return {
     x, y, z,
@@ -698,7 +701,10 @@ function publishChanges (ctx :RanchContext) :void {
     if (data.hp <= 0) {
       removeActor(ctx, id)
     } else if (data.dirty) {
-      ctx.obj.actors.set(id, actorDataToUpdate(data))
+      if (data.dirty & CLIENT_DIRTY) {
+        ctx.obj.actors.set(id, actorDataToUpdate(data))
+      }
+      delete data.dirty
       ctx.obj.actorData.set(id, data)
     }
   })
@@ -735,14 +741,14 @@ function growMonster (data :ActorData) :void {
   // get us 1/4th of the way to max size
   const increment = Math.min(MAX_INCREMENT, Math.max(0, (MAX_MONSTER_SCALE - data.scale)) * .25)
   data.scale = Math.min(MAX_MONSTER_SCALE, data.scale + increment)
-  data.dirty = true
+  dirtyClient(data)
 }
 
 function shrinkMonster (data :ActorData) :void {
   const SHRINKAGE_FACTOR = .1
   const decrement = data.scale * SHRINKAGE_FACTOR
   data.scale = Math.max(MIN_MONSTER_SCALE, data.scale - decrement)
-  data.dirty = true
+  dirtyClient(data)
 }
 
 /**
@@ -786,7 +792,7 @@ function setActorName (ctx :RanchContext, ownerId :UUID, id :UUID, name :string)
     log.info("Renaming actor", "id", id, "name", name)
     const oname = actor.data.name
     actor.data.name = name
-    actor.data.dirty = true
+    dirtyClient(actor.data)
     // TODO: push an immediate actor update?
 
     // update this monster's profile
@@ -821,7 +827,7 @@ function sendActorPost (ctx :RanchContext, actor :Actor, text :string, imageType
 
 function setState (data :ActorData, state :ActorState) :void {
   data.state = state
-  data.dirty = true
+  dirtyClient(data)
 }
 
 /**
@@ -903,7 +909,7 @@ function stopWalking (
     // override their ending orientation with the current path segment's orientation
     actor.data.orient = actor.data.path.orient
     actor.data.path = undefined
-    actor.data.dirty = true
+    dirtyClient(actor.data)
   }
 }
 
@@ -962,7 +968,7 @@ function walkTo (
   actor.data.path = info
   // set our final angle to something wacky
   actor.data.orient = Math.random() * Math.PI * 2
-  actor.data.dirty = true
+  dirtyClient(actor.data)
 }
 
 function advanceWalk (ctx :RanchContext, actor :Actor, dt :number) :void {
@@ -976,7 +982,7 @@ function advanceWalk (ctx :RanchContext, actor :Actor, dt :number) :void {
       data.x = (path.src.x - path.dest.x) * perc + path.dest.x
       data.y = (path.src.y - path.dest.y) * perc + path.dest.y
       data.z = (path.src.z - path.dest.z) * perc + path.dest.z
-      data.dirty = true
+      dirtyClient(data)
       return
     }
     // otherwise we used-up a path segment
@@ -990,7 +996,7 @@ function advanceWalk (ctx :RanchContext, actor :Actor, dt :number) :void {
       // proceed to assign path to undefined, and fall out of the while
     }
     path = data.path = path.next
-    data.dirty = true
+    dirtyClient(data)
   }
 }
 
@@ -1005,4 +1011,17 @@ function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|un
   foundPath.unshift(srcVec) // put the damn src back on the start of the list
   //return foundPath.map(v => vec2loc(v))
   return foundPath
+}
+
+function dirtyServer (data :ActorData) :void {
+  dirty(data, SERVER_DIRTY)
+}
+
+function dirtyClient (data :ActorData) :void {
+  dirty(data, CLIENT_DIRTY)
+}
+
+function dirty (data :ActorData, level :number) :void {
+  if (data.dirty === undefined) data.dirty = level
+  else data.dirty |= level
 }

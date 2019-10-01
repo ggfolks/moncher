@@ -180,6 +180,8 @@ export interface ActorData extends Located {
   /** Unchanging data regarding the behavior. */
   info? :BehaviorInfo
 
-  /** Has something changed such that we need to republish this object (and an ActorUpdate). */
-  dirty? :boolean
+  /** Flags containing the dirtyness level of this data. If the SERVER flag is on, the
+   *  ActorData will be re-set() in the Map to persist it. If the CLIENT flag is also on,
+   *  then a new ActorUpdate is published (and persisted). */
+  dirty? :number
 }
