@@ -53,6 +53,9 @@ if (ranchId === "") {
   } else {
     window.location.pathname = `${appPath}/5cXg8Tp5WwsuVeO7JflubY`
   }
+} else if (window.location.hostname === "localhost") {
+  // store this ranchId
+  localStorage.setItem("ranchid", ranchId)
 }
 
 export class App implements Disposable {
