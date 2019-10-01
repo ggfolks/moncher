@@ -273,7 +273,7 @@ export type RanchReq =
     /** A client-initiated tick (TEMP) */
     {type :"tick"}
 
-//const ranchQ = (id :UUID) => RanchObject.queueAddr(["ranches", id], "ranchq")
+export const ranchQ = (id :UUID) => RanchObject.queueAddr(["ranches", id], "ranchq")
 
 function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
   global[SERVER_FUNCS].handleRanchReq(obj, req, auth)

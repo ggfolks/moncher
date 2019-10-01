@@ -83,7 +83,7 @@ import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
 import {LerpRecord, LerpSystem} from "./lerpsystem"
 import {RanchObject, RanchReq} from "./data"
-import {InstallAppView, OccupantsView, createDialog, label, button, textBox} from "./ui"
+import {InstallAppView, OccupantsView, createDialog, createEditNameDialog, label, button, textBox} from "./ui"
 import {showEggInvite, showEggAuth, generateName} from "./egg"
 
 class ActorInfo {
@@ -712,11 +712,16 @@ export class RanchMode extends Mode {
 
     // set up nodes to capture touches on the actor and call our callback
     graphCfg.hover = {type: "hover", component: "hovers"}
+    graphCfg.shiftPressed = {type: "key", code: 16}
+    graphCfg.shiftNotPressed = {type: "not", input: "shiftPressed"}
+    graphCfg.pressWithShift = {type: "and", inputs: [["hover", "pressed"], "shiftPressed"]}
+    graphCfg.pressNoShift = {type: "and", inputs: [["hover", "pressed"], "shiftNotPressed"]}
+    // graphCfg.hoverPressed = {type: "output", name: "hoverPressed", input: ["hover", "pressed"]}
 
     let timeoutHandle :number|undefined
     graphCfg.detectTouch = {
       type: "onChange",
-      input: ["hover", "pressed"],
+      input: "pressNoShift",
       callback: (nv :boolean, ov :boolean) => {
         if (timeoutHandle !== undefined) {
           window.clearTimeout(timeoutHandle)
@@ -742,6 +747,20 @@ export class RanchMode extends Mode {
 //0
 //0        } else {
 //0          triggerInspect.update(false)
+        }
+      },
+    }
+
+    graphCfg.shiftTouch = {
+      type: "onChange",
+      input: "pressWithShift",
+      callback: (nv :boolean, ov :boolean) => {
+        if (nv) {
+          const config = this._ranchObj.actorConfigs.get(id)
+          const update = this._ranchObj.actors.get(id)
+          if (config && update) {
+            this.actorShiftTouched(id, config, update)
+          }
         }
       },
     }
@@ -1081,6 +1100,13 @@ export class RanchMode extends Mode {
       req.arg = {debug: true}
     }
     this._ranchObj.ranchq.post(req)
+  }
+
+  protected actorShiftTouched (id :UUID, config :ActorConfig, update :ActorUpdate) {
+    // show name dialog if you shift-click an actor that you own
+    if (this._app.user.user.key == update.owner) {
+      createEditNameDialog(this._app, this._host, "Name Your Moncher", id)
+    }
   }
 
   /**
