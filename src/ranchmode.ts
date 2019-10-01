@@ -1083,7 +1083,7 @@ export class RanchMode extends Mode {
   protected actorTouched (id :UUID, config :ActorConfig, update :ActorUpdate) :void {
     // TEMP: hackery to require invite to touch/hatch egg
     if (!this._ranchObj.debug.current && config.kind === ActorKind.Egg) {
-      if (this._app.user.user.key == update.owner) {
+      if (this._app.user.user.key === update.owner) {
         showEggInvite(this._app, this._host, this._app.state.ranchId, id)
         return
       }
@@ -1104,7 +1104,7 @@ export class RanchMode extends Mode {
 
   protected actorShiftTouched (id :UUID, config :ActorConfig, update :ActorUpdate) {
     // show name dialog if you shift-click an actor that you own
-    if (this._app.user.user.key == update.owner) {
+    if (this._app.user.user.key === update.owner) {
       createEditNameDialog(this._app, this._host, "Name Your Moncher", id)
     }
   }
