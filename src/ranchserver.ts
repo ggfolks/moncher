@@ -958,13 +958,14 @@ function stopWalking (
 function stopWalkingOutsideTick (
   ctx :RanchContext,
   actor :Actor,
-) :void {
-  if (!actor.data.path) return
+) :number {
+  if (!actor.data.path) return 0
 
   // fake like we received a tick, but just for this walk
   const dt = (Date.now() - ctx.obj.lastTick.current) / 1000
   advanceWalk(ctx, actor, dt)
   stopWalking(ctx, actor)
+  return dt
 }
 
 /**
@@ -1077,9 +1078,19 @@ function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
     addActor(ctx, ctx.auth.id, avatar, loc)
     return
   }
-  stopWalkingOutsideTick(ctx, actor)
+  const advancedDt = stopWalkingOutsideTick(ctx, actor)
   walkTo(ctx, actor, loc)
   publishOneActor(ctx, actor)
+
+  // for now, update the walk by projecting the src back to a fake position where it would
+  // have been on the previous tick!
+  const path = actor.data.path
+  if (!path) return // never actually did the walk...
+  const perc = (path.duration + advancedDt) / path.duration // over 100%
+  path.src.x = path.dest.x + ((path.src.x - path.dest.x) * perc)
+  path.src.y = path.dest.y + ((path.src.y - path.dest.y) * perc)
+  path.src.z = path.dest.z + ((path.src.z - path.dest.z) * perc)
+  path.duration += advancedDt
 }
 
 function maybeDefrostAvatar (ctx :RanchContext, id :UUID) :void {
