@@ -25,6 +25,7 @@ const serverUrl = stripTrailingSlash(process.env.SERVER_URL || "http://localhost
 
 /** The name of the pathfinder stuffed in global. */
 export const PATHFINDER_GLOBAL = "_ranchPathfinder"
+export const NAVMESH_GLOBAL = "_navMesh"
 
 const MAX_MONSTER_SCALE = 4
 const DEFAULT_MONSTER_SCALE = 1
@@ -337,23 +338,23 @@ class AvatarBehavior extends MobileBehavior {
     const data = actor.data
     for (let rads = 0; rads < Math.PI * 2; rads += (Math.PI / 6)) {
       const point =
-        new Vector3(data.x + Math.sin(rads) * radius, data.y, data.z + Math.cos(rads)  * radius)
+        new Vector3(data.x + Math.sin(rads) * radius, data.y, data.z + Math.cos(rads) * radius)
       //const proj = ctx.path.projectOnNavmesh(point)
       const proj = this.project(point)
-      if (!proj) {
-        log.warn("Projection returned null?")
-      } else {
+      if (proj) {
         addActor(ctx, ctx.auth.id, MonsterDb.getRandomEgg(), vec2loc(proj))
+      } else {
+        log.warn("Projection returned null?")
       }
     }
     return false
   }
 
-  project (vec :Vector3) :Vector3|null {
+  protected project (vec :Vector3) :Vector3|null {
     const origin = vec.clone().setY(10)
     const direction = new Vector3(0, -1, 0)
     const caster = new Raycaster(origin, direction)
-    for (const result of caster.intersectObject(global["navMesh"] as Object3D, true)) {
+    for (const result of caster.intersectObject(global[NAVMESH_GLOBAL] as Object3D, true)) {
       return result.point
     }
     return null
