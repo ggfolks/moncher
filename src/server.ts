@@ -158,4 +158,5 @@ function configureNavMesh (gltf :any) :void {
 //  log.debug("I got something: " + navMesh)
 //  log.debug("It's a mesh? " + (navMesh instanceof Mesh))
   global[PATHFINDER_GLOBAL] = new ZonedPathfinding(navMesh.geometry)
+  global["navMesh"] = navMesh
 }

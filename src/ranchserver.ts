@@ -2,7 +2,7 @@ import {Data, Record} from "tfw/core/data"
 import {log} from "tfw/core/util"
 import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
 import {Auth, MetaMsg} from "tfw/data/data"
-import {Vector3} from "three"
+import {Object3D, Raycaster, Vector3} from "three"
 import {RanchObject, RanchReq, ProfileType, profileQ, channelQ} from "./data"
 import {MonsterDb} from "./monsterdb"
 import {ZonedPathfinding} from "./zonedpathfinding"
@@ -338,15 +338,25 @@ class AvatarBehavior extends MobileBehavior {
     for (let rads = 0; rads < Math.PI * 2; rads += (Math.PI / 6)) {
       const point =
         new Vector3(data.x + Math.sin(rads) * radius, data.y, data.z + Math.cos(rads)  * radius)
-      log.info("Circle point!", "pt", point)
-      const proj = ctx.path.projectOnNavmesh(point)
+      //const proj = ctx.path.projectOnNavmesh(point)
+      const proj = this.project(point)
       if (!proj) {
         log.warn("Projection returned null?")
       } else {
-        log.info("Projected point", "point", point, "proj", proj)
+        addActor(ctx, ctx.auth.id, MonsterDb.getRandomEgg(), vec2loc(proj))
       }
     }
     return false
+  }
+
+  project (vec :Vector3) :Vector3|null {
+    const origin = vec.clone().setY(10)
+    const direction = new Vector3(0, -1, 0)
+    const caster = new Raycaster(origin, direction)
+    for (const result of caster.intersectObject(global["navMesh"] as Object3D, true)) {
+      return result.point
+    }
+    return null
   }
 }
 
