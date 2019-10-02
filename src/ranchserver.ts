@@ -1,7 +1,7 @@
 import {Data, Record} from "tfw/core/data"
 import {log} from "tfw/core/util"
 import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
-import {Auth} from "tfw/data/data"
+import {Auth, MetaMsg} from "tfw/data/data"
 import {Vector3} from "three"
 import {RanchObject, RanchReq, ProfileType, profileQ, channelQ} from "./data"
 import {MonsterDb} from "./monsterdb"
@@ -69,6 +69,19 @@ interface RanchContext {
 }
 
 /**
+ * Observe (we don't need to handle) meta messages. */
+export function observeRanchMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth) :void {
+  if (msg.type === "subscribed" || msg.type === "unsubscribed") {
+    const ctx :RanchContext = {obj, auth, path: global[PATHFINDER_GLOBAL]}
+    if (msg.type === "subscribed") {
+      maybeDefrostAvatar(ctx, msg.id)
+    } else {
+      maybeFreezeAvatar(ctx, msg.id)
+    }
+  }
+}
+
+/**
  * The queue handler for client-initiated requests to the ranch. */
 export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
   const ctx :RanchContext = { obj, auth, path: global[PATHFINDER_GLOBAL] }
@@ -126,6 +139,11 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
     obj.actorData.clear()
     obj.actors.clear()
     obj.actorConfigs.clear()
+    obj.frozenAvatars.clear()
+    break
+
+  case "move":
+    handleAvatarMove(ctx, req)
     break
 
   default:
@@ -302,6 +320,15 @@ abstract class MobileBehavior extends Behavior {
     super.tick(ctx, actor, dt)
     advanceWalk(ctx, actor, dt)
   }
+}
+
+/**
+ * The behavior implemented by avatars.
+ * Handles walking and other future stuffs. */
+class AvatarBehavior extends MobileBehavior {
+  static INSTANCE = new AvatarBehavior(ActorKind.Avatar)
+
+  // nothing else yet
 }
 
 /**
@@ -495,7 +522,7 @@ class WanderBehavior extends MonsterBehavior {
     if (Math.random() < .5) {
       const newpos = getRandomPositionFrom(ctx, data, MAX_WANDER_DISTANCE * data.scale)
       if (newpos) {
-        walkTo(ctx, actor, newpos)
+        walkToAndFaceRandomly(ctx, actor, newpos)
       }
     }
   }
@@ -610,9 +637,11 @@ class SleepBehavior extends MonsterBehavior {
 }
 
 // mother-fricking compiler doesn't know that the INSTANCES handle it!
+// TODO: Maybe I create an BehaviorRegistry that contains the static elements of Behavior,
+// and then we can just register instances externally so that this gruntling hackery can go away
 if (false) {
   log.debug("Gruntle: " + DecayBehavior + EggBehavior + WanderBehavior +
-      ChatCircleBehavior + EatFoodBehavior + SleepBehavior)
+      ChatCircleBehavior + EatFoodBehavior + SleepBehavior + AvatarBehavior)
 }
 
 /**
@@ -673,7 +702,7 @@ function addActor (
   locProps :Located,
   behavior? :Behavior,
 ) :void {
-  const id = uuidv1()
+  const id = (config.kind === ActorKind.Avatar) ? owner : uuidv1()
   const data = newActorData(id, owner, config, locProps, behavior)
   const update = actorDataToUpdate(data)
   ctx.obj.actorConfigs.set(id, config)
@@ -700,13 +729,23 @@ function publishChanges (ctx :RanchContext) :void {
     if (data.hp <= 0) {
       removeActor(ctx, id)
     } else if (data.dirty) {
-      if (data.dirty & CLIENT_DIRTY) {
+      if ((data.dirty & CLIENT_DIRTY) != 0) {
         ctx.obj.actors.set(id, actorDataToUpdate(data))
       }
       delete data.dirty
       ctx.obj.actorData.set(id, data)
     }
   })
+}
+
+function publishOneActor (ctx :RanchContext, actor :Actor) :void {
+  if (actor.data.dirty) {
+    if ((actor.data.dirty & CLIENT_DIRTY) != 0) {
+      ctx.obj.actors.set(actor.id, actorDataToUpdate(actor.data))
+    }
+    delete actor.data.dirty
+    ctx.obj.actorData.set(actor.id, actor.data)
+  }
 }
 
 function tickRanch (
@@ -929,12 +968,25 @@ function stopWalkingOutsideTick (
 }
 
 /**
+ * Walk to a location, with a random facing direction once we arrive. */
+function walkToAndFaceRandomly (
+  ctx :RanchContext,
+  actor :Actor,
+  newPos :Located,
+  speedFactor = 1,
+) :void {
+  walkTo(ctx, actor, newPos, speedFactor)
+  // set our final angle to something wacky
+  actor.data.orient = Math.random() * Math.PI * 2
+}
+
+/**
  * Walk to a location. */
 function walkTo (
   ctx :RanchContext,
   actor :Actor,
   newPos :Located,
-  speedFactor = 1
+  speedFactor = 1,
 ) :void {
   const path = findPath(ctx, actor.data, newPos)
   if (!path) {
@@ -961,12 +1013,11 @@ function walkTo (
     const src = path[path.length - 1]
     const duration = src.distanceTo(dest) / speed
     const orient = Math.atan2(dest.x - src.x, dest.z - src.z)
+    if (info === undefined) actor.data.orient = orient // set the final orientation
     info = { src: vec2loc(src), dest: vec2loc(dest), orient, duration, timeLeft: duration,
         next: info }
   }
   actor.data.path = info
-  // set our final angle to something wacky
-  actor.data.orient = Math.random() * Math.PI * 2
   dirtyClient(actor.data)
 }
 
@@ -1010,6 +1061,41 @@ function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|un
   foundPath.unshift(srcVec) // put the damn src back on the start of the list
   //return foundPath.map(v => vec2loc(v))
   return foundPath
+}
+
+function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
+  if (ctx.auth.isGuest) {
+    log.warn("Guest tried to move avatar?")
+    return
+  }
+  // find this player's avatar
+  const actor = getActor(ctx, ctx.auth.id)
+  if (!actor) {
+    // make a new avatar for the player!
+    const proto = MonsterDb.getRandomMonster()
+    const avatar :ActorConfig = {...proto, kind: ActorKind.Avatar}
+    addActor(ctx, ctx.auth.id, avatar, loc)
+    return
+  }
+  stopWalkingOutsideTick(ctx, actor)
+  walkTo(ctx, actor, loc)
+  publishOneActor(ctx, actor)
+}
+
+function maybeDefrostAvatar (ctx :RanchContext, id :UUID) :void {
+  const frozenData = ctx.obj.frozenAvatars.get(id)
+  if (!frozenData) return
+  const actor :Actor = {id: id, config: ctx.obj.actorConfigs.get(id)!, data: frozenData}
+  dirtyClient(actor.data)
+  publishOneActor(ctx, actor)
+}
+
+function maybeFreezeAvatar (ctx :RanchContext, id :UUID) :void {
+  const data = ctx.obj.actorData.get(id)
+  if (!data) return
+  ctx.obj.frozenAvatars.set(id, data)
+  ctx.obj.actorData.delete(id)
+  ctx.obj.actors.delete(id)
 }
 
 function dirtyServer (data :ActorData) :void {

@@ -231,6 +231,10 @@ export class RanchObject extends DObject {
   @dmap("uuid", "record", true)
   actorData = this.map<UUID, ActorData>()
 
+  /** "Frozen" avatars- player avatars for players who aren't connected. */
+  @dmap("uuid", "record", true)
+  frozenAvatars = this.map<UUID, ActorData>()
+
   /** Keeps the last time we were ticked, from Date.now() */
   @dvalue("number")
   lastTick = this.value(0)
@@ -247,6 +251,7 @@ export class RanchObject extends DObject {
     default: return super.canRead(prop, auth)
     case "actorData":
     case "lastTick":
+    case "frozenAvatars":
       return auth.isSystem
     }
   }
@@ -262,6 +267,8 @@ export type RanchReq =
     {type :"dropEgg", x :number, y :number, z :number} |
     /** Drop food at the specified location. */
     {type :"dropFood", x :number, y :number, z :number} |
+    /** Request to move to the specified location. */
+    {type :"move", x :number, y :number, z :number} |
     /** Set the name of an actor. */
     {type :"setActorName", id :UUID, name :string} |
     /** Set the name of the ranch. (TEMP?) */
@@ -296,6 +303,7 @@ function handleRanchMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth) {
       serverQ, {type: "inactive", what: "ranch", id: obj.key})
     break
   }
+  global[SERVER_FUNCS].observeRanchMetaMsg(obj, msg, auth)
 }
 
 @dobject

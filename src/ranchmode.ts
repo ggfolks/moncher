@@ -1276,6 +1276,10 @@ export class RanchMode extends Mode {
           this.adjustCameraTarget(
               change.value.movement[0] * MOUSE_FACTOR,
               change.value.movement[1] * MOUSE_FACTOR)
+        } else if (this._app.notGuest.current) {
+          // TODO: trigger "move" differently so that it's a bit more intentional
+          const loc = this.mouseToLocation(change.value.position)
+          if (loc) this._ranchObj.ranchq.post({type: "move", x: loc.x, y: loc.y, z: loc.z})
         }
         break
 

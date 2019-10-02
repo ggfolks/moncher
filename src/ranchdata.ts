@@ -14,6 +14,9 @@ export const enum ActorKind {
   Runner = 4,
   Healer = 5,
   Firefly = 6,
+
+  /** A player-controlled actor. */
+  Avatar = 100,
 }
 
 /**

@@ -12,7 +12,7 @@ import {FirebaseAuthValidator} from "tfw/auth/firebase"
 import {ServerObject} from "./data"
 import {ZonedPathfinding} from "./zonedpathfinding"
 import {SERVER_FUNCS} from "./ranchdata"
-import {handleRanchReq, PATHFINDER_GLOBAL} from "./ranchserver"
+import {handleRanchReq, observeRanchMetaMsg, PATHFINDER_GLOBAL} from "./ranchserver"
 import {Notifier} from "./notifier"
 import {Ticker} from "./ticker"
 
@@ -112,6 +112,7 @@ server.state.whenOnce(s => s === "terminated", _ => ticker.dispose())
 /** Configure serverside handlers in a special global object to hide from the client. */
 global[SERVER_FUNCS] = {
   handleRanchReq,
+  observeRanchMetaMsg,
 }
 
 // Load the navmesh GLB and put our pathfinder into global
