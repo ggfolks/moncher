@@ -75,6 +75,9 @@ export function observeRanchMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth)
     const ctx :RanchContext = {obj, auth, path: global[PATHFINDER_GLOBAL]}
     if (msg.type === "subscribed") {
       maybeDefrostAvatar(ctx, msg.id)
+      if (ctx.obj.occupants.size === 1) {
+        freezeOtherAvatars(ctx, msg.id)
+      }
     } else {
       maybeFreezeAvatar(ctx, msg.id)
     }
@@ -1107,6 +1110,14 @@ function maybeFreezeAvatar (ctx :RanchContext, id :UUID) :void {
   ctx.obj.frozenAvatars.set(id, data)
   ctx.obj.actorData.delete(id)
   ctx.obj.actors.delete(id)
+}
+
+function freezeOtherAvatars (ctx :RanchContext, id :UUID) :void {
+  visitActors(ctx, actor => {
+    if (actor.config.kind === ActorKind.Avatar && actor.id !== id) {
+      maybeFreezeAvatar(ctx, actor.id)
+    }
+  })
 }
 
 function dirtyServer (data :ActorData) :void {
