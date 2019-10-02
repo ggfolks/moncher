@@ -612,6 +612,12 @@ export class RanchMode extends Mode {
           // let's say: this is the same!
           let pathPiece :PathInfo|undefined = path
           while (pathPiece && existingPath) {
+            // TODO: this, along with not checking the src equivalence, was intended to
+            // cope with paths started mid-tick, which interpolate the src back...
+            // It doesn't work, time to stop being funny.
+//            if (existingPath.stamp && pathPiece.duration != existingPath.duration) {
+//              existingPath.stamp += (pathPiece.duration - existingPath.duration)
+//            }
             pathPiece.stamp = existingPath.stamp
             pathPiece.ended = existingPath.ended
             pathPiece = pathPiece.next

@@ -1094,6 +1094,10 @@ function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
   path.src.y = path.dest.y + ((path.src.y - path.dest.y) * perc)
   path.src.z = path.dest.z + ((path.src.z - path.dest.z) * perc)
   path.duration += advancedDt
+  // TODO: this isn't actually working. The client is matching path segments and copying
+  // over the timestamp, so I tried to make it only match the destination and also
+  // take care of the extra time we added, but it's still not quite right.
+  // Rather than make ever more twisted modifications to this, it's time to just rethink it.
 }
 
 function maybeDefrostAvatar (ctx :RanchContext, id :UUID) :void {
