@@ -6,7 +6,7 @@ import * as fs from "fs"
 import {TextEncoder, TextDecoder} from "util"
 import {setTextCodec} from "tfw/core/codec"
 import {log} from "tfw/core/util"
-import {Server} from "tfw/data/server"
+import {Server, DataStore, MemoryDataStore} from "tfw/data/server"
 import {FirebaseDataStore} from "tfw/data/firebase"
 import {FirebaseAuthValidator} from "tfw/auth/firebase"
 import {ServerObject} from "./data"
@@ -18,17 +18,18 @@ import {Ticker} from "./ticker"
 
 setTextCodec(() => new TextEncoder() as any, () => new TextDecoder() as any)
 
-firebase.initializeApp({
+const haveFBCreds = !!process.env.GOOGLE_APPLICATION_CREDENTIALS
+const fireConfig = {
   apiKey: "AIzaSyBqGwobKx4ReOufFpoQcKD8qv_jY4lgRSk",
   authDomain: "tfwchat.firebaseapp.com",
-  credential: admin.credential.applicationDefault(),
   databaseURL: "https://tfwchat.firebaseio.com",
   projectId: "tfwchat",
   storageBucket: "tfwchat.appspot.com",
   messagingSenderId: "733313051370",
   appId: "1:733313051370:web:ef572661b45a730f8d8593"
-})
-const adminApp = admin.initializeApp()
+}
+if (haveFBCreds) fireConfig["credential"] = admin.credential.applicationDefault()
+firebase.initializeApp(fireConfig)
 
 function mimeType (path :string) :string {
   const ldidx = path.lastIndexOf("."), suff = path.substring(ldidx+1).toLowerCase()
@@ -75,7 +76,18 @@ const httpServer = http.createServer((req, rsp) => {
 httpServer.listen(httpPort)
 log.info("Listening for connections", "port", httpPort)
 
-const store = new FirebaseDataStore(ServerObject)
+function createStore () :[DataStore, () => Promise<void>] {
+  if (haveFBCreds) {
+    log.info("Using Firebase data store")
+    const store = new FirebaseDataStore(ServerObject)
+    return [store, () => store.shutdown()]
+  } else {
+    log.info("Using memory data store")
+    return [new MemoryDataStore(ServerObject), () => Promise.resolve(undefined)]
+  }
+}
+const [store, shutdownStore] = createStore()
+
 const server = new Server(store, {firebase: new FirebaseAuthValidator()}, {httpServer})
 server.state.onValue(ss => {
   log.info(`Server state: ${ss}`)
@@ -88,7 +100,7 @@ server.errors.onEmit(error => {
 const signalHandler = () => {
   httpServer.close()
   server.shutdown()
-  store.shutdown().then(_ => {
+  shutdownStore().then(_ => {
     log.info("Server shutdown complete")
     process.exit(0)
   })
@@ -101,9 +113,12 @@ fs.writeFile("server.pid", `${process.pid}`, err => {
   if (err) log.warn("Failed to write pid file", err)
 })
 
-// this guy sends out FCM notifications for chat channel messages
-const notifier = new Notifier(adminApp, server.store)
-server.state.whenOnce(s => s === "terminated", _ => notifier.dispose())
+if (haveFBCreds) {
+  const adminApp = admin.initializeApp()
+  // this guy sends out FCM notifications for chat channel messages
+  const notifier = new Notifier(adminApp, server.store)
+  server.state.whenOnce(s => s === "terminated", _ => notifier.dispose())
+}
 
 // this guy ticks active ranches
 const ticker = new Ticker(server.store)
