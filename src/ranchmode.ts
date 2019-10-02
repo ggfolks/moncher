@@ -23,7 +23,7 @@ import {Body} from "cannon"
 import {Clock} from "tfw/core/clock"
 import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
-import {Mutable, Value} from "tfw/core/react"
+import {Mutable, Subject, Value} from "tfw/core/react"
 import {
   Noop,
   PMap,
@@ -49,6 +49,7 @@ import {
   AnimationSystem,
   HoverMap,
   SceneSystem,
+  loadGLTF,
   loadGLTFAnimationClip,
 } from "tfw/scene3/entity"
 import {HTMLHost} from "tfw/ui/element"
@@ -254,16 +255,20 @@ export class RanchMode extends Mode {
   }
 
   protected preloadObj (url :string) :void {
-    this.preloadAnim(url + "#") // pretend it has an animation named ""
+    this.preload(url, () => loadGLTF(url))
   }
 
   protected preloadAnim (url :string) :void {
+    this.preload(url, () => loadGLTFAnimationClip(url))
+  }
+
+  protected preload<T> (url :string, doLoad :() => Subject<T>) :void {
     if (this._preloads.has(url)) return // we already got one!
     let handle :any
     const cancelLater :Remover = () => { clearImmediate(handle) }
     const runLater = () => {
         // replace 'cancelLater' with the Subject's remover
-        this._preloads.set(url, loadGLTFAnimationClip(url).onEmit(Noop))
+        this._preloads.set(url, doLoad().onEmit(Noop))
       }
     handle = setImmediate(runLater)
     this._preloads.set(url, cancelLater)
