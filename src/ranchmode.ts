@@ -17,7 +17,7 @@ import {
   WebGLRenderer,
 } from "three"
 
-import {Body} from "cannon"
+//import {Body} from "cannon"
 
 //import {loadImage} from "tfw/core/assets"
 import {Clock} from "tfw/core/clock"
@@ -385,7 +385,7 @@ export class RanchMode extends Mode {
     const obj = this._obj = new DenseValueComponent<Object3D>("obj", new Object3D())
     const mixer = new DenseValueComponent<AnimationMixer>("mixer",
         new AnimationMixer(new Object3D()))
-    const body = new DenseValueComponent<Body>("body", new Body())
+    //const body = new DenseValueComponent<Body>("body", new Body())
     const updates = this._updates =
         new DenseValueComponent<ActorUpdate>("updates", blankActorUpdate())
     const hovers = new SparseValueComponent<HoverMap>("hovers", new Map())
@@ -394,7 +394,7 @@ export class RanchMode extends Mode {
     const lerps = new SparseValueComponent<LerpRecord>("lerps", LerpRecord.DUMMY)
 
     const domain = this._domain = new Domain({},
-        {trans, obj, mixer, body, updates, paths, hovers, graph, lerps})
+        {trans, obj, mixer, /*body,*/ updates, paths, hovers, graph, lerps})
     this._pathsys = new PathSystem(domain, trans, paths, updates, this.setY.bind(this))
     this._lerpsys = new LerpSystem(domain, lerps, trans, obj, 1.2)
     this._scenesys = new SceneSystem(
