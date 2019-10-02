@@ -183,6 +183,117 @@ class Pathfinding {
   path.shift();
   return path;
  }
+
+ /**
+  * Project a point onto the navmesh.
+  *
+  * @param  {THREE.Vector3} position Start position.
+  * @param  {string} zoneID ID of current zone.
+  * @param  {number} groupID Current group ID.
+  * @return {THREE.Vector3} Position on the navmesh, or null.
+  */
+  projectOnNavmesh (position, zoneID, groupID) {
+    const nodes = this.zones[zoneID].groups[groupID];
+    const vertices = this.zones[zoneID].vertices;
+
+    let closestNode = null;
+    let distance = Infinity;
+    let finalProj = null,
+      proj = null,
+      node = null,
+      measuredDistance = 0;
+
+    for (let i = 0; i < nodes.length; i++) {
+      node = nodes[i];
+
+      proj = this._getProjectionOnNode(position, node, vertices);
+      measuredDistance = position.distanceToSquared(proj);
+
+      if (measuredDistance < distance) {
+        distance = measuredDistance;
+        //this.meshes[3].position.copyFrom(proj);
+        finalProj = proj;
+        closestNode = node;
+      }
+
+    }
+
+    return finalProj;
+  }
+
+  _projectPointOnPlane (point, plane) {
+    const coef = point.dot(plane.normal) + plane.d;
+    const proj = point.clone().sub(plane.normal.clone().multiplyScalar(coef));
+
+    return proj;
+  }
+
+ /**
+  * Project a point onto one node (is that a face?).
+  *
+  * @param  {THREE.Vector3} position Start position.
+  * @param  {Node} node the node
+  * @param  {number} groupID Current group ID.
+  * @return {THREE.Vector3} Position on the navmesh, or null.
+  */
+  _getProjectionOnNode (position, node, vertices) {
+
+    const A = this._getVectorFrom(vertices, node.vertexIds[0]);
+    const B = this._getVectorFrom(vertices, node.vertexIds[1]);
+    const C = this._getVectorFrom(vertices, node.vertexIds[2]);
+    const u = B.clone().sub(A);
+    const v = C.clone().sub(A);
+    const n = u.clone().cross(v).normalize();
+
+    const plane = {
+      normal: n,
+      d: -A.dot(n)
+    };
+    const p = this._projectPointOnPlane(position, plane);
+    // Compute barycentric coordinates (u, v, w) for
+    // point p with respect to triangle (a, b, c)
+    const barycentric = function (p, a, b, c) {
+      const ret = {};
+
+      const v0 = c.clone().sub(a),
+        v1 = b.clone().sub(a),
+        v2 = p.clone().sub(a);
+
+      const d00 = v0.dot(v0);
+      const d01 = v0.dot(v1);
+      const d02 = v0.dot(v2);
+      const d11 = v1.dot(v1);
+      const d12 = v1.dot(v2);
+      const denom = d00 * d11 - d01 * d01;
+      ret.u = (d11 * d02 - d01 * d12) / denom;
+      ret.v = (d00 * d12 - d01 * d02) / denom;
+      ret.w = 1 - ret.u - ret.v;
+
+      return ret;
+    };
+
+    const bary = barycentric(p, A, B, C);
+
+    bary.u = Math.min(Math.max(bary.u, 0), 1);
+    bary.v = Math.min(Math.max(bary.v, 0), 1);
+
+    if (bary.u + bary.v >= 1) {
+      const sum = bary.u + bary.v;
+      bary.u /= sum;
+      bary.v /= sum;
+    }
+
+    const proj = A.clone().add(B.clone().sub(A).multiplyScalar(bary.v).add(C.clone().sub(A).multiplyScalar(bary.u)));
+
+    return proj;
+  }
+
+  _getVectorFrom (vertices, id,/* _vector*/) {
+//    if (_vector) {
+//      return _vector.set(vertices[id * 3], vertices[id * 3 + 1], vertices[id * 3 + 2]);
+//    }
+    return new THREE.Vector3(vertices[id * 3], vertices[id * 3 + 1], vertices[id * 3 + 2]);
+  }
 }
 
 /**

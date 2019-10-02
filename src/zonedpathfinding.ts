@@ -26,5 +26,13 @@ export class ZonedPathfinding {
     return this._pather.findPath(src, dest, "", groupId)
   }
 
+  /**
+   * Project a point onto the navmesh. */
+  projectOnNavmesh (pos :Vector3) :Vector3|null {
+    const groupId = this._pather.getGroup("", pos)
+    if (groupId === null) return null
+    return this._pather.projectOnNavmesh(pos, "", groupId)
+  }
+
   protected readonly _pather :Pathfinding = new Pathfinding()
 }

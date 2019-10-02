@@ -331,7 +331,23 @@ abstract class MobileBehavior extends Behavior {
 class AvatarBehavior extends MobileBehavior {
   static INSTANCE = new AvatarBehavior(ActorKind.Avatar)
 
-  // nothing else yet
+  touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
+    if (!ctx.path) return false
+    const radius = 3
+    const data = actor.data
+    for (let rads = 0; rads < Math.PI * 2; rads += (Math.PI / 6)) {
+      const point =
+        new Vector3(data.x + Math.sin(rads) * radius, data.y, data.z + Math.cos(rads)  * radius)
+      log.info("Circle point!", "pt", point)
+      const proj = ctx.path.projectOnNavmesh(point)
+      if (!proj) {
+        log.warn("Projection returned null?")
+      } else {
+        log.info("Projected point", "point", point, "proj", proj)
+      }
+    }
+    return false
+  }
 }
 
 /**
