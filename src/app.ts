@@ -94,18 +94,16 @@ export class App implements Disposable {
     this.loop.clock.onEmit(clock => this.mode.render(clock))
 
     // when we're authed as a Google user, slurp our profile info
-    this.client.serverAuth.onValue(id => {
-      if (this.client.auth.current.source === "firebase") {
-        const user = currentUser.current
-        if (user) {
+    Value.join3(this.client.serverAuth, this.client.auth, currentUser).onValue(
+      ([id, auth, user]) => {
+        if (auth.source === "firebase" && auth.id === id && user) {
           const {displayName, photoURL} = user
           const profile = this.profiles.profile(id)
           if (displayName) profile.name.update(displayName)
           if (photoURL) profile.photo.update(photoURL)
           profile.type.update(1) // person
         }
-      }
-    })
+      })
   }
 
   start () {
