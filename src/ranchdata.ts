@@ -189,3 +189,23 @@ export interface ActorData extends Located {
    *  then a new ActorUpdate is published (and persisted). */
   dirty? :number
 }
+
+//export interface ChatCircleUpdate extends Located {
+//}
+
+export interface ChatCircle extends Located {
+  /** Yes these are repeated from Located, I am very explicit. */
+  x :number
+  y :number
+  z :number
+
+  /** The circle's radius. */
+  radius :number
+
+  /** The size is how many players could fit here. The upper-bound of size is derived from the
+   *  radius, but we could have a smaller size if some points are invalid. */
+  size :number
+
+  /** Members of the chat circle. But doesn't specify their positions. Hm. */
+  members :UUID[]
+}

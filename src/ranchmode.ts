@@ -75,10 +75,11 @@ import {
   ActorKindAttributes,
   ActorState,
   ActorUpdate,
+  ChatCircle,
   PathInfo,
   blankActorUpdate,
 } from "./ranchdata"
-import {loc2vec} from "./ranchutil"
+import {loc2vec, vec2loc} from "./ranchutil"
 import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
@@ -86,6 +87,7 @@ import {LerpRecord, LerpSystem} from "./lerpsystem"
 import {RanchObject, RanchReq} from "./data"
 import {InstallAppView, OccupantsView, createDialog, createEditNameDialog, label, button, textBox} from "./ui"
 import {showEggInvite, showEggAuth, generateName} from "./egg"
+import {createChatCircle} from "./circles"
 
 class ActorInfo {
 
@@ -1150,6 +1152,17 @@ export class RanchMode extends Mode {
    * Place an egg or food. */
   protected doPlacement (pos :Vector3) :void {
     const isEgg = (this._uiState === UiState.PlacingEgg)
+    if (!isEgg) {
+      const members :UUID[] = []
+      const circle = <ChatCircle>{
+        radius: 1,
+        size: 0, // temp
+        members
+      }
+      vec2loc(pos, circle)
+      this._scenesys.scene.add(createChatCircle(circle, this._pathsys.setY))
+      return
+    }
     this._ranchObj.ranchq.post(
         {type: isEgg ? "dropEgg" : "dropFood", x: pos.x, y: pos.y, z: pos.z})
     this.setUiState(UiState.Default)
