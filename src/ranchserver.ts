@@ -86,7 +86,7 @@ export function observeRanchMetaMsg (dctx :DContext, obj :RanchObject, msg :Meta
         }
       }
       maybeDefrostAvatar(ctx, msg.id)
-    } else {
+    } else { // unsubscribed
       maybeFreezeAvatar(ctx, msg.id)
     }
   }
@@ -106,18 +106,15 @@ export function handleRanchReq (dctx :DContext, obj :RanchObject, req :RanchReq)
     break
 
   case "tick":
-//    if (!auth.isSystem) {
-//      log.warn("Rejecting tick from client.")
-//      return
-//    }
+    if (!dctx.auth.isSystem) return
     const now = Date.now()
     const diff = now - obj.lastTick.current
     if (diff >= 1000) {
       //log.debug("Tick with delta " + diff)
       tickRanch(ctx, Math.min(diff, 5000) / 1000) // 5s max tick
       obj.lastTick.update(now)
-    } else {
-      //log.info("Rejecting client-initiated tick (multiple clients connected?)")
+//    } else {
+//      log.info("Rejecting client-initiated tick (multiple clients connected?)")
     }
     break
 
