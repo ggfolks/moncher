@@ -74,10 +74,18 @@ export function observeRanchMetaMsg (dctx :DContext, obj :RanchObject, msg :Meta
   if (msg.type === "subscribed" || msg.type === "unsubscribed") {
     const ctx :RanchContext = {obj, path: global[PATHFINDER_GLOBAL], ...dctx}
     if (msg.type === "subscribed") {
-      maybeDefrostAvatar(ctx, msg.id)
+      // check to see if we're starting up after (potentially) being suspended
       if (ctx.obj.occupants.size === 1) {
+        // freeze any avatars other than the one player
         freezeOtherAvatars(ctx, msg.id)
+        // then, publish all ActorUpdates if it looks like we might need to
+        if (obj.actors.size === 0) {
+          obj.actorData.forEach((data, id) => {
+            obj.actors.set(id, actorDataToUpdate(data))
+          })
+        }
       }
+      maybeDefrostAvatar(ctx, msg.id)
     } else {
       maybeFreezeAvatar(ctx, msg.id)
     }

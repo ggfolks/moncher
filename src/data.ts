@@ -224,7 +224,7 @@ export class RanchObject extends DObject {
   actorConfigs = this.map<UUID, ActorConfig>()
 
   /** The latest snapshot of each actor. */
-  @dmap("uuid", "record", true)
+  @dmap("uuid", "record")
   actors = this.map<UUID, ActorUpdate>()
 
   /** The "server-side" data about each actor. */
