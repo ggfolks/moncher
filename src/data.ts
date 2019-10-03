@@ -1,7 +1,8 @@
 import {Data} from "tfw/core/data"
+import {Auth} from "tfw/auth/auth"
 import {Timestamp, log} from "tfw/core/util"
 import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
-import {Auth, DObject, MetaMsg} from "tfw/data/data"
+import {DContext, DObject, MetaMsg} from "tfw/data/data"
 import {dcollection, dmap, dobject, dqueue, dset, dtable, dvalue, dview,
         orderBy} from "tfw/data/meta"
 import {ActorConfig, ActorData, ActorUpdate, SERVER_FUNCS} from "./ranchdata"
@@ -36,15 +37,15 @@ export class ProfileObject extends DObject {
 
 export const profileQ = (id :UUID) => ProfileObject.queueAddr(["profiles", id], "profileq")
 
-function handleProfileReq (obj :ProfileObject, req :ProfileReq, auth :Auth) {
-  if (auth.isSystem || auth.id === obj.key) {
+function handleProfileReq (ctx :DContext, obj :ProfileObject, req :ProfileReq) {
+  if (ctx.auth.isSystem || ctx.auth.id === obj.key) {
     switch (req.type) {
     case "update":
       obj.name.update(req.name)
       obj.photo.update(req.photo)
       if (req.ptype) obj.type.update(req.ptype)
     }
-  } else log.warn("Rejecting profile update from non-owner", "obj", obj, "req", req, "auth", auth)
+  } else log.warn("No profile update from non-owner", "obj", obj, "req", req, "auth", ctx.auth)
 }
 
 @dobject
@@ -73,9 +74,9 @@ export class UserObject extends DObject {
 
 export const userQ = (id :UUID) => UserObject.queueAddr(["users", id], "userq")
 
-function sendFeedback (from :DObject, uid :UUID, msg :string) {
+function sendFeedback (ctx :DContext, uid :UUID, msg :string) {
   // TODO: this custom message will go away when we have generic set-value meta msgs
-  from.source.post(userQ(uid), {type: "feedback", msg})
+  ctx.post(userQ(uid), {type: "feedback", msg})
 }
 
 type UserReq = {type :"enter", ranch :UUID}
@@ -86,17 +87,17 @@ type UserReq = {type :"enter", ranch :UUID}
 //   obj.source.post(ranchQ(ranch), {type: "joined", id: obj.key, name: obj.name.current})
 // }
 
-function handleUserReq (obj :UserObject, req :UserReq, auth :Auth) {
-  log.debug("handleUserReq", "auth", auth, "req", req)
+function handleUserReq (ctx :DContext, obj :UserObject, req :UserReq) {
+  log.debug("handleUserReq", "auth", ctx.auth, "req", req)
   switch (req.type) {
   case "enter":
-    if (auth.isSystem) obj.ranch.update(req.ranch)
+    if (ctx.auth.isSystem) obj.ranch.update(req.ranch)
     break
   case "joined":
-    if (auth.isSystem) obj.channels.add(req.channelId)
+    if (ctx.auth.isSystem) obj.channels.add(req.channelId)
     break
   case "feedback":
-    if (auth.isSystem) obj.feedback.update(req.msg)
+    if (ctx.auth.isSystem) obj.feedback.update(req.msg)
     break
   }
 }
@@ -157,11 +158,12 @@ type ChannelReq = {type :"speak", text :string}
                 | {type :"post", sender :UUID, text :string, image? :string, link? :string}
                 | {type :"join"}
 
-function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
+function handleChannelReq (ctx :DContext, obj :ChannelObject, req :ChannelReq) {
+  const auth = ctx.auth
   log.debug("handleChannelReq", "auth", auth, "req", req)
   switch (req.type) {
   case "speak":
-    if (auth.isGuest) sendFeedback(obj, auth.id, "Please login if you wish to chat.")
+    if (auth.isGuest) sendFeedback(ctx, auth.id, "Please login if you wish to chat.")
     else obj.addMessage(auth.id, req.text)
     break
   case "post":
@@ -175,7 +177,7 @@ function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
     else if (auth.id === UUID0) log.warn("Got channel join by UUID0?", "auth", auth)
     else {
       obj.members.add(auth.id)
-      obj.source.post(userQ(auth.id), {type: "joined", channelId: obj.key})
+      ctx.post(userQ(auth.id), {type: "joined", channelId: obj.key})
     }
     break
   // case "edit":
@@ -187,21 +189,19 @@ function handleChannelReq (obj :ChannelObject, req :ChannelReq, auth :Auth) {
   }
 }
 
-function handleChannelMetaMsg (obj :ChannelObject, msg :MetaMsg, auth :Auth) {
+function handleChannelMetaMsg (ctx :DContext, obj :ChannelObject, msg :MetaMsg) {
   // log.debug("handleChannelMeta", "auth", auth, "msg", msg)
-  if (!auth.isSystem) return
+  if (!ctx.auth.isSystem) return
   switch (msg.type) {
   case "subscribed":
     if (msg.id === UUID0) return // ignore system subscribers
-    if (obj.viewers.size === 0) obj.source.post(
-      serverQ, {type: "active", what: "channel", id: obj.key})
+    if (obj.viewers.size === 0) ctx.post(serverQ, {type: "active", what: "channel", id: obj.key})
     obj.viewers.add(msg.id)
     break
   case "unsubscribed":
     if (msg.id === UUID0) return // ignore system subscribers
     obj.viewers.delete(msg.id)
-    if (obj.viewers.size === 0) obj.source.post(
-      serverQ, {type: "inactive", what: "channel", id: obj.key})
+    if (obj.viewers.size === 0) ctx.post(serverQ, {type: "inactive", what: "channel", id: obj.key})
     break
   }
 }
@@ -282,28 +282,26 @@ export type RanchReq =
 
 export const ranchQ = (id :UUID) => RanchObject.queueAddr(["ranches", id], "ranchq")
 
-function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
-  global[SERVER_FUNCS].handleRanchReq(obj, req, auth)
+function handleRanchReq (ctx :DContext, obj :RanchObject, req :RanchReq) :void {
+  global[SERVER_FUNCS].handleRanchReq(ctx, obj, req)
 }
 
-function handleRanchMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth) {
+function handleRanchMetaMsg (ctx :DContext, obj :RanchObject, msg :MetaMsg) {
   // log.debug("handleRanchMeta", "auth", auth, "msg", msg)
   switch (msg.type) {
   case "subscribed":
     if (msg.id === UUID0) return // ignore system subscribers
-    if (obj.occupants.size === 0) obj.source.post(
-      serverQ, {type: "active", what: "ranch", id: obj.key})
+    if (obj.occupants.size === 0) ctx.post(serverQ, {type: "active", what: "ranch", id: obj.key})
     obj.occupants.add(msg.id)
-    sendFeedback(obj, msg.id, `Welcome to ${obj.name.current}`)
+    sendFeedback(ctx, msg.id, `Welcome to ${obj.name.current}`)
     break
   case "unsubscribed":
     if (msg.id === UUID0) return // ignore system subscribers
     obj.occupants.delete(msg.id)
-    if (obj.occupants.size === 0) obj.source.post(
-      serverQ, {type: "inactive", what: "ranch", id: obj.key})
+    if (obj.occupants.size === 0) ctx.post(serverQ, {type: "inactive", what: "ranch", id: obj.key})
     break
   }
-  global[SERVER_FUNCS].observeRanchMetaMsg(obj, msg, auth)
+  global[SERVER_FUNCS].observeRanchMetaMsg(ctx, obj, msg)
 }
 
 @dobject
@@ -334,9 +332,9 @@ export class ServerObject extends DObject {
 type ServerReq = {type: "active", id :UUID, what :"ranch"|"channel"}
                | {type: "inactive", id :UUID, what :"ranch"|"channel"}
 
-function handleServerReq (obj :ServerObject, req :ServerReq, auth :Auth) {
+function handleServerReq (ctx :DContext, obj :ServerObject, req :ServerReq) {
   // log.debug("handleServerReq", "auth", auth, "req", req)
-  if (!auth.isSystem) return
+  if (!ctx.auth.isSystem) return
   // TODO: create meta messages for this sort of super simple "make this change to this standard
   // distributed object property" machinery
   switch (req.type) {

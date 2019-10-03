@@ -1,7 +1,7 @@
 import {Data, Record} from "tfw/core/data"
 import {log} from "tfw/core/util"
 import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
-import {Auth, MetaMsg} from "tfw/data/data"
+import {DContext, MetaMsg} from "tfw/data/data"
 import {Object3D, Raycaster, Vector3} from "three"
 import {RanchObject, RanchReq, ProfileType, profileQ, channelQ} from "./data"
 import {MonsterDb} from "./monsterdb"
@@ -63,17 +63,16 @@ const MAX_FIREFLIES = 10 // maximum number of fireflies to have in the scene?
 
 /**
  * Context object passed to most request handlers. */
-interface RanchContext {
+interface RanchContext extends DContext {
   obj :RanchObject
-  auth :Auth
   path? :ZonedPathfinding
 }
 
 /**
  * Observe (we don't need to handle) meta messages. */
-export function observeRanchMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth) :void {
+export function observeRanchMetaMsg (dctx :DContext, obj :RanchObject, msg :MetaMsg) :void {
   if (msg.type === "subscribed" || msg.type === "unsubscribed") {
-    const ctx :RanchContext = {obj, auth, path: global[PATHFINDER_GLOBAL]}
+    const ctx :RanchContext = {obj, path: global[PATHFINDER_GLOBAL], ...dctx}
     if (msg.type === "subscribed") {
       maybeDefrostAvatar(ctx, msg.id)
       if (ctx.obj.occupants.size === 1) {
@@ -87,15 +86,15 @@ export function observeRanchMetaMsg (obj :RanchObject, msg :MetaMsg, auth :Auth)
 
 /**
  * The queue handler for client-initiated requests to the ranch. */
-export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :void {
-  const ctx :RanchContext = { obj, auth, path: global[PATHFINDER_GLOBAL] }
+export function handleRanchReq (dctx :DContext, obj :RanchObject, req :RanchReq) :void {
+  const ctx :RanchContext = { obj, path: global[PATHFINDER_GLOBAL], ...dctx }
   switch (req.type) {
   case "touch":
     touchActor(ctx, req.id, req.arg)
     break
 
   case "setActorName":
-    setActorName(ctx, auth.id, req.id, req.name)
+    setActorName(ctx, ctx.auth.id, req.id, req.name)
     break
 
   case "tick":
@@ -120,8 +119,8 @@ export function handleRanchReq (obj :RanchObject, req :RanchReq, auth :Auth) :vo
     break
 
   case "dropEgg":
-    if (auth.isGuest && !obj.debug.current) {
-      log.warn("Rejecting egg drop from guest", "auth", auth)
+    if (ctx.auth.isGuest && !obj.debug.current) {
+      log.warn("Rejecting egg drop from guest", "auth", ctx.auth)
       return
     }
     addActor(ctx, ctx.auth.id, MonsterDb.getRandomEgg(), req)
@@ -864,7 +863,7 @@ function setActorName (ctx :RanchContext, ownerId :UUID, id :UUID, name :string)
     // TODO: push an immediate actor update?
 
     // update this monster's profile
-    if (name !== oname) ctx.obj.source.post(profileQ(id), {
+    if (name !== oname) ctx.post(profileQ(id), {
       type: "update", name, photo: actorImageURL(actor.config, "photo"), ptype: ProfileType.npc})
     // if this is the first time the name is set, send a welcome message to the channel
     if (!oname) sendActorPost(ctx, actor, "Hi everybody!")
@@ -889,7 +888,7 @@ function sendActorPost (ctx :RanchContext, actor :Actor, text :string, imageType
     post["image"] = actorImageURL(actor.config, imageType)
     post["link"] = makeRanchLink(ctx)
   }
-  ctx.obj.source.post(channelQ(ctx.obj.key), post)
+  ctx.post(channelQ(ctx.obj.key), post)
   actor.data.lastPost = Date.now()
 }
 
