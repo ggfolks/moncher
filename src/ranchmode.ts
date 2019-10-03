@@ -276,7 +276,7 @@ export class RanchMode extends Mode {
 
   protected subscribeToRanch () :void {
     const ranchId = this._app.state.ranchId
-    const [ranch, unranch] = this._app.client.resolve(["ranches", ranchId], RanchObject)
+    const [ranch, unranch] = this._app.store.resolve(["ranches", ranchId], RanchObject)
     this._ranchObj = ranch
     this.onDispose.add(unranch)
 
@@ -1086,7 +1086,7 @@ export class RanchMode extends Mode {
 
     // if we see a Hatching monster added and we're the owner, pop up a name it dialog
     if (update.state === ActorState.Hatching &&
-        update.owner === this._app.client.serverAuth.current) {
+        update.owner === this._app.client.manager.ackedId.current) {
       this.showNameEgg(id, update.name)
     }
   }

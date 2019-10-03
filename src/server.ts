@@ -6,8 +6,10 @@ import * as fs from "fs"
 import {TextEncoder, TextDecoder} from "util"
 import {setTextCodec} from "tfw/core/codec"
 import {log} from "tfw/core/util"
-import {Server, DataStore, MemoryDataStore} from "tfw/data/server"
+import {ChannelServer} from "tfw/channel/server"
+import {DataStore, MemoryDataStore, channelHandlers} from "tfw/data/server"
 import {FirebaseDataStore} from "tfw/data/firebase"
+import {guestValidator} from "tfw/auth/auth"
 import {FirebaseAuthValidator} from "tfw/auth/firebase"
 import {ServerObject} from "./data"
 import {ZonedPathfinding} from "./zonedpathfinding"
@@ -88,7 +90,11 @@ function createStore () :[DataStore, () => Promise<void>] {
 }
 const [store, shutdownStore] = createStore()
 
-const server = new Server(store, {firebase: new FirebaseAuthValidator()}, {httpServer})
+const server = new ChannelServer({
+  httpServer,
+  authers: {guest: guestValidator, firebase: new FirebaseAuthValidator()},
+  handlers: channelHandlers(store),
+})
 server.state.onValue(ss => {
   log.info(`Server state: ${ss}`)
 })
@@ -116,12 +122,12 @@ fs.writeFile("server.pid", `${process.pid}`, err => {
 if (haveFBCreds) {
   const adminApp = admin.initializeApp()
   // this guy sends out FCM notifications for chat channel messages
-  const notifier = new Notifier(adminApp, server.store)
+  const notifier = new Notifier(adminApp, store)
   server.state.whenOnce(s => s === "terminated", _ => notifier.dispose())
 }
 
 // this guy ticks active ranches
-const ticker = new Ticker(server.store)
+const ticker = new Ticker(store)
 server.state.whenOnce(s => s === "terminated", _ => ticker.dispose())
 
 /** Configure serverside handlers in a special global object to hide from the client. */

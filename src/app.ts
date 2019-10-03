@@ -9,7 +9,8 @@ import {Value} from "tfw/core/react"
 import {Renderer, windowSize} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {UniformQuadBatch} from "tfw/scene2/batch"
-import {Client, addrFromLocation} from "tfw/data/client"
+import {ChannelClient} from "tfw/channel/client"
+import {ClientStore, addrFromLocation} from "tfw/data/client"
 import {UI} from "tfw/ui/ui"
 import {currentUser} from "tfw/auth/firebase"
 
@@ -64,7 +65,8 @@ export class App implements Disposable {
   readonly renderer :Renderer
   readonly loop  = new Loop()
   readonly ui = new UI(moncherTheme, moncherStyles, {resolve: loadImage})
-  readonly client = new Client(addrFromLocation("data"))
+  readonly client = new ChannelClient({serverUrl: addrFromLocation("data")})
+  readonly store = new ClientStore(this.client)
   readonly profiles = new ProfileStore(this)
   readonly user = new UserStore(this)
 
@@ -76,7 +78,7 @@ export class App implements Disposable {
   }
 
   /** A value that is true when we're authed as a real user. */
-  readonly notGuest = Value.join2(this.client.auth, this.client.serverAuth).map(
+  readonly notGuest = Value.join2(this.client.auth, this.client.manager.ackedId).map(
     ([sess, sid]) => sess.source !== "guest" && sess.id === sid)
 
   constructor (readonly root :HTMLElement) {
@@ -94,7 +96,7 @@ export class App implements Disposable {
     this.loop.clock.onEmit(clock => this.mode.render(clock))
 
     // when we're authed as a Google user, slurp our profile info
-    Value.join3(this.client.serverAuth, this.client.auth, currentUser).onValue(
+    Value.join3(this.client.manager.ackedId, this.client.auth, currentUser).onValue(
       ([id, auth, user]) => {
         if (auth.source === "firebase" && auth.id === id && user) {
           const {displayName, photoURL} = user
@@ -116,6 +118,7 @@ export class App implements Disposable {
   }
 
   dispose () {
+    this.store.dispose()
     this.client.dispose()
   }
 }

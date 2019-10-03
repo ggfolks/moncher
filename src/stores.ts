@@ -16,7 +16,7 @@ export class ProfileStore implements Disposable {
   profile (id :UUID) :ProfileObject {
     const obj = this._profiles.get(id)
     if (obj) return obj
-    const [nobj, unsub] = this.app.client.resolve(["profiles", id], ProfileObject)
+    const [nobj, unsub] = this.app.store.resolve(["profiles", id], ProfileObject)
     this._profiles.set(id, nobj)
     this._onDispose.add(unsub)
     return nobj
@@ -49,10 +49,10 @@ export class UserStore implements Disposable {
   get feedback () :RList<Feedback> { return this._feedback }
 
   constructor (readonly app :App) {
-    app.client.serverAuth.onValue(id => {
+    app.client.manager.ackedId.onValue(id => {
       this._onDispose.dispose()
       if (id !== UUID0) {
-        const [user, unlisten] = app.client.resolve(["users", id], UserObject)
+        const [user, unlisten] = app.store.resolve(["users", id], UserObject)
         this._user.update(user)
         this._onDispose.add(unlisten)
         this._onDispose.add(user.feedback.onChange(msg => {

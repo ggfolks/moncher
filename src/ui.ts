@@ -196,7 +196,7 @@ export class OccupantsView implements Disposable {
   private _onDispose = new Disposer()
 
   constructor (readonly app :App, host :Host) {
-    const [ranch, unranch] = app.client.resolve(["ranches", app.state.ranchId], RanchObject)
+    const [ranch, unranch] = app.store.resolve(["ranches", app.state.ranchId], RanchObject)
     this._onDispose.add(unranch)
     const occupantsUI = box({
       type: "hlist",
@@ -239,7 +239,7 @@ export function createEditNameDialog (
     name,
     photo: profile.photo,
     updateName: () => {
-      app.client.post(ranchQ(app.state.ranchId), {type: "setActorName", id, name: name.current})
+      app.store.post(ranchQ(app.state.ranchId), {type: "setActorName", id, name: name.current})
       nameModel.close()
     },
     close: () => {
