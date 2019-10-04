@@ -32,6 +32,8 @@ const MAX_MONSTER_SCALE = 4
 const DEFAULT_MONSTER_SCALE = 1
 const MIN_MONSTER_SCALE = .8
 
+const MIN_CIRCLE_RADIUS = .5
+
 // TODO Don't hardcode distances. Sort out something based on the monster's scale maybe?
 const CLOSE_EAT_DISTANCE = .1
 const NAP_NEAR_FOOD_DISTANCE = 3
@@ -342,7 +344,7 @@ class AvatarBehavior extends MobileBehavior {
 
     // create a chat circle right here
     let radius = 1 + Math.trunc(Math.random() * 4)
-    while (radius >= 1) {
+    while (radius >= MIN_CIRCLE_RADIUS) {
       const id = createChatCircle(ctx, actor.data, radius)
       if (id) {
         // let's spawn eggs in all the valid positions
@@ -358,7 +360,7 @@ class AvatarBehavior extends MobileBehavior {
 
         // try to join the circle ourselves
         const result = joinCircle(ctx, actor, id)
-        log.debug("Joined circle? " + result)
+        log.debug("Joined circle? " + result, "radius", circle.radius)
         return true
       }
       radius -= .5
@@ -1186,7 +1188,7 @@ function joinCircleLocation (
 /**
  * Return the target number of actors we'd like to host in a circle of the specified radius. */
 function getCircleMemberCountTarget (radius :number) :number {
-  return 2 + (2 * radius)
+  return Math.trunc(4 * radius)
 }
 
 /**
@@ -1199,8 +1201,8 @@ function createChatCircle (ctx :RanchContext, loc :Located, radius = 1) :number 
     const dz = circle.z - loc.z
     const dist = Math.sqrt(dx * dx + dz * dz)
     if (dist < radius + circle.radius + CIRCLE_PADDING) {
-      log.warn("Too close to existing circle",
-        "loc", loc, "radius", radius, "circle", circle)
+//      log.warn("Too close to existing circle",
+//        "loc", loc, "radius", radius, "circle", circle)
       return 0
     }
   }
