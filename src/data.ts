@@ -235,7 +235,7 @@ export class RanchObject extends DObject {
   @dmap("uuid", "record", true)
   frozenAvatars = this.map<UUID, ActorData>()
 
-  @dmap("number", "record", true)
+  @dmap("number", "record", false)
   circles = this.map<number, ChatCircle>()
 
   /** Keeps the last time we were ticked, from Date.now() */
