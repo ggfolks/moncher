@@ -1111,12 +1111,13 @@ function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
     addActor(ctx, ctx.auth.id, avatar, loc)
     return
   }
-  const advancedDt = stopWalkingOutsideTick(ctx, actor)
+  /*# const advancedDt =*/ stopWalkingOutsideTick(ctx, actor)
   walkTo(ctx, actor, loc)
   publishOneActor(ctx, actor)
 
   // for now, update the walk by projecting the src back to a fake position where it would
   // have been on the previous tick!
+  /*#
   const path = actor.data.path
   if (!path) return // never actually did the walk...
   const perc = (path.duration + advancedDt) / path.duration // over 100%
@@ -1124,6 +1125,7 @@ function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
   path.src.y = path.dest.y + ((path.src.y - path.dest.y) * perc)
   path.src.z = path.dest.z + ((path.src.z - path.dest.z) * perc)
   path.duration += advancedDt
+  */
   // TODO: this isn't actually working. The client is matching path segments and copying
   // over the timestamp, so I tried to make it only match the destination and also
   // take care of the extra time we added, but it's still not quite right.
