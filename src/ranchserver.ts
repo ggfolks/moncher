@@ -34,6 +34,9 @@ const MIN_MONSTER_SCALE = .8
 
 const MIN_CIRCLE_RADIUS = .5
 
+// don't let actors spam the channel more often than once an hour (TODO: probably way less)
+const MIN_POST_INTERVAL = 60 * 60 * 1000
+
 // TODO Don't hardcode distances. Sort out something based on the monster's scale maybe?
 const CLOSE_EAT_DISTANCE = .1
 const NAP_NEAR_FOOD_DISTANCE = 3
@@ -880,9 +883,6 @@ function setActorName (ctx :RanchContext, ownerId :UUID, id :UUID, name :string)
   }
 }
 
-// don't let actors spam the channel more often than once an hour (TODO: probably way less)
-const MIN_POST_INTERVAL = 60 * 60 * 1000
-
 function canPost (actor :Actor) {
   const now = Date.now()
   return (actor.data.lastPost === undefined || now - actor.data.lastPost >= MIN_POST_INTERVAL)
@@ -1117,8 +1117,18 @@ function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
     addActor(ctx, ctx.auth.id, avatar, loc)
     return
   }
-  /*# const advancedDt =*/ stopWalkingOutsideTick(ctx, actor)
-  walkTo(ctx, actor, loc)
+
+  maybeLeaveCircle(ctx, actor)
+
+  const circle = getCircleByLocation(ctx, loc)
+  if (circle) {
+    joinCircle(ctx, actor, circle.id)
+    // TODO: handle errors with joining, maybe don't leave, etc, etc, etc,
+    // Complexity lives here.
+  } else {
+    /*# const advancedDt =*/ stopWalkingOutsideTick(ctx, actor)
+    walkTo(ctx, actor, loc)
+  }
   publishOneActor(ctx, actor)
 
   // for now, update the walk by projecting the src back to a fake position where it would
@@ -1136,6 +1146,34 @@ function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
   // over the timestamp, so I tried to make it only match the destination and also
   // take care of the extra time we added, but it's still not quite right.
   // Rather than make ever more twisted modifications to this, it's time to just rethink it.
+}
+
+function maybeLeaveCircle (ctx :RanchContext, actor :Actor) :void {
+  const circleId = actor.data.circleId
+  if (circleId) {
+    const circle = ctx.obj.circles.get(circleId)
+    if (circle) {
+      const index = circle.members.indexOf(actor.id)
+      if (index >= 0) {
+        circle.members[index] = ""
+      } else {
+        log.warn("Actor doesn't actually belong to circle?")
+      }
+      // destroy the circle if now empty
+      if (-1 === circle.members.findIndex(id => id !== "")) {
+        ctx.obj.circles.delete(circleId)
+      } else {
+        // otherwise, update it
+        ctx.obj.circles.set(circleId, circle)
+      }
+
+    } else {
+      log.warn("Actor has invalid circle id? Clearing.", "circleId", actor.data.circleId)
+    }
+
+    delete actor.data.circleId
+    dirtyServer(actor.data)
+  }
 }
 
 function joinCircle (ctx :RanchContext, actor :Actor, circleId :number) :boolean {
@@ -1182,6 +1220,9 @@ function joinCircleLocation (
   // and record that the actor is in a spot
   circle.members[index] = actor.id
   ctx.obj.circles.set(circleId, circle)
+  actor.data.circleId = circleId
+  dirtyServer(actor.data)
+
   return true
 }
 
@@ -1197,10 +1238,7 @@ function createChatCircle (ctx :RanchContext, loc :Located, radius = 1) :number 
   // first, let's make sure we're not too close to an existing circle
   const CIRCLE_PADDING = .1
   for (const circle of ctx.obj.circles.values()) {
-    const dx = circle.x - loc.x
-    const dz = circle.z - loc.z
-    const dist = Math.sqrt(dx * dx + dz * dz)
-    if (dist < radius + circle.radius + CIRCLE_PADDING) {
+    if (ranchDistance(circle, loc) < radius + circle.radius + CIRCLE_PADDING) {
 //      log.warn("Too close to existing circle",
 //        "loc", loc, "radius", radius, "circle", circle)
       return 0
@@ -1235,9 +1273,15 @@ function createChatCircle (ctx :RanchContext, loc :Located, radius = 1) :number 
       "radius", radius, "positions", positions.length)
     return 0 // fail if we have fewer positions available than an ideal circle with 1 less radius.
   }
+  let maxCircleId = 0
+  for (const id of ctx.obj.circles.keys()) {
+    maxCircleId = Math.max(maxCircleId, id)
+  }
+  const circleId = maxCircleId + 1
 
   const members :string[] = new Array(positions.length).fill("")
   const circle :ChatCircle = {
+    id: circleId,
     x: loc.x,
     y: maxY,
     z: loc.z,
@@ -1245,11 +1289,6 @@ function createChatCircle (ctx :RanchContext, loc :Located, radius = 1) :number 
     positions,
     members,
   }
-  let maxCircleId = 0
-  for (const id of ctx.obj.circles.keys()) {
-    maxCircleId = Math.max(maxCircleId, id)
-  }
-  const circleId = maxCircleId + 1
   ctx.obj.circles.set(circleId, circle)
   return circleId
 }
@@ -1264,6 +1303,13 @@ function getCirclePosition (ctx :RanchContext, circle :ChatCircle, index :number
   return vec2loc(result)
 }
 
+function getCircleByLocation (ctx :RanchContext, loc :Located) :ChatCircle|undefined {
+  for (const circle of ctx.obj.circles.values()) {
+    if (ranchDistance(loc, circle) <= circle.radius) return circle
+  }
+  return undefined
+}
+
 function projectOnNavmesh (ctx :RanchContext, vec :Vector3) :Vector3|undefined {
   // TODO: move the navmesh into the RanchContext?
   const origin = vec.clone().setY(10)
@@ -1273,6 +1319,14 @@ function projectOnNavmesh (ctx :RanchContext, vec :Vector3) :Vector3|undefined {
     return result.point
   }
   return undefined
+}
+
+/**
+ * Return a distance between 2 points, ignoring the y coordinate. */
+function ranchDistance (l1 :Located, l2 :Located) :number {
+  const dx = l1.x - l2.x
+  const dz = l1.z - l2.z
+  return Math.sqrt(dx * dx + dz * dz)
 }
 
 function maybeDefrostAvatar (ctx :RanchContext, id :UUID) :void {

@@ -184,6 +184,9 @@ export interface ActorData extends Located {
   /** Unchanging data regarding the behavior. */
   info? :BehaviorInfo
 
+  /** The circle that this actor belongs to, or 0. */
+  circleId? :number
+
   /** Flags containing the dirtyness level of this data. If the SERVER flag is on, the
    *  ActorData will be re-set() in the Map to persist it. If the CLIENT flag is also on,
    *  then a new ActorUpdate is published (and persisted). */
@@ -194,6 +197,9 @@ export interface ActorData extends Located {
 //}
 
 export interface ChatCircle extends Located {
+  /** The (reused) numeric (nonzero) id of this circle. */
+  id :number
+
   /** The very center of the chat circle. */
   x :number
   y :number
