@@ -1113,13 +1113,23 @@ function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
     return
   }
 
+  const circle = getCircleByLocation(ctx, loc)
+  if (circle && (actor.data.circleId === circle.id)) {
+    const newIndex = maybeRepositionInCircle(ctx, actor, loc)
+    if (newIndex >= 0) {
+      stopWalkingOutsideTick(ctx, actor)
+      removeActorFromCircle(ctx, actor, circle)
+      joinCirclePosition(ctx, actor, circle.id, newIndex)
+      publishOneActor(ctx, actor)
+    }
+    return
+  }
+
   maybeLeaveCircle(ctx, actor)
 
-  const circle = getCircleByLocation(ctx, loc)
   if (circle) {
     joinCircle(ctx, actor, circle.id)
-    // TODO: handle errors with joining, maybe don't leave, etc, etc, etc,
-    // Complexity lives here.
+    // TODO: handle errors with joining and etc
   } else {
     /*# const advancedDt =*/ stopWalkingOutsideTick(ctx, actor)
     walkTo(ctx, actor, loc)
@@ -1143,32 +1153,59 @@ function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
   // Rather than make ever more twisted modifications to this, it's time to just rethink it.
 }
 
+/**
+ * Remove the actor as a member of the circle. Do nothing else. */
+function removeActorFromCircle (ctx :RanchContext, actor :Actor, circle :ChatCircle) :void {
+  const index = circle.members.indexOf(actor.id)
+  if (index >= 0) {
+    circle.members[index] = ""
+    ctx.obj.circles.set(circle.id, circle)
+  }
+  delete actor.data.circleId
+  dirtyServer(actor.data)
+}
+
 function maybeLeaveCircle (ctx :RanchContext, actor :Actor) :void {
   const circleId = actor.data.circleId
   if (circleId) {
     const circle = ctx.obj.circles.get(circleId)
     if (circle) {
-      const index = circle.members.indexOf(actor.id)
-      if (index >= 0) {
-        circle.members[index] = ""
-      } else {
-        log.warn("Actor doesn't actually belong to circle?")
-      }
+      removeActorFromCircle(ctx, actor, circle)
       // destroy the circle if now empty
       if (-1 === circle.members.findIndex(id => id !== "")) {
         ctx.obj.circles.delete(circleId)
-      } else {
-        // otherwise, update it
-        ctx.obj.circles.set(circleId, circle)
       }
-
     } else {
       log.warn("Actor has invalid circle id? Clearing.", "circleId", actor.data.circleId)
     }
-
-    delete actor.data.circleId
-    dirtyServer(actor.data)
   }
+}
+
+/**
+ * Find an empty position in the circle closest to the specified location.
+ * @return a circle index, or -1 if not found.
+  */
+function maybeRepositionInCircle (ctx :RanchContext, actor :Actor, loc :Located) :number {
+  const circleId = actor.data.circleId
+  if (!circleId) return -1
+  const circle = ctx.obj.circles.get(circleId)
+  if (!circle) {
+    log.warn("Missing circle?", "circleId", circleId)
+    return -1
+  }
+  let minDist = Infinity
+  let bestIndex = -1
+  for (let ii = 0; ii < circle.members.length; ii++) {
+    if (circle.members[ii] === "") {
+      const pos = getCirclePosition(ctx, circle, ii)
+      const dist = ranchDistance(loc, pos)
+      if (dist < minDist) {
+        minDist = dist
+        bestIndex = ii
+      }
+    }
+  }
+  return bestIndex
 }
 
 function joinCircle (ctx :RanchContext, actor :Actor, circleId :number) :boolean {
@@ -1197,10 +1234,10 @@ function joinCircle (ctx :RanchContext, actor :Actor, circleId :number) :boolean
     }
   }
   // if the circle isn't full, join it!
-  return (bestIndex !== -1) && joinCircleLocation(ctx, actor, circleId, bestIndex)
+  return (bestIndex !== -1) && joinCirclePosition(ctx, actor, circleId, bestIndex)
 }
 
-function joinCircleLocation (
+function joinCirclePosition (
   ctx :RanchContext, actor :Actor, circleId :number, index :number
 ) :boolean {
   const circle = ctx.obj.circles.get(circleId)
@@ -1254,6 +1291,8 @@ function createChatCircle (ctx :RanchContext, loc :Located, radius = 1) :number 
     vec.z = loc.z + Math.cos(angle) * radius
     const result = projectOnNavmesh(ctx, vec)
     if (result) {
+      // TODO: I could test and save the positions for all 4 offsets and then pick the one
+      // with the most positions.
       maxY = Math.max(maxY, result.y)
       if (positions.length === 0) {
         positionOffset = (pp % SAMPLES_PER_ACTOR)
