@@ -347,12 +347,17 @@ class AvatarBehavior extends MobileBehavior {
       // let's spawn eggs in all the valid positions
       const circle = ctx.obj.circles.get(id)!
       for (let ii = 0; ii < circle.positions.length; ii++) {
+        if (Math.random() < .5) continue
         const pos = getCirclePosition(ctx, circle, ii)
         const id = addActor(ctx, ctx.auth.id, MonsterDb.getRandomEgg(), pos)
         circle.members[ii] = id
       }
       // update the circle in the map? now that we've populated positions
       ctx.obj.circles.set(id, circle)
+
+      // try to join the circle ourselves
+      const result = joinCircle(ctx, actor, id)
+      log.debug("Joined circle? " + result)
     }
     return true
   }
@@ -1125,6 +1130,59 @@ function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
   // Rather than make ever more twisted modifications to this, it's time to just rethink it.
 }
 
+function joinCircle (ctx :RanchContext, actor :Actor, circleId :number) :boolean {
+  const circle = ctx.obj.circles.get(circleId)
+  if (!circle) return false
+  // Look through all the open spots and find the one furthest from any occupied spot.
+  const spots = circle.positions.length
+  let bestDist = 0
+  let bestIndex = -1
+  for (let ii = 0; ii < spots; ii++) {
+    if (circle.members[ii] === "") { // check this empty spot
+      let minDist = Infinity
+      for (let jj = 0; jj < spots; jj++) {
+        if (circle.members[jj] !== "") {
+          // we're measuring "distance" as the difference between their angles
+          const dist = Math.min(
+            Math.abs(circle.positions[ii] - circle.positions[jj]),
+            Math.abs(circle.positions[ii] - (circle.positions[jj] + (Math.PI * 2))))
+          minDist = Math.min(minDist, dist)
+        }
+      }
+      if (minDist > bestDist) {
+        bestDist = minDist
+        bestIndex = ii
+      }
+    }
+  }
+  // if the circle isn't full, join it!
+  return (bestIndex !== -1) && joinCircleLocation(ctx, actor, circleId, bestIndex)
+}
+
+function joinCircleLocation (
+  ctx :RanchContext, actor :Actor, circleId :number, index :number
+) :boolean {
+  const circle = ctx.obj.circles.get(circleId)
+  if (!circle) return false
+  if (index < 0 || index >= circle.positions.length) return false
+  if (circle.members[index] !== "") return false // occupied!
+  const pos = getCirclePosition(ctx, circle, index)
+  walkTo(ctx, actor, pos)
+  if (!actor.data.path) return false
+  actor.data.orient = Math.atan2(circle.x - pos.x, circle.z - pos.z) // face the center
+
+  // and record that the actor is in a spot
+  circle.members[index] = actor.id
+  ctx.obj.circles.set(circleId, circle)
+  return true
+}
+
+/**
+ * Return the target number of actors we'd like to host in a circle of the specified radius. */
+function getCircleMemberCountTarget (radius :number) :number {
+  return 2 + (2 * radius)
+}
+
 /**
  * Create a new chat circle. Return the id, or 0. */
 function createChatCircle (ctx :RanchContext, loc :Located, radius = 1) :number {
@@ -1138,7 +1196,7 @@ function createChatCircle (ctx :RanchContext, loc :Located, radius = 1) :number 
   }
 
   // now, let's sample 4x as many points as we think we'll need, so we get good Y
-  const actorCount = 2 + (2 * radius)
+  const actorCount = getCircleMemberCountTarget(radius)
   const SAMPLES_PER_ACTOR = 4
   const samples = actorCount * SAMPLES_PER_ACTOR
   const positions :number[] = []
@@ -1159,6 +1217,9 @@ function createChatCircle (ctx :RanchContext, loc :Located, radius = 1) :number 
         positions.push(angle)
       }
     }
+  }
+  if (positions.length < getCircleMemberCountTarget(radius - 1)) {
+    return 0 // fail if we have fewer positions available than an ideal circle with 1 less radius.
   }
 
   const members :string[] = new Array(positions.length).fill("")
