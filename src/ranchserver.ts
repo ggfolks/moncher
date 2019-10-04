@@ -593,7 +593,7 @@ class EatFoodBehavior extends MonsterBehavior {
       const food = getNearestActor(ctx, data, isFood)
       if (food) {
         const foodData = food.data
-        if (getDistance(data, foodData) < CLOSE_EAT_DISTANCE) {
+        if (ranchDistance(data, foodData) < CLOSE_EAT_DISTANCE) {
           foodData.hp -= 50
           dirtyServer(foodData)
           bd.phase = 2
@@ -939,7 +939,7 @@ function getNearestActor (
   let nearest = undefined
   visitActors(ctx, actor => {
     if (predicate(actor)) {
-      const dd = getDistance(loc, actor.data)
+      const dd = ranchDistance(loc, actor.data)
       if (dd < maxDist) {
         maxDist = dd
         nearest = actor
@@ -959,11 +959,6 @@ function getRandomPositionFrom (
   const result = ctx.path.getRandomPositionFrom(vec, maxDist)
   if (result) return vec2loc(result)
   else return undefined
-}
-
-function getDistance (one :Located, two :Located) :number {
-  const dx = one.x - two.x, dy = one.y - two.y, dz = one.z - two.z
-  return Math.sqrt(dx*dx + dy*dy + dz*dz)
 }
 
 function getSpeed (ctx :RanchContext, actor :Actor) :number {
@@ -1328,6 +1323,11 @@ function ranchDistance (l1 :Located, l2 :Located) :number {
   const dz = l1.z - l2.z
   return Math.sqrt(dx * dx + dz * dz)
 }
+
+//function getDistance (one :Located, two :Located) :number {
+//  const dx = one.x - two.x, dy = one.y - two.y, dz = one.z - two.z
+//  return Math.sqrt(dx*dx + dy*dy + dz*dz)
+//}
 
 function maybeDefrostAvatar (ctx :RanchContext, id :UUID) :void {
   const frozenData = ctx.obj.frozenAvatars.get(id)
