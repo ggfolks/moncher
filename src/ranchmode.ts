@@ -1113,6 +1113,8 @@ export class RanchMode extends Mode {
   }
 
   protected actorTouched (id :UUID, config :ActorConfig, update :ActorUpdate) :void {
+    if (this._uiState !== UiState.Petting) return
+
     // TEMP: hackery to require invite to touch/hatch egg
     if (!this._ranchObj.debug.current && config.kind === ActorKind.Egg) {
       if (this._app.user.user.key === update.owner) {
@@ -1128,10 +1130,9 @@ export class RanchMode extends Mode {
       }
     }
     const req :RanchReq = {type: "touch", id: id}
-    if (this._uiState === UiState.Debug) {
-      req.arg = {debug: true}
-    }
     this._ranchObj.ranchq.post(req)
+
+    this.setUiState(UiState.Default)
   }
 
   protected actorShiftTouched (id :UUID, config :ActorConfig, update :ActorUpdate) {
@@ -1302,6 +1303,9 @@ export class RanchMode extends Mode {
     if (change.type === "deleted") return
     if (!change.value.pressed) return
     switch (this._uiState) {
+    case UiState.Petting:
+      break
+
     case UiState.PlacingEgg:
     case UiState.PlacingFood:
       const loc = this.mouseToLocation(change.value.position)

@@ -9,6 +9,7 @@ import {App} from "./app"
 
 export const enum UiState {
   Default = 1,
+  Petting,
   PlacingEgg,
   PlacingFood,
   Debug,
@@ -75,6 +76,22 @@ export class Hud
             constraints: {stretch: true},
           }, {
             type: "button",
+            onClick: "hand.clicked",
+            visible: "notGuest",
+            contents: {
+              type: "box",
+              contents: {
+                type: "image",
+                image: "hand.img",
+                width: BUTTON_WIDTH,
+              },
+              style: {
+                background: null,
+                border: null,
+              },
+            },
+          }, {
+            type: "button",
             onClick: "egg.clicked",
             visible: "notGuest",
             contents: {
@@ -119,6 +136,10 @@ export class Hud
           },
         }],
       }
+      model.hand = {
+        img: Value.constant("ui/HandButton.png"),
+        clicked: () => this._ranchMode.setUiState(UiState.Petting),
+      }
       model.egg = {
         img: Value.constant("ui/EggButton.png"),
         clicked: () => this._ranchMode.setUiState(UiState.PlacingEgg),
@@ -132,6 +153,7 @@ export class Hud
       }
       break // end: Default
 
+    case UiState.Petting:
     case UiState.PlacingEgg:
     case UiState.PlacingFood:
       contents = {
@@ -146,9 +168,9 @@ export class Hud
         },
       }
       model.cancel = {
-        text: Value.constant((uiState == UiState.PlacingEgg)
+        text: Value.constant((uiState === UiState.PlacingEgg)
             ? "Cancel egg placement"
-            : "Cancel food drop"),
+            : (uiState === UiState.PlacingFood) ? "Cancel food drop" : "Cancel touch"),
         clicked: () => this._ranchMode.setUiState(UiState.Default),
       }
       break // end: PlacingEgg & PlacingFood

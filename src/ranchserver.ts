@@ -419,23 +419,23 @@ abstract class MonsterBehavior extends MobileBehavior {
     data.orient = 0 // face forward
     dirtyClient(data)
 
-    // TEMP: debug sizes
-    if (arg && arg["debug"]) {
-      stopWalkingOutsideTick(ctx, actor)
-      switch (data.scale) {
-      default:
-        data.scale = MAX_MONSTER_SCALE
-        break
-
-      case MAX_MONSTER_SCALE:
-        data.scale = MIN_MONSTER_SCALE
-        break
-
-      case MIN_MONSTER_SCALE:
-        data.scale = DEFAULT_MONSTER_SCALE
-        break
-      }
-    } // END: TEMP
+//    // TEMP: debug sizes
+//    if (arg && arg["debug"]) {
+//      stopWalkingOutsideTick(ctx, actor)
+//      switch (data.scale) {
+//      default:
+//        data.scale = MAX_MONSTER_SCALE
+//        break
+//
+//      case MAX_MONSTER_SCALE:
+//        data.scale = MIN_MONSTER_SCALE
+//        break
+//
+//      case MIN_MONSTER_SCALE:
+//        data.scale = DEFAULT_MONSTER_SCALE
+//        break
+//      }
+//    } // END: TEMP
     return true // publish!
   }
 }
