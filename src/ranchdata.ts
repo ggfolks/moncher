@@ -194,7 +194,7 @@ export interface ActorData extends Located {
 //}
 
 export interface ChatCircle extends Located {
-  /** Yes these are repeated from Located, I am very explicit. */
+  /** The very center of the chat circle. */
   x :number
   y :number
   z :number
@@ -202,10 +202,9 @@ export interface ChatCircle extends Located {
   /** The circle's radius. */
   radius :number
 
-  /** The size is how many players could fit here. The upper-bound of size is derived from the
-   *  radius, but we could have a smaller size if some points are invalid. */
-  size :number
+  /** The valid positions around the circle, specified as radians. */
+  positions :number[]
 
-  /** Members of the chat circle. But doesn't specify their positions. Hm. */
-  members :UUID[]
+  /** The ids of actors in positions, or the empty string. */
+  members :string[]
 }

@@ -79,7 +79,7 @@ import {
   PathInfo,
   blankActorUpdate,
 } from "./ranchdata"
-import {loc2vec, vec2loc} from "./ranchutil"
+import {loc2vec} from "./ranchutil"
 import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
@@ -555,6 +555,25 @@ export class RanchMode extends Mode {
 
     this.onDispose.add(this._ranchObj.actors.onChange(this._actorChanged))
     this._ranchObj.actors.forEach((actor, id) => { this.updateActor(id, actor) })
+
+    this.onDispose.add(this._ranchObj.circles.onChange(this._circleChanged))
+    this._ranchObj.circles.forEach((circle, id) => {this.updateCircle(id, circle)})
+  }
+
+  protected updateCircle (id :number, circle :ChatCircle) :void {
+    this.deleteCircle(id)
+
+    // make a new circle (programmer art for now)
+    const circObj = createChatCircle(circle)
+    this._scenesys.scene.add(circObj)
+    this._circles.set(id, circObj)
+  }
+
+  protected deleteCircle (id :number) :void {
+    const obj = this._circles.get(id)
+    if (!obj) return
+    this._scenesys.scene.remove(obj)
+    this._circles.delete(id)
   }
 
   /**
@@ -1152,17 +1171,6 @@ export class RanchMode extends Mode {
    * Place an egg or food. */
   protected doPlacement (pos :Vector3) :void {
     const isEgg = (this._uiState === UiState.PlacingEgg)
-    if (!isEgg) {
-      const members :UUID[] = []
-      const circle = <ChatCircle>{
-        radius: 1,
-        size: 0, // temp
-        members
-      }
-      vec2loc(pos, circle)
-      this._scenesys.scene.add(createChatCircle(circle, this._pathsys.setY))
-      return
-    }
     this._ranchObj.ranchq.post(
         {type: isEgg ? "dropEgg" : "dropFood", x: pos.x, y: pos.y, z: pos.z})
     this.setUiState(UiState.Default)
@@ -1275,6 +1283,16 @@ export class RanchMode extends Mode {
       this.updateActor(change.key, change.value)
     } else {
       this.deleteActor(change.key)
+    }
+  }
+
+  protected readonly _circles :Map<number, Object3D> = new Map()
+
+  protected readonly _circleChanged = (change :MapChange<number, ChatCircle>) => {
+    if (change.type === "set") {
+      this.updateCircle(change.key, change.value)
+    } else {
+      this.deleteCircle(change.key)
     }
   }
 

@@ -15,6 +15,7 @@ import {
   ActorState,
   ActorUpdate,
   BehaviorData,
+  ChatCircle,
   Located,
   PathInfo,
 } from "./ranchdata"
@@ -337,31 +338,23 @@ class AvatarBehavior extends MobileBehavior {
   static INSTANCE = new AvatarBehavior(ActorKind.Avatar)
 
   touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
-    if (!ctx.path) return false
-    const radius = 3
-    const data = actor.data
-    for (let rads = 0; rads < Math.PI * 2; rads += (Math.PI / 6)) {
-      const point =
-        new Vector3(data.x + Math.sin(rads) * radius, data.y, data.z + Math.cos(rads) * radius)
-      //const proj = ctx.path.projectOnNavmesh(point)
-      const proj = this.project(point)
-      if (proj) {
-        addActor(ctx, ctx.auth.id, MonsterDb.getRandomEgg(), vec2loc(proj))
-      } else {
-        log.warn("Projection returned null?")
-      }
-    }
-    return false
-  }
+    stopWalkingOutsideTick(ctx, actor)
 
-  protected project (vec :Vector3) :Vector3|null {
-    const origin = vec.clone().setY(10)
-    const direction = new Vector3(0, -1, 0)
-    const caster = new Raycaster(origin, direction)
-    for (const result of caster.intersectObject(global[NAVMESH_GLOBAL] as Object3D, true)) {
-      return result.point
+    // create a chat circle right here
+    const radius = 1 + Math.trunc(Math.random() * 4)
+    const id = createChatCircle(ctx, actor.data, radius)
+    if (id) {
+      // let's spawn eggs in all the valid positions
+      const circle = ctx.obj.circles.get(id)!
+      for (let ii = 0; ii < circle.positions.length; ii++) {
+        const pos = getCirclePosition(ctx, circle, ii)
+        const id = addActor(ctx, ctx.auth.id, MonsterDb.getRandomEgg(), pos)
+        circle.members[ii] = id
+      }
+      // update the circle in the map? now that we've populated positions
+      ctx.obj.circles.set(id, circle)
     }
-    return null
+    return true
   }
 }
 
@@ -735,7 +728,7 @@ function addActor (
   config :ActorConfig,
   locProps :Located,
   behavior? :Behavior,
-) :void {
+) :UUID {
   const id = (config.kind === ActorKind.Avatar) ? owner : uuidv1()
   const data = newActorData(id, owner, config, locProps, behavior)
   const update = actorDataToUpdate(data)
@@ -744,6 +737,7 @@ function addActor (
   ctx.obj.actors.set(id, update)
 
   //log.debug("We got a random position?", "pos", getRandomPositionFrom(ctx, data))
+  return id
 }
 
 function removeActor (
@@ -1129,6 +1123,81 @@ function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
   // over the timestamp, so I tried to make it only match the destination and also
   // take care of the extra time we added, but it's still not quite right.
   // Rather than make ever more twisted modifications to this, it's time to just rethink it.
+}
+
+/**
+ * Create a new chat circle. Return the id, or 0. */
+function createChatCircle (ctx :RanchContext, loc :Located, radius = 1) :number {
+  // first, let's make sure we're not too close to an existing circle
+  const CIRCLE_PADDING = .1
+  for (const circle of ctx.obj.circles.values()) {
+    const dx = circle.x - loc.x
+    const dy = circle.y - loc.y
+    const dist = Math.sqrt(dx * dx + dy * dy)
+    if (dist < radius + circle.radius + CIRCLE_PADDING) return 0
+  }
+
+  // now, let's sample 4x as many points as we think we'll need, so we get good Y
+  const actorCount = 2 + (2 * radius)
+  const SAMPLES_PER_ACTOR = 4
+  const samples = actorCount * SAMPLES_PER_ACTOR
+  const positions :number[] = []
+  const vec = new Vector3()
+  let positionOffset = 0
+  let maxY = loc.y
+  for (let pp = 0, angle = 0, incr = (Math.PI * 2) / samples; pp < samples; pp++, angle += incr) {
+    vec.x = loc.x + Math.sin(angle) * radius
+    vec.y = loc.y
+    vec.z = loc.z + Math.cos(angle) * radius
+    const result = projectOnNavmesh(ctx, vec)
+    if (result) {
+      maxY = Math.max(maxY, result.y)
+      if (positions.length === 0) {
+        positionOffset = (pp % SAMPLES_PER_ACTOR)
+        positions.push(angle)
+      } else if (pp % SAMPLES_PER_ACTOR === positionOffset) {
+        positions.push(angle)
+      }
+    }
+  }
+
+  const members :string[] = new Array(positions.length).fill("")
+  const circle :ChatCircle = {
+    x: loc.x,
+    y: maxY,
+    z: loc.z,
+    radius,
+    positions,
+    members,
+  }
+  let maxCircleId = 0
+  for (const id of ctx.obj.circles.keys()) {
+    maxCircleId = Math.max(maxCircleId, id)
+  }
+  const circleId = maxCircleId + 1
+  ctx.obj.circles.set(circleId, circle)
+  return circleId
+}
+
+function getCirclePosition (ctx :RanchContext, circle :ChatCircle, index :number) :Located {
+  const angle = circle.positions[index]
+  const vec = new Vector3(
+    circle.x + Math.sin(angle) * circle.radius,
+    circle.y,
+    circle.z + Math.cos(angle) * circle.radius)
+  const result = projectOnNavmesh(ctx, vec) || vec // result shouldn't fail...
+  return vec2loc(result)
+}
+
+function projectOnNavmesh (ctx :RanchContext, vec :Vector3) :Vector3|undefined {
+  // TODO: move the navmesh into the RanchContext?
+  const origin = vec.clone().setY(10)
+  const direction = new Vector3(0, -1, 0)
+  const caster = new Raycaster(origin, direction)
+  for (const result of caster.intersectObject(global[NAVMESH_GLOBAL] as Object3D, true)) {
+    return result.point
+  }
+  return undefined
 }
 
 function maybeDefrostAvatar (ctx :RanchContext, id :UUID) :void {
