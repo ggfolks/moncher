@@ -341,23 +341,27 @@ class AvatarBehavior extends MobileBehavior {
     stopWalkingOutsideTick(ctx, actor)
 
     // create a chat circle right here
-    const radius = 1 + Math.trunc(Math.random() * 4)
-    const id = createChatCircle(ctx, actor.data, radius)
-    if (id) {
-      // let's spawn eggs in all the valid positions
-      const circle = ctx.obj.circles.get(id)!
-      for (let ii = 0; ii < circle.positions.length; ii++) {
-        if (Math.random() < .5) continue
-        const pos = getCirclePosition(ctx, circle, ii)
-        const id = addActor(ctx, ctx.auth.id, MonsterDb.getRandomEgg(), pos)
-        circle.members[ii] = id
-      }
-      // update the circle in the map? now that we've populated positions
-      ctx.obj.circles.set(id, circle)
+    let radius = 1 + Math.trunc(Math.random() * 4)
+    while (radius >= 1) {
+      const id = createChatCircle(ctx, actor.data, radius)
+      if (id) {
+        // let's spawn eggs in all the valid positions
+        const circle = ctx.obj.circles.get(id)!
+        for (let ii = 0; ii < circle.positions.length; ii++) {
+          if (Math.random() < .5) continue
+          const pos = getCirclePosition(ctx, circle, ii)
+          const id = addActor(ctx, ctx.auth.id, MonsterDb.getRandomEgg(), pos)
+          circle.members[ii] = id
+        }
+        // update the circle in the map? now that we've populated positions
+        ctx.obj.circles.set(id, circle)
 
-      // try to join the circle ourselves
-      const result = joinCircle(ctx, actor, id)
-      log.debug("Joined circle? " + result)
+        // try to join the circle ourselves
+        const result = joinCircle(ctx, actor, id)
+        log.debug("Joined circle? " + result)
+        return true
+      }
+      radius -= .5
     }
     return true
   }
@@ -1192,9 +1196,13 @@ function createChatCircle (ctx :RanchContext, loc :Located, radius = 1) :number 
   const CIRCLE_PADDING = .1
   for (const circle of ctx.obj.circles.values()) {
     const dx = circle.x - loc.x
-    const dy = circle.y - loc.y
-    const dist = Math.sqrt(dx * dx + dy * dy)
-    if (dist < radius + circle.radius + CIRCLE_PADDING) return 0
+    const dz = circle.z - loc.z
+    const dist = Math.sqrt(dx * dx + dz * dz)
+    if (dist < radius + circle.radius + CIRCLE_PADDING) {
+      log.warn("Too close to existing circle",
+        "loc", loc, "radius", radius, "circle", circle)
+      return 0
+    }
   }
 
   // now, let's sample 4x as many points as we think we'll need, so we get good Y
@@ -1221,6 +1229,8 @@ function createChatCircle (ctx :RanchContext, loc :Located, radius = 1) :number 
     }
   }
   if (positions.length < getCircleMemberCountTarget(radius - 1)) {
+    log.warn("Circle had too many invalid positions",
+      "radius", radius, "positions", positions.length)
     return 0 // fail if we have fewer positions available than an ideal circle with 1 less radius.
   }
 
