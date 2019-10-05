@@ -514,6 +514,18 @@ export class RanchMode extends Mode {
   setUiState (uiState :UiState) :void {
     this._uiState = uiState
     this._hud.updateUiState(uiState)
+
+    switch (uiState) {
+    default:
+      this._handDowns.clear()
+      this._handDrags.clear()
+      break
+
+    case UiState.Default:
+    case UiState.Debug:
+      // do not clear the mouse trackings
+      break
+    }
   }
 
   protected ranchLoaded (scene :Object3D) :void {
@@ -1297,9 +1309,48 @@ export class RanchMode extends Mode {
     }
   }
 
+  protected readonly _handDowns :Map<number, vec2> = new Map()
+
+  protected readonly _handDrags :Map<number, boolean> = new Map()
+
+  protected handHasBeenDragged (key :number, curpos :vec2) :boolean {
+    if (this._handDrags.get(key)) return true
+    const DRAG_HYSTERESIS = 5
+    const down = this._handDowns.get(key)!
+    if (Math.abs(curpos[0] - down[0]) > DRAG_HYSTERESIS ||
+        Math.abs(curpos[1] - down[1]) > DRAG_HYSTERESIS) {
+      this._handDrags.set(key, true)
+      return true
+    }
+    return false
+  }
+
   // TODO: move into new gesture handler class
   protected readonly _handChanged = (change :MapChange<number, Pointer>) => {
-
+    if (this._handDowns.has(change.key)) {
+      if (change.type === "deleted" || !change.value.pressed) {
+        if (this._app.notGuest.current &&
+            (this._uiState === UiState.Default || this._uiState === UiState.Debug)) {
+          let size
+          let curpos
+          if (change.type === "deleted") {
+            size = 0
+            curpos = change.prev.position
+          } else {
+            size = 1
+            curpos = change.value.position
+          }
+          if (this._hand.pointers.size === size && !this.handHasBeenDragged(change.key, curpos)) {
+            const loc = this.mouseToLocation(curpos)
+            if (loc) this._ranchObj.ranchq.post({type: "move", x: loc.x, y: loc.y, z: loc.z})
+          }
+        }
+        this._handDowns.delete(change.key)
+        this._handDrags.delete(change.key)
+      }
+    } else if (change.type === "set" && change.value.pressed) {
+      this._handDowns.set(change.key, change.value.position)
+    }
     if (change.type === "deleted") return
     if (!change.value.pressed) return
     switch (this._uiState) {
@@ -1317,15 +1368,12 @@ export class RanchMode extends Mode {
       // do panning an zooming
       switch (this._hand.pointers.size) {
       case 1: // mouse panning
-        if (change.value.movement[0] || change.value.movement[1]) {
+        if (this.handHasBeenDragged(change.key, change.value.position) &&
+            (change.value.movement[0] || change.value.movement[1])) {
           const MOUSE_FACTOR = -.025
           this.adjustCameraTarget(
               change.value.movement[0] * MOUSE_FACTOR,
               change.value.movement[1] * MOUSE_FACTOR)
-        } else if (this._app.notGuest.current) {
-          // TODO: trigger "move" differently so that it's a bit more intentional
-          const loc = this.mouseToLocation(change.value.position)
-          if (loc) this._ranchObj.ranchq.post({type: "move", x: loc.x, y: loc.y, z: loc.z})
         }
         break
 

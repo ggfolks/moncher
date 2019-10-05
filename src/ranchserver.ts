@@ -1122,6 +1122,9 @@ function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
       joinCirclePosition(ctx, actor, circle.id, newIndex)
       publishOneActor(ctx, actor)
     }
+//    log.info("Checking circle membership",
+//      "id", actor.id,
+//      "members", circle.members)
     return
   }
 
