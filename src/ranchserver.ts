@@ -1031,15 +1031,15 @@ function walkTo (
     return
   }
 
-  // TEMP!?
-  // make sure we can path-back
-  const pathBack = findPath(ctx, newPos, actor.data)
-  if (!pathBack) {
-    log.warn("Unable to find a path BACK from a point. Skipping",
-      "point", newPos)
-    return
-  }
-  // END TEMP
+//  // TEMP!?
+//  // make sure we can path-back
+//  const pathBack = findPath(ctx, newPos, actor.data)
+//  if (!pathBack) {
+//    log.warn("Unable to find a path BACK from a point. Skipping",
+//      "point", newPos)
+//    return
+//  }
+//  // END TEMP
 
   let info :PathInfo|undefined = undefined
   const speed = getSpeed(ctx, actor) * speedFactor
