@@ -515,17 +515,17 @@ export class RanchMode extends Mode {
     this._uiState = uiState
     this._hud.updateUiState(uiState)
 
-    switch (uiState) {
-    default:
-      this._handDowns.clear()
-      this._handDrags.clear()
-      break
-
-    case UiState.Default:
-    case UiState.Debug:
-      // do not clear the mouse trackings
-      break
-    }
+//    switch (uiState) {
+//    default:
+//      this._handDowns.clear()
+//      this._handDrags.clear()
+//      break
+//
+//    case UiState.Default:
+//    case UiState.Debug:
+//      // do not clear the mouse trackings
+//      break
+//    }
   }
 
   protected ranchLoaded (scene :Object3D) :void {
@@ -1126,11 +1126,13 @@ export class RanchMode extends Mode {
 
   protected actorTouched (id :UUID, config :ActorConfig, update :ActorUpdate) :void {
     if (this._uiState !== UiState.Petting) return
+    this._ignoreNextHandUp = true
 
     // TEMP: hackery to require invite to touch/hatch egg
     if (!this._ranchObj.debug.current && config.kind === ActorKind.Egg) {
       if (this._app.user.user.key === update.owner) {
         showEggInvite(this._app, this._host, this._app.state.ranchId, id)
+        this.setUiState(UiState.Default)
         return
       }
       else if (this._app.state.focusId !== id) {
@@ -1313,6 +1315,8 @@ export class RanchMode extends Mode {
 
   protected readonly _handDrags :Map<number, boolean> = new Map()
 
+  protected _ignoreNextHandUp :boolean = false
+
   protected handHasBeenDragged (key :number, curpos :vec2) :boolean {
     if (this._handDrags.get(key)) return true
     const DRAG_HYSTERESIS = 5
@@ -1329,7 +1333,7 @@ export class RanchMode extends Mode {
   protected readonly _handChanged = (change :MapChange<number, Pointer>) => {
     if (this._handDowns.has(change.key)) {
       if (change.type === "deleted" || !change.value.pressed) {
-        if (this._app.notGuest.current &&
+        if (this._app.notGuest.current && !this._ignoreNextHandUp &&
             (this._uiState === UiState.Default || this._uiState === UiState.Debug)) {
           let size
           let curpos
@@ -1347,6 +1351,7 @@ export class RanchMode extends Mode {
         }
         this._handDowns.delete(change.key)
         this._handDrags.delete(change.key)
+        this._ignoreNextHandUp = false
       }
     } else if (change.type === "set" && change.value.pressed) {
       this._handDowns.set(change.key, change.value.position)
@@ -1361,6 +1366,9 @@ export class RanchMode extends Mode {
     case UiState.PlacingFood:
       const loc = this.mouseToLocation(change.value.position)
       if (loc) this.doPlacement(loc)
+      // after placement, force this Hand touch to be considered a drag so that we don't
+      // trigger movements on the mouse-up. Gah.
+      this._ignoreNextHandUp = true
       break
 
     case UiState.Default:
