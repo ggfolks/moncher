@@ -514,18 +514,6 @@ export class RanchMode extends Mode {
   setUiState (uiState :UiState) :void {
     this._uiState = uiState
     this._hud.updateUiState(uiState)
-
-//    switch (uiState) {
-//    default:
-//      this._handDowns.clear()
-//      this._handDrags.clear()
-//      break
-//
-//    case UiState.Default:
-//    case UiState.Debug:
-//      // do not clear the mouse trackings
-//      break
-//    }
   }
 
   protected ranchLoaded (scene :Object3D) :void {
@@ -534,8 +522,6 @@ export class RanchMode extends Mode {
     if (navMesh instanceof Mesh) {
       navMesh.parent!.remove(navMesh)
       this._navMesh = navMesh
-
-//      this.configurePathFinding(navMesh)
 
       // use the bounding box of the navmesh geometry as the bounds of our camera focus
       navMesh.geometry.computeBoundingBox()
