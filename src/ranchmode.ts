@@ -101,6 +101,13 @@ class ActorInfo {
   ) {}
 }
 
+class CircleInfo {
+  constructor (
+    readonly id :number,
+    readonly entityId :number,
+  ) {}
+}
+
 const unitY = new Vector3(0, 1, 0)
 const downY = new Vector3(0, -1, 0)
 const scratchQ = new Quaternion()
@@ -563,14 +570,27 @@ export class RanchMode extends Mode {
 
     // make a new circle (programmer art for now)
     const circObj = createChatCircle(circle)
-    this._scenesys.scene.add(circObj)
-    this._circles.set(id, circObj)
+
+    const entityId = this._domain.add({
+      components: {
+        obj: {type: "obj3d", obj: circObj},
+        hovers: {},
+        trans: {},
+        graph: /*this.makeInspectable(*/{
+          hover: {type: "hover", component: "hovers"},
+          showOnHover: {type: "updateVisible", input: "hover"},
+        }/*)*/,
+      }
+    })
+    const circleInfo = new CircleInfo(id, entityId)
+    this._circles.set(id, circleInfo)
   }
 
   protected deleteCircle (id :number) :void {
-    const obj = this._circles.get(id)
-    if (!obj) return
-    this._scenesys.scene.remove(obj)
+    const circleInfo = this._circles.get(id)
+    if (!circleInfo) return
+
+    this._domain.delete(circleInfo.entityId)
     this._circles.delete(id)
   }
 
@@ -1292,7 +1312,7 @@ export class RanchMode extends Mode {
     }
   }
 
-  protected readonly _circles :Map<number, Object3D> = new Map()
+  protected readonly _circles :Map<number, CircleInfo> = new Map()
 
   protected readonly _circleChanged = (change :MapChange<number, ChatCircle>) => {
     if (change.type === "set") {
