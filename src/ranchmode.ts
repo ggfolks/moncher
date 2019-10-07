@@ -101,6 +101,13 @@ class ActorInfo {
   ) {}
 }
 
+class CircleInfo {
+  constructor (
+    readonly id :number,
+    readonly entityId :number,
+  ) {}
+}
+
 const unitY = new Vector3(0, 1, 0)
 const downY = new Vector3(0, -1, 0)
 const scratchQ = new Quaternion()
@@ -185,6 +192,20 @@ function makeLightCastShadows (obj :Object3D) :void {
  * Helper for loading a SpriteMaterial for monster emojional state. */
 function makeEmoji (tl :TextureLoader, url :string) :SpriteMaterial {
   return new SpriteMaterial({map: tl.load("monsters/emoji/" + url), color: 0xFFFFFF})
+}
+
+/**
+ * Attempt to colorize the object and all its children.  */
+function colorize (obj :Object3D, color :Color) :void {
+  if ((obj instanceof Mesh) && (obj.material instanceof MeshStandardMaterial)) {
+    // clone the material so that we don't change all instances of this object
+    const newMat = new MeshStandardMaterial(obj.material as object)
+    newMat.color = color
+    obj.material = newMat
+  }
+  for (const child of obj.children) {
+    colorize(child, color)
+  }
 }
 
 export class RanchMode extends Mode {
@@ -532,20 +553,6 @@ export class RanchMode extends Mode {
   }
 
   /**
-   * Attempt to colorize the object and all its children.  */
-  protected colorize (obj :Object3D, color :Color) :void {
-    if ((obj instanceof Mesh) && (obj.material instanceof MeshStandardMaterial)) {
-      // clone the material so that we don't change all instances of this object
-      const newMat = new MeshStandardMaterial(obj.material as object)
-      newMat.color = color
-      obj.material = newMat
-    }
-    for (const child of obj.children) {
-      this.colorize(child, color)
-    }
-  }
-
-  /**
    * Called once we know enough to start adding actors. */
   protected setReady () :void {
     if (this._ready) return
@@ -563,14 +570,27 @@ export class RanchMode extends Mode {
 
     // make a new circle (programmer art for now)
     const circObj = createChatCircle(circle)
-    this._scenesys.scene.add(circObj)
-    this._circles.set(id, circObj)
+
+    const entityId = this._domain.add({
+      components: {
+        obj: {type: "obj3d", obj: circObj},
+        hovers: {},
+        trans: {},
+        graph: /*this.makeInspectable(*/{
+          hover: {type: "hover", component: "hovers"},
+          showOnHover: {type: "updateVisible", input: "hover"},
+        }/*)*/,
+      }
+    })
+    const circleInfo = new CircleInfo(id, entityId)
+    this._circles.set(id, circleInfo)
   }
 
   protected deleteCircle (id :number) :void {
-    const obj = this._circles.get(id)
-    if (!obj) return
-    this._scenesys.scene.remove(obj)
+    const circleInfo = this._circles.get(id)
+    if (!circleInfo) return
+
+    this._domain.delete(circleInfo.entityId)
     this._circles.delete(id)
   }
 
@@ -709,36 +729,7 @@ export class RanchMode extends Mode {
     // make the graph inspectable
 //0    const triggerInspect = Mutable.local(false)
 //0    let touchTime :number = 0
-    graphCfg.inspectable = {
-      type: "subgraph",
-      graph: {
-        doubleClick: {type: "doubleClick"},
-        hover: {type: "hover", component: "hovers"},
-        inspect: {type: "and", inputs: ["doubleClick", "hover"]},
-//0        // Hack-in a way that I can bring up the graph even on touch inputs
-//0        triggerInspect: {type: "or", inputs: ["inspect", triggerInspect ]},
-        ui: {
-          type: "ui",
-//0          input: "triggerInspect",
-          input: "inspect",
-          model: {
-            editable: Value.constant(true),
-            backButton: {text: Value.constant("←")},
-            closeButton: {text: Value.constant("x")},
-          },
-          root: {
-            type: "root",
-            scale: this._app.renderer.scale,
-            contents: {
-              type: "box",
-              contents: {type: "graphviewer", editable: "editable"},
-              style: {halign: "stretch", valign: "stretch", background: "$root"},
-            },
-          },
-          size: this._inspectUiSize,
-        },
-      },
-    }
+    this.makeInspectable(graphCfg)
 
     // set up nodes to capture touches on the actor and call our callback
     graphCfg.hover = {type: "hover", component: "hovers"}
@@ -1028,7 +1019,7 @@ export class RanchMode extends Mode {
       type: "gltf",
       url: cfg.model.model,
       onLoad: (obj :Object3D) => {
-        if (cfg.color !== undefined) this.colorize(obj, new Color(cfg.color))
+        if (cfg.color !== undefined) colorize(obj, new Color(cfg.color))
         makeShadowy(obj)
         if (ActorKindAttributes.isMonster(cfg.kind)) this.addBubble(obj, update)
       },
@@ -1073,6 +1064,40 @@ export class RanchMode extends Mode {
 
     this.actorAdded(id, update)
     return actorInfo
+  }
+
+  protected makeInspectable (graphCfg :GraphConfig) :GraphConfig {
+    graphCfg.inspectable = {
+      type: "subgraph",
+      graph: {
+        doubleClick: {type: "doubleClick"},
+        hover: {type: "hover", component: "hovers"},
+        inspect: {type: "and", inputs: ["doubleClick", "hover"]},
+//0        // Hack-in a way that I can bring up the graph even on touch inputs
+//0        triggerInspect: {type: "or", inputs: ["inspect", triggerInspect ]},
+        ui: {
+          type: "ui",
+//0          input: "triggerInspect",
+          input: "inspect",
+          model: {
+            editable: Value.constant(true),
+            backButton: {text: Value.constant("←")},
+            closeButton: {text: Value.constant("x")},
+          },
+          root: {
+            type: "root",
+            scale: this._app.renderer.scale,
+            contents: {
+              type: "box",
+              contents: {type: "graphviewer", editable: "editable"},
+              style: {halign: "stretch", valign: "stretch", background: "$root"},
+            },
+          },
+          size: this._inspectUiSize,
+        },
+      },
+    }
+    return graphCfg
   }
 
   /**
@@ -1287,7 +1312,7 @@ export class RanchMode extends Mode {
     }
   }
 
-  protected readonly _circles :Map<number, Object3D> = new Map()
+  protected readonly _circles :Map<number, CircleInfo> = new Map()
 
   protected readonly _circleChanged = (change :MapChange<number, ChatCircle>) => {
     if (change.type === "set") {
