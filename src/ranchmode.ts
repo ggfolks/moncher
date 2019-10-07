@@ -6,6 +6,7 @@ import {
   Object3D,
   Light,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   Quaternion,
   Raycaster,
@@ -578,7 +579,9 @@ export class RanchMode extends Mode {
         trans: {},
         graph: /*this.makeInspectable(*/{
           hover: {type: "hover", component: "hovers"},
-          showOnHover: {type: "updateVisible", input: "hover"},
+          showOnHover: {type: "onChange", input: "hover", callback: (nv :boolean, ov :boolean) => {
+            ((circObj as Mesh).material as MeshBasicMaterial).opacity = nv ? .8 : .4
+          }},
         }/*)*/,
       }
     })
