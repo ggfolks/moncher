@@ -13,7 +13,7 @@ export function createChatCircle (circle :ChatCircle) :Object3D {
   const POINTS_PER_RADIUS = 16 // how many points to use for a radius 1 circle
   const points = POINTS_PER_RADIUS * circle.radius
 
-  const mat = new MeshBasicMaterial({color: 0xEEEE22})
+  const mat = new MeshBasicMaterial({color: 0xEEEE22, opacity: .5, transparent: true})
   const geom = new RingBufferGeometry(circle.radius - RING_THICKNESS, circle.radius, points)
   const ring = new Mesh(geom, mat)
   loc2vec(circle, ring.position)
