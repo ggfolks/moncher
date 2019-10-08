@@ -154,6 +154,7 @@ export function handleRanchReq (dctx :DContext, obj :RanchObject, req :RanchReq)
     obj.actors.clear()
     obj.actorConfigs.clear()
     obj.frozenAvatars.clear()
+    obj.circles.clear()
     break
 
   case "move":
