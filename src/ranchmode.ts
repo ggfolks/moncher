@@ -177,11 +177,11 @@ function makeSceneShadowy (obj :Object3D) :void {
   obj.children.forEach(makeSceneShadowy)
 }
 
-function makeLightCastShadows (obj :Object3D) :void {
+function makeLightCastShadows (obj :Object3D, renderer :WebGLRenderer) :void {
   if (obj instanceof Light) {
     obj.castShadow = true
-    //obj.shadow.mapSize.set(1024, 1024)
-    obj.shadow.mapSize.set(2048, 2048)
+    const size = Math.min(2048, renderer.capabilities.maxTextureSize)
+    obj.shadow.mapSize.set(size, size)
   }
 }
 
@@ -471,7 +471,7 @@ export class RanchMode extends Mode {
       components: {
         trans: {},
         obj: {type: "json", url: "ranch/lights/PrimaryDay.json",
-              onLoad: makeLightCastShadows },
+              onLoad: (l :Object3D) => { makeLightCastShadows(l, this._webGlRenderer)} },
         lerps: makeLightLerps("Primary"),
       }
     })
