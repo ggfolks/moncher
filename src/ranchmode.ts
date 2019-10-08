@@ -178,7 +178,11 @@ function makeSceneShadowy (obj :Object3D) :void {
 }
 
 function makeLightCastShadows (obj :Object3D) :void {
-  if (obj instanceof Light) obj.castShadow = true
+  if (obj instanceof Light) {
+    obj.castShadow = true
+    //obj.shadow.mapSize.set(1024, 1024)
+    obj.shadow.mapSize.set(2048, 2048)
+  }
 }
 
 /**

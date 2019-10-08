@@ -18,10 +18,10 @@
 				"type": "OrthographicCamera",
 				"layers": 1,
 				"zoom": 1,
-				"left": -5,
-				"right": 5,
-				"top": 5,
-				"bottom": -5,
+				"left": -20,
+				"right": 20,
+				"top": 20,
+				"bottom": -20,
 				"near": 0.5,
 				"far": 500
 			}
