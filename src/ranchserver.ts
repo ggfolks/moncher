@@ -34,8 +34,8 @@ const MIN_MONSTER_SCALE = .8
 
 const MIN_CIRCLE_RADIUS = .5
 
-// don't let actors spam the channel more often than once an hour (TODO: probably way less)
-const MIN_POST_INTERVAL = 60 * 60 * 1000
+// don't let actors spam the channel more often than twice a day (TODO: probably way less)
+const MIN_POST_INTERVAL = 12 * 60 * 60 * 1000
 
 // TODO Don't hardcode distances. Sort out something based on the monster's scale maybe?
 const CLOSE_EAT_DISTANCE = .1
