@@ -179,9 +179,12 @@ function makeSceneShadowy (obj :Object3D) :void {
 
 function makeLightCastShadows (obj :Object3D, renderer :WebGLRenderer) :void {
   if (obj instanceof Light) {
-    obj.castShadow = true
-    const size = Math.min(2048, renderer.capabilities.maxTextureSize)
-    obj.shadow.mapSize.set(size, size)
+    // Note: I moved these settings back into the json
+//    obj.castShadow = true
+//    log.info("obj.shadow.mapSize", "size", obj.shadow.mapSize)
+//    const size = Math.min(2048, renderer.capabilities.maxTextureSize)
+//    obj.shadow.mapSize.set(size, size)
+//    log.info("obj.shadow.mapSize", "size", obj.shadow.mapSize)
   }
 }
 

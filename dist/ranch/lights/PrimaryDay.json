@@ -12,6 +12,7 @@
 		"matrix": [1,0,0,0,0,1,0,0,0,0,1,0,5,10,7.5,1],
 		"color": 16777215,
 		"intensity": 2,
+                "castShadow": true,
 		"shadow": {
 			"camera": {
 				"uuid": "B68794A5-6282-4A68-BA63-9C50AFC7BCE0",
@@ -24,7 +25,8 @@
 				"bottom": -20,
 				"near": 0.5,
 				"far": 500
-			}
+			},
+                        "mapSize": [2048, 2048]
 		}
 	}
 }
