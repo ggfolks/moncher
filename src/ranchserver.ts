@@ -603,6 +603,7 @@ class EatFoodBehavior extends MonsterBehavior {
 
         } else {
           walkTo(ctx, actor, foodData, WALK_TO_FOOD_SPEED)
+          dumpPath(ctx, actor.data.path)
         }
       } else {
         // can't find food: we're just going to wait one tick and reset
@@ -1104,6 +1105,16 @@ function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|un
   foundPath.unshift(srcVec) // put the damn src back on the start of the list
   //return foundPath.map(v => vec2loc(v))
   return foundPath
+}
+
+function dumpPath (ctx :RanchContext, path :PathInfo|undefined) :void {
+  if (!path) return
+  log.info(  "Path from", "start", path.src)
+  while (path.next) {
+    path = path.next
+    log.info("To...    ", "pnode", path.src)
+  }
+  log.info(  "Finishing", "thend", path.dest)
 }
 
 function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
