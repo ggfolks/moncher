@@ -900,6 +900,7 @@ export class RanchMode extends Mode {
         }
         animStates.walk = {
           url: cfg.model.walk,
+          timeScale: ActorKindAttributes.walkAnimationTimeScale(cfg.kind),
           transitions: {
             default: {condition: "!walkCond"},
           }

@@ -49,6 +49,13 @@ export class ActorKindAttributes {
     default: return .7
     }
   }
+
+  static walkAnimationTimeScale (kind :ActorKind) :number {
+    switch (kind) {
+    case ActorKind.Avatar: return 2
+    default: return 1
+    }
+  }
 }
 
 /**
