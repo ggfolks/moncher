@@ -151,7 +151,7 @@ class Pathfinding {
   }
 
   const paths = AStar.search(nodes, closestNode, farthestNode);
-  if (TFW_CHECK_ASTAR && (paths.length === 0)) return null
+  if (TFW_CHECK_ASTAR_RESULT && (paths.length === 0)) return null
 
   const getPortalFromTo = function (a, b) {
    for (var i = 0; i < a.neighbours.length; i++) {
