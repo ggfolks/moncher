@@ -914,10 +914,12 @@ export class RanchMode extends Mode {
           }
         }
         const walkObj = animStates.walk
-        updateWalkSpeed = v => {
-          walkObj.timeScale = v
-          log.info("It shall be noted that I updated the walk speed to a new value", "v", v)
-        }
+        // set up a function to adjust the walk speed.
+        // TODO! NOTE: This isn't good enough, because it can't update the speed of an
+        // animation that's already playing. If an actor changes speed mid-walk (which it can do
+        // if it's actually starting a new walk) then the animation will keep playing at the old
+        // speed.
+        updateWalkSpeed = v => walkObj.timeScale = v
         anyTransitions.walk = {condition: "walkCond"}
         graphCfg.controller.walkCond = "hasValidPath"
       } // end: walk
