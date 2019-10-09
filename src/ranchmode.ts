@@ -98,7 +98,13 @@ class ActorInfo {
     readonly entityId :number,
     /** An easy reference to the config. */
     readonly config :ActorConfig,
+    /** The fn to update the walk speed. TODO. */
+    protected readonly updateWalkSpeed :(speed :number) => void,
   ) {}
+
+  update (update :ActorUpdate) :void {
+    this.updateWalkSpeed(update.walkAnimationSpeed)
+  }
 }
 
 const unitY = new Vector3(0, 1, 0)
@@ -615,6 +621,7 @@ export class RanchMode extends Mode {
   /**
    * Effect updates received from the RanchModel. */
   protected updateActorSprite (actorInfo :ActorInfo, update :ActorUpdate) :void {
+    actorInfo.update(update)
     // store their state in the entity system...
     this._updates.update(actorInfo.entityId, update)
     this.updatePath(actorInfo, update.path)
@@ -864,6 +871,7 @@ export class RanchMode extends Mode {
       graphCfg.controller.hatchCond = "isHatching"
     }
 
+    let updateWalkSpeed :(speed :number) => void = Noop
     if (isEgg) {
       graphCfg.isReadyToHatch = {
         type: "equals",
@@ -900,10 +908,15 @@ export class RanchMode extends Mode {
         }
         animStates.walk = {
           url: cfg.model.walk,
-          timeScale: ActorKindAttributes.walkAnimationTimeScale(cfg.kind),
+          timeScale: 1,
           transitions: {
             default: {condition: "!walkCond"},
           }
+        }
+        const walkObj = animStates.walk
+        updateWalkSpeed = v => {
+          walkObj.timeScale = v
+          log.info("It shall be noted that I updated the walk speed to a new value", "v", v)
         }
         anyTransitions.walk = {condition: "walkCond"}
         graphCfg.controller.walkCond = "hasValidPath"
@@ -1047,7 +1060,7 @@ export class RanchMode extends Mode {
       }
     }
 
-    const actorInfo = new ActorInfo(id, entityId, cfg)
+    const actorInfo = new ActorInfo(id, entityId, cfg, updateWalkSpeed)
     this._actors.set(id, actorInfo)
 
     this.actorAdded(id, update)

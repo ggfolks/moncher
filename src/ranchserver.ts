@@ -701,6 +701,7 @@ function newActorData (
     z: loc.z,
     scale: DEFAULT_MONSTER_SCALE,
     orient: 0,
+    walkAnimationSpeed: 1,
 
     hp: ActorKindAttributes.initialHealth(config.kind),
     hunger: 0,
@@ -722,7 +723,7 @@ function newActorData (
 /**
  * Publish an actor update derived from the specified ActorData. */
 function actorDataToUpdate (data :ActorData) :ActorUpdate {
-  const {x, y, z, scale, orient, state, instant, owner, name, path} = data
+  const {x, y, z, scale, orient, state, instant, owner, name, path, walkAnimationSpeed} = data
   return {
     x, y, z,
     scale,
@@ -732,6 +733,7 @@ function actorDataToUpdate (data :ActorData) :ActorUpdate {
     owner,
     name,
     path,
+    walkAnimationSpeed,
   }
 }
 
@@ -966,6 +968,10 @@ function getSpeed (ctx :RanchContext, actor :Actor) :number {
   return ActorKindAttributes.baseMovementSpeed(actor.config.kind) * actor.data.scale
 }
 
+function getWalkAnimationSpeed (ctx :RanchContext, actor :Actor, speed :number) :number {
+  return speed / ActorKindAttributes.baseWalkAnimationSpeed(actor.config.kind)
+}
+
 /**
  * Stop a monster walking dead in its tracks. Should be called after super.tick() on a mobile
  * behavior so that the location in the monster's data is up-to-date.
@@ -1054,6 +1060,7 @@ function walkTo (
         next: info }
   }
   actor.data.path = info
+  actor.data.walkAnimationSpeed = getWalkAnimationSpeed(ctx, actor, speed)
   dirtyClient(actor.data)
 }
 

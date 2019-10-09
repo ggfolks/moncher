@@ -50,11 +50,8 @@ export class ActorKindAttributes {
     }
   }
 
-  static walkAnimationTimeScale (kind :ActorKind) :number {
-    switch (kind) {
-    case ActorKind.Avatar: return 2
-    default: return 1
-    }
+  static baseWalkAnimationSpeed (kind :ActorKind) :number {
+    return .7
   }
 }
 
@@ -142,6 +139,7 @@ export interface ActorUpdate extends Located {
   owner :UUID
   name? :string
   path? :PathInfo
+  walkAnimationSpeed :number
 }
 
 /**
@@ -156,6 +154,7 @@ export function blankActorUpdate () :ActorUpdate {
     owner: UUID0,
     state: ActorState.Default,
     instant: ActorInstant.None,
+    walkAnimationSpeed: 1,
   }
 }
 
@@ -184,6 +183,9 @@ export interface ActorData extends Located {
   orient :number
   instant :ActorInstant // TODO: going away
   lastPost? :number
+
+  /** The latest walk animation speed. */
+  walkAnimationSpeed :number
 
   /** Data related to the current behavior. */
   data :BehaviorData
