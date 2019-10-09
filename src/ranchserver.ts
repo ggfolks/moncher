@@ -970,7 +970,8 @@ function getSpeed (ctx :RanchContext, actor :Actor) :number {
 }
 
 function getWalkAnimationSpeed (ctx :RanchContext, actor :Actor, speed :number) :number {
-  return speed / ActorKindAttributes.baseWalkAnimationSpeed(actor.config.kind)
+  // factor the scale back out of the speed.
+  return (speed / actor.data.scale) / ActorKindAttributes.baseWalkAnimationSpeed(actor.config.kind)
 }
 
 /**
