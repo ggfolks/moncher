@@ -5,7 +5,7 @@ import { AStar } from './AStar';
 import { Builder } from './Builder';
 import { Channel } from './Channel';
 
-import {TFW_CHECK_POLYGON} from "./TfwMods"
+import {TFW_CHECK_ASTAR_RESULT, TFW_CHECK_POLYGON} from "./TfwMods"
 
 /**
  * Defines an instance of the pathfinding module, with one or more zones.
@@ -151,6 +151,7 @@ class Pathfinding {
   }
 
   const paths = AStar.search(nodes, closestNode, farthestNode);
+  if (TFW_CHECK_ASTAR && (paths.length === 0)) return null
 
   const getPortalFromTo = function (a, b) {
    for (var i = 0; i < a.neighbours.length; i++) {
