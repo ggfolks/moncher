@@ -32,8 +32,8 @@ export class ActorKindAttributes {
    * Is the specified kind a monster? */
   static isMonster (kind :ActorKind) :boolean {
     switch (kind) {
-    case ActorKind.Egg: case ActorKind.Food: return false
-    default: return true
+    case ActorKind.Lobber: case ActorKind.Runner: case ActorKind.Healer: return true
+    default: return false
     }
   }
 
