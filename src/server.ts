@@ -61,7 +61,7 @@ const httpServer = http.createServer((req, rsp) => {
   log.info("HTTP request", "url", req.url, "path", path)
   fs.readFile(`dist/${path}`, (err, content) => {
     if (err) {
-      if (err.code == "ENOENT") {
+      if (err.code === "ENOENT") {
         rsp.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" })
         rsp.end(`Not found: ${path}`)
       } else {

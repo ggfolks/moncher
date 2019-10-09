@@ -772,7 +772,7 @@ function publishChanges (ctx :RanchContext) :void {
     if (data.hp <= 0) {
       removeActor(ctx, id)
     } else if (data.dirty) {
-      if ((data.dirty & CLIENT_DIRTY) != 0) {
+      if ((data.dirty & CLIENT_DIRTY) !== 0) {
         ctx.obj.actors.set(id, actorDataToUpdate(data))
       }
       delete data.dirty
@@ -783,7 +783,7 @@ function publishChanges (ctx :RanchContext) :void {
 
 function publishOneActor (ctx :RanchContext, actor :Actor) :void {
   if (actor.data.dirty) {
-    if ((actor.data.dirty & CLIENT_DIRTY) != 0) {
+    if ((actor.data.dirty & CLIENT_DIRTY) !== 0) {
       ctx.obj.actors.set(actor.id, actorDataToUpdate(actor.data))
     }
     delete actor.data.dirty
