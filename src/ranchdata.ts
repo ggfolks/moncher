@@ -196,14 +196,14 @@ export interface ActorData extends Located {
   /** The circle that this actor belongs to, or 0. */
   circleId? :number
 
+  /** The snake that this actor belongs to, or 0. */
+  snakeId? :number
+
   /** Flags containing the dirtyness level of this data. If the SERVER flag is on, the
    *  ActorData will be re-set() in the Map to persist it. If the CLIENT flag is also on,
    *  then a new ActorUpdate is published (and persisted). */
   dirty? :number
 }
-
-//export interface ChatCircleUpdate extends Located {
-//}
 
 export interface ChatCircle extends Located {
   /** The (reused) numeric (nonzero) id of this circle. */
@@ -222,4 +222,21 @@ export interface ChatCircle extends Located {
 
   /** The ids of actors in positions, or the empty string. */
   members :string[]
+}
+
+/** Snek. I do a chatting. */
+export interface ChatSnake extends Located {
+  /** The (reused) numeric (nonzero) id of this snek. */
+  id :number,
+
+  /** The head of the snake. */
+  x :number
+  y :number
+  z :number
+
+  /** The snake extends from the head point and ends at *or prior to* the last point. */
+  length :number,
+
+  /** An array with x,y,z,x,y,z,x,y,z.... */
+  points :number[],
 }

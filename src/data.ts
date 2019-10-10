@@ -5,7 +5,7 @@ import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
 import {DContext, DObject, MetaMsg} from "tfw/data/data"
 import {dcollection, dmap, dobject, dqueue, dset, dtable, dvalue, dview,
         orderBy} from "tfw/data/meta"
-import {ActorConfig, ActorData, ActorUpdate, ChatCircle, SERVER_FUNCS} from "./ranchdata"
+import {ActorConfig, ActorData, ActorUpdate, ChatCircle, ChatSnake, SERVER_FUNCS} from "./ranchdata"
 
 const guestName = (id :UUID) => `Guest ${id.substring(0, 4)}`
 const guestPhoto = (id :UUID) => "ui/DefaultAvatar.png"
@@ -237,6 +237,9 @@ export class RanchObject extends DObject {
 
   @dmap("number", "record", false)
   circles = this.map<number, ChatCircle>()
+
+  @dmap("number", "record", false)
+  snakes = this.map<number, ChatSnake>()
 
   /** Keeps the last time we were ticked, from Date.now() */
   @dvalue("number")

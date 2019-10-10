@@ -16,10 +16,11 @@ import {
   ActorUpdate,
   BehaviorData,
   ChatCircle,
+  ChatSnake,
   Located,
   PathInfo,
 } from "./ranchdata"
-import {copyloc, loc2vec, locsEqual, vec2loc} from "./ranchutil"
+import {copyloc, getDistance2d, loc2vec, locsEqual, vec2loc} from "./ranchutil"
 
 const stripTrailingSlash = (url :string) => url.endsWith("/") ? url.substring(0, url.length-1) : url
 const serverUrl = stripTrailingSlash(process.env.SERVER_URL || "http://localhost:3000/")
@@ -27,6 +28,9 @@ const serverUrl = stripTrailingSlash(process.env.SERVER_URL || "http://localhost
 /** The name of the pathfinder stuffed in global. */
 export const PATHFINDER_GLOBAL = "_ranchPathfinder"
 export const NAVMESH_GLOBAL = "_navMesh"
+
+/** Are we testing circles or snakes? */
+const TEST_SNAKES = true
 
 const MAX_MONSTER_SCALE = 4
 const DEFAULT_MONSTER_SCALE = 1
@@ -155,6 +159,7 @@ export function handleRanchReq (dctx :DContext, obj :RanchObject, req :RanchReq)
     obj.actorConfigs.clear()
     obj.frozenAvatars.clear()
     obj.circles.clear()
+    obj.snakes.clear()
     break
 
   case "move":
@@ -346,28 +351,39 @@ class AvatarBehavior extends MobileBehavior {
   touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
     stopWalkingOutsideTick(ctx, actor)
 
-    // create a chat circle right here
-    let radius = 1 + Math.trunc(Math.random() * 4)
-    while (radius >= MIN_CIRCLE_RADIUS) {
-      const id = createChatCircle(ctx, actor.data, radius)
+    if (TEST_SNAKES) {
+      // create a snake extending from this actor
+      const id = createChatSnake(ctx, actor.data, 5)
       if (id) {
-        // let's spawn eggs in all the valid positions
-        const circle = ctx.obj.circles.get(id)!
-        for (let ii = 0; ii < circle.positions.length; ii++) {
-          if (Math.random() < .5) continue
-          const pos = getCirclePosition(ctx, circle, ii)
-          const id = addActor(ctx, ctx.auth.id, MonsterDb.getRandomEgg(), pos)
-          circle.members[ii] = id
-        }
-        // update the circle in the map? now that we've populated positions
-        ctx.obj.circles.set(id, circle)
-
-        // try to join the circle ourselves
-        const result = joinCircle(ctx, actor, id)
-        log.debug("Joined circle? " + result, "radius", circle.radius)
-        return true
+        // for now, "join" it manually...
+        actor.data.snakeId = id
+        dirtyServer(actor.data)
       }
-      radius -= .5
+
+    } else {
+      // create a chat circle right here
+      let radius = 1 + Math.trunc(Math.random() * 4)
+      while (radius >= MIN_CIRCLE_RADIUS) {
+        const id = createChatCircle(ctx, actor.data, radius)
+        if (id) {
+          // let's spawn eggs in all the valid positions
+          const circle = ctx.obj.circles.get(id)!
+          for (let ii = 0; ii < circle.positions.length; ii++) {
+            if (Math.random() < .5) continue
+            const pos = getCirclePosition(ctx, circle, ii)
+            const id = addActor(ctx, ctx.auth.id, MonsterDb.getRandomEgg(), pos)
+            circle.members[ii] = id
+          }
+          // update the circle in the map? now that we've populated positions
+          ctx.obj.circles.set(id, circle)
+
+          // try to join the circle ourselves
+          const result = joinCircle(ctx, actor, id)
+          log.debug("Joined circle? " + result, "radius", circle.radius)
+          return true
+        }
+        radius -= .5
+      }
     }
     return true
   }
@@ -594,7 +610,7 @@ class EatFoodBehavior extends MonsterBehavior {
       const food = getNearestActor(ctx, data, isFood)
       if (food) {
         const foodData = food.data
-        if (ranchDistance(data, foodData) < CLOSE_EAT_DISTANCE) {
+        if (getDistance2d(data, foodData) < CLOSE_EAT_DISTANCE) {
           foodData.hp -= 50
           dirtyServer(foodData)
           bd.phase = 2
@@ -943,7 +959,7 @@ function getNearestActor (
   let nearest = undefined
   visitActors(ctx, actor => {
     if (predicate(actor)) {
-      const dd = ranchDistance(loc, actor.data)
+      const dd = getDistance2d(loc, actor.data)
       if (dd < maxDist) {
         maxDist = dd
         nearest = actor
@@ -1221,7 +1237,7 @@ function maybeRepositionInCircle (ctx :RanchContext, actor :Actor, loc :Located)
   for (let ii = 0; ii < circle.members.length; ii++) {
     if (circle.members[ii] === "") {
       const pos = getCirclePosition(ctx, circle, ii)
-      const dist = ranchDistance(loc, pos)
+      const dist = getDistance2d(loc, pos)
       if (dist < minDist) {
         minDist = dist
         bestIndex = ii
@@ -1293,7 +1309,7 @@ function createChatCircle (ctx :RanchContext, loc :Located, radius = 1) :number 
   // first, let's make sure we're not too close to an existing circle
   const CIRCLE_PADDING = .1
   for (const circle of ctx.obj.circles.values()) {
-    if (ranchDistance(circle, loc) < radius + circle.radius + CIRCLE_PADDING) {
+    if (getDistance2d(circle, loc) < radius + circle.radius + CIRCLE_PADDING) {
 //      log.warn("Too close to existing circle",
 //        "loc", loc, "radius", radius, "circle", circle)
       return 0
@@ -1362,9 +1378,55 @@ function getCirclePosition (ctx :RanchContext, circle :ChatCircle, index :number
 
 function getCircleByLocation (ctx :RanchContext, loc :Located) :ChatCircle|undefined {
   for (const circle of ctx.obj.circles.values()) {
-    if (ranchDistance(loc, circle) <= circle.radius) return circle
+    if (getDistance2d(loc, circle) <= circle.radius) return circle
   }
   return undefined
+}
+
+function createChatSnake (ctx :RanchContext, loc :Located, length :number) :number {
+  if (!ctx.path) {
+    log.warn("No pathfinding, no snake.")
+    return 0
+  }
+
+  // For now, make a snake that goes from our location to a random location
+  // But maybe it coils up as a circle to start out?
+  const src = loc2vec(loc)
+  let dest :Vector3|undefined
+  let tries = 0
+  do {
+    dest = ctx.path.getRandomPositionFrom(src)
+    tries++
+  } while (tries < 100 && (!dest || dest.distanceTo(src) < length))
+  if (!dest) {
+    log.warn("Too many tries to find a suitably far point for starting snake")
+    return 0
+  }
+  const path = ctx.path.findPath(src, dest)
+  if (!path) {
+    log.warn("Couldn't find path while making snake, just giving up.")
+    return 0
+  }
+  const points :number[] = []
+  for (const pp of path) {
+    points.push(pp.x, pp.y, pp.z)
+  }
+
+  let maxSnakeId = 0
+  for (const id of ctx.obj.snakes.keys()) {
+    maxSnakeId = Math.max(maxSnakeId, id)
+  }
+  const snakeId = maxSnakeId + 1
+  const snake :ChatSnake = {
+    id: snakeId,
+    x: loc.x,
+    y: loc.y,
+    z: loc.z,
+    length,
+    points,
+  }
+  ctx.obj.snakes.set(snakeId, snake)
+  return snakeId
 }
 
 function projectOnNavmesh (ctx :RanchContext, vec :Vector3) :Vector3|undefined {
@@ -1376,14 +1438,6 @@ function projectOnNavmesh (ctx :RanchContext, vec :Vector3) :Vector3|undefined {
     return result.point
   }
   return undefined
-}
-
-/**
- * Return a distance between 2 points, ignoring the y coordinate. */
-function ranchDistance (l1 :Located, l2 :Located) :number {
-  const dx = l1.x - l2.x
-  const dz = l1.z - l2.z
-  return Math.sqrt(dx * dx + dz * dz)
 }
 
 //function getDistance (one :Located, two :Located) :number {

@@ -24,3 +24,10 @@ export function copyloc (loc :Located, into? :Located) :Located {
 export function locsEqual (loc1 :Located, loc2 :Located) :boolean {
   return loc1.x === loc2.x && loc1.y === loc2.y && loc1.z === loc2.z
 }
+
+/** Return distance between two points, ignoring the Y coordinates. */
+export function getDistance2d (l1 :Located, l2 :Located) :number {
+  const dx = l1.x - l2.x
+  const dz = l1.z - l2.z
+  return Math.sqrt(dx * dx + dz * dz)
+}
