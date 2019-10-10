@@ -151,7 +151,7 @@ class Pathfinding {
   }
 
   const paths = AStar.search(nodes, closestNode, farthestNode);
-  if (TFW_CHECK_ASTAR_RESULT && (paths.length === 0)) return null
+  if (TFW_CHECK_ASTAR_RESULT && (paths.length === 0)) return null;
 
   const getPortalFromTo = function (a, b) {
    for (var i = 0; i < a.neighbours.length; i++) {
@@ -174,6 +174,8 @@ class Pathfinding {
      vertices[portals[0]],
      vertices[portals[1]]
     );
+   } else if (i < paths.length - 1) {
+       console.log("AStar is missing an intermediate polygon?");
    }
   }
   channel.push(targetPosition);
