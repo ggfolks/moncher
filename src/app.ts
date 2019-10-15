@@ -25,7 +25,7 @@ firebase.initializeApp({
 })
 
 const stripTrailSlash = (url :string) => url.endsWith("/") ? url.substring(0, url.length-1) : url
-const ranchFocusR = /^([A-Za-z0-9]{22})(\+([A-Za-z0-9]{22}))?$/
+const ranchFocusR = /^([A-Za-z0-9]{20,22})(\+([A-Za-z0-9]{20,22}))?$/
 function parseLocation () :[string, string, string|undefined] {
   const path = window.location.pathname
   if (path) {
@@ -139,7 +139,7 @@ export abstract class SurfaceMode extends Mode {
 
   constructor (app :App) {
     super()
-    this.onDispose.add(this.batch = new UniformQuadBatch(app.renderer.glc))
+    this.onDispose.add(this.batch = new UniformQuadBatch(app.renderer))
     this.surf = new Surface(app.renderer.target, this.batch)
   }
 
