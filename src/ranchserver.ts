@@ -1078,6 +1078,7 @@ function walkTo (
         next: info }
   }
   actor.data.path = info
+  maybeSegmentSnake(ctx, actor)
   actor.data.walkAnimationSpeed = getWalkAnimationSpeed(ctx, actor, speed)
   dirtyClient(actor.data)
 }
@@ -1093,22 +1094,41 @@ function advanceWalk (ctx :RanchContext, actor :Actor, dt :number) :void {
       data.x = (path.src.x - path.dest.x) * perc + path.dest.x
       data.y = (path.src.y - path.dest.y) * perc + path.dest.y
       data.z = (path.src.z - path.dest.z) * perc + path.dest.z
+      maybeUpdateSnakeHead(ctx, actor)
       dirtyClient(data)
       return
     }
     // otherwise we used-up a path segment
     if (path.next) {
+      maybeSegmentSnake(ctx, actor)
       dt -= path.timeLeft
     } else {
       // otherwise we have finished!
       data.x = path.dest.x
       data.y = path.dest.y
       data.z = path.dest.z
+      maybeUpdateSnakeHead(ctx, actor)
       // proceed to assign path to undefined, and fall out of the while
     }
     path = data.path = path.next
     dirtyClient(data)
   }
+}
+
+function maybeSegmentSnake (ctx :RanchContext, actor :Actor) :void {
+  if (!actor.data.snakeId) return
+  const snake = ctx.obj.snakes.get(actor.data.snakeId)
+  if (!snake) return
+  snake.points.unshift(snake.x, snake.y, snake.z)
+  ctx.obj.snakes.set(actor.data.snakeId, snake)
+}
+
+function maybeUpdateSnakeHead (ctx :RanchContext, actor :Actor, loc? :Located) :void {
+  if (!actor.data.snakeId) return
+  const snake = ctx.obj.snakes.get(actor.data.snakeId)
+  if (!snake) return
+  copyloc(loc || actor.data, snake)
+  ctx.obj.snakes.set(actor.data.snakeId, snake)
 }
 
 function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|undefined {
