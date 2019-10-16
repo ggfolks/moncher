@@ -237,6 +237,6 @@ export interface ChatSnake extends Located {
   /** The snake extends from the head point and ends at *or prior to* the last point. */
   length :number,
 
-  /** An array with x,y,z,x,y,z,x,y,z.... */
-  points :number[],
+  /** The tail of the snake: an array of locations. */
+  tail :Located[]
 }

@@ -1119,7 +1119,8 @@ function maybeSegmentSnake (ctx :RanchContext, actor :Actor) :void {
   if (!actor.data.snakeId) return
   const snake = ctx.obj.snakes.get(actor.data.snakeId)
   if (!snake) return
-  snake.points.unshift(snake.x, snake.y, snake.z)
+  // simply copy the head back
+  snake.tail.unshift(copyloc(snake))
   ctx.obj.snakes.set(actor.data.snakeId, snake)
 }
 
@@ -1127,7 +1128,26 @@ function maybeUpdateSnakeHead (ctx :RanchContext, actor :Actor, loc? :Located) :
   if (!actor.data.snakeId) return
   const snake = ctx.obj.snakes.get(actor.data.snakeId)
   if (!snake) return
-  copyloc(loc || actor.data, snake)
+  if (!loc) loc = actor.data
+  let distChange = getDistance2d(loc, snake)
+  copyloc(loc, snake)
+  // now we're going to peel that much distance off the end of the snake
+  while (distChange > 0) {
+    const end = snake.tail[snake.tail.length - 1]
+    const prev = (snake.tail.length === 1) ? snake : snake.tail[snake.tail.length - 2]
+    const dist = getDistance2d(end, prev)
+    if (dist <= distChange) {
+      snake.tail.pop() // remove the point
+      distChange -= dist
+    } else {
+      // else, trim it!
+      const perc = distChange / dist
+      end.x += (prev.x - end.x) * perc
+      end.y += (prev.y - end.y) * perc
+      end.z += (prev.z - end.z) * perc
+      distChange = 0
+    }
+  }
   ctx.obj.snakes.set(actor.data.snakeId, snake)
 }
 
@@ -1427,9 +1447,9 @@ function createChatSnake (ctx :RanchContext, loc :Located, length :number) :numb
     log.warn("Couldn't find path while making snake, just giving up.")
     return 0
   }
-  const points :number[] = []
+  const tail :Located[] = []
   for (const pp of path) {
-    points.push(pp.x, pp.y, pp.z)
+    tail.push(vec2loc(pp))
   }
 
   let maxSnakeId = 0
@@ -1443,7 +1463,7 @@ function createChatSnake (ctx :RanchContext, loc :Located, length :number) :numb
     y: loc.y,
     z: loc.z,
     length,
-    points,
+    tail,
   }
   ctx.obj.snakes.set(snakeId, snake)
   return snakeId
