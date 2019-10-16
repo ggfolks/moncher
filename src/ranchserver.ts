@@ -625,7 +625,7 @@ class EatFoodBehavior extends MonsterBehavior {
         // can't find food: we're just going to wait one tick and reset
         bd.phase = 1
         // if we haven't complained lately, message our owner asking for food
-        if (canPost(actor)) sendActorPost(ctx, actor, "I'm hungry and there's no food!", "hungry")
+        // if (canPost(actor)) sendActorPost(ctx, actor, "I'm hungry and there's no food!", "hungry")
         dirtyServer(data)
       }
       break
