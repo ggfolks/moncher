@@ -91,7 +91,6 @@ export class LerpSystem extends System {
     })
   }
 
-  /** LerpFn: no-op */
   protected added (id :ID, config :EntityConfig) {
     super.added(id, config)
 
