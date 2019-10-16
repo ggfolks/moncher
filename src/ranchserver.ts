@@ -1149,6 +1149,17 @@ function maybeUpdateSnakeHead (ctx :RanchContext, actor :Actor, loc? :Located) :
     }
   }
   ctx.obj.snakes.set(actor.data.snakeId, snake)
+  checkSnakeLength(snake)
+}
+
+function checkSnakeLength (snake :ChatSnake) :void {
+  let len = 0
+  let point :Located = snake
+  for (const next of snake.tail) {
+    len += getDistance2d(point, next)
+    point = next
+  }
+  log.debug("Snake length", "calculated", len, "configured", snake.length)
 }
 
 function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|undefined {
@@ -1448,8 +1459,23 @@ function createChatSnake (ctx :RanchContext, loc :Located, length :number) :numb
     return 0
   }
   const tail :Located[] = []
+  let lengthLeft = length
+  let lastNode = loc
   for (const pp of path) {
-    tail.push(vec2loc(pp))
+    let node = vec2loc(pp)
+    const nodeLength = getDistance2d(node, lastNode)
+    if (nodeLength > lengthLeft) {
+      const perc = lengthLeft / nodeLength
+      node.x = lastNode.x + (node.x - lastNode.x) * perc
+      node.y = lastNode.y + (node.y - lastNode.y) * perc
+      node.z = lastNode.z + (node.z - lastNode.z) * perc
+      lengthLeft = 0
+    } else {
+      lengthLeft -= nodeLength
+    }
+    tail.push(node)
+    if (lengthLeft <= 0) break
+    lastNode = node
   }
 
   let maxSnakeId = 0
