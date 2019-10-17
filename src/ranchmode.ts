@@ -17,9 +17,6 @@ import {
   WebGLRenderer,
 } from "three"
 
-//import {Body} from "cannon"
-
-//import {loadImage} from "tfw/core/assets"
 import {Clock} from "tfw/core/clock"
 import {dim2, vec2} from "tfw/core/math"
 import {MapChange} from "tfw/core/rcollect"
@@ -77,16 +74,18 @@ import {
   ActorUpdate,
   ChatCircle,
   ChatSnake,
+  Located,
   PathInfo,
   blankActorUpdate,
 } from "./ranchdata"
-import {loc2vec} from "./ranchutil"
+import {loc2vec, vec2loc} from "./ranchutil"
 import {Hud, UiState} from "./hud"
 import {ChatView} from "./chat"
 import {Lakitu} from "./lakitu"
 import {LerpRecord, LerpSystem} from "./lerpsystem"
 import {RanchObject, RanchReq} from "./data"
-import {InstallAppView, OccupantsView, createDialog, createEditNameDialog, label, button, textBox} from "./ui"
+import {InstallAppView, OccupantsView,
+        createDialog, createEditNameDialog, label, button, textBox} from "./ui"
 import {showEggInvite, showEggAuth, generateName} from "./egg"
 import {createChatCircle} from "./circles"
 import {createChatSnake} from "./snakes"
@@ -122,11 +121,12 @@ class PathSystem extends System {
     readonly paths :Component<PathInfo|undefined>,
     readonly updates :Component<ActorUpdate>,
     readonly setY :(into :Vector3) => void,
+    readonly updateSnakeFromPath :(id :number, pos :Vector3) => void,
   ) {
     super(domain, Matcher.hasAllC(trans.id, paths.id))
   }
 
-  update (clock :Clock) {
+  update (clock :Clock) :void {
     const timestamp = clock.time / 1000
     this.onEntities(id => {
       let thePath = this.paths.read(id)
@@ -157,6 +157,15 @@ class PathSystem extends System {
           this.trans.updatePosition(id, scratchV)
           break
         }
+      }
+    })
+  }
+
+  updateSnakes () :void {
+    this.onEntities(id => {
+      const update = this.updates.read(id)
+      if (update.snakeId) {
+        this.updateSnakeFromPath(update.snakeId, this.trans.readPosition(id, scratchV))
       }
     })
   }
@@ -426,7 +435,7 @@ export class RanchMode extends Mode {
 
     const domain = this._domain = new Domain({},
         {trans, obj, mixer, /*body,*/ updates, paths, hovers, graph, lerps})
-    this._pathsys = new PathSystem(domain, trans, paths, updates, this.setY.bind(this))
+    this._pathsys = new PathSystem(domain, trans, paths, updates, this.setY.bind(this), this.updateSnakeFromPath.bind(this))
     this._lerpsys = new LerpSystem(domain, lerps, trans, obj, 1.2)
     this._scenesys = new SceneSystem(
         domain, trans, obj, hovers, hand.pointers)
@@ -537,6 +546,7 @@ export class RanchMode extends Mode {
     this._camControl.update(clock)
     this._lerpsys.update(clock)
     this._scenesys.update()
+    this._pathsys.updateSnakes()
     this._scenesys.render(this._webGlRenderer)
   }
 
@@ -592,11 +602,15 @@ export class RanchMode extends Mode {
     this._circles.delete(id)
   }
 
-  protected updateSnake (id :number, snake :ChatSnake) :void {
+  protected updateSnakeFromPath (id :number, pos :Vector3) :void {
+    this.updateSnake(id, this._ranchObj.snakes.get(id)!, vec2loc(pos))
+  }
+
+  protected updateSnake (id :number, snake :ChatSnake, headAdvance? :Located) :void {
     this.deleteSnake(id)
 
     // make a new snake (programmer art for now)
-    const snakeObj = createChatSnake(snake)
+    const snakeObj = createChatSnake(snake, headAdvance)
     this._scenesys.scene.add(snakeObj)
     this._snakes.set(id, snakeObj)
   }

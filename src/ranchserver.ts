@@ -740,7 +740,8 @@ function newActorData (
 /**
  * Publish an actor update derived from the specified ActorData. */
 function actorDataToUpdate (data :ActorData) :ActorUpdate {
-  const {x, y, z, scale, orient, state, instant, owner, name, path, walkAnimationSpeed} = data
+  const {x, y, z, scale, orient, state, instant,
+      owner, name, path, walkAnimationSpeed, snakeId} = data
   return {
     x, y, z,
     scale,
@@ -751,6 +752,7 @@ function actorDataToUpdate (data :ActorData) :ActorUpdate {
     name,
     path,
     walkAnimationSpeed,
+    snakeId,
   }
 }
 

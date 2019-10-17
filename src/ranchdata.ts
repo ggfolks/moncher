@@ -140,6 +140,7 @@ export interface ActorUpdate extends Located {
   name? :string
   path? :PathInfo
   walkAnimationSpeed :number
+  snakeId? :number
 }
 
 /**
