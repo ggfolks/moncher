@@ -30,7 +30,8 @@ export const PATHFINDER_GLOBAL = "_ranchPathfinder"
 export const NAVMESH_GLOBAL = "_navMesh"
 
 /** Are we testing circles or snakes? */
-const TEST_SNAKES = true
+//const TEST_SNAKES = false
+//const SNAKE_MOVEMENT = true
 
 const MAX_MONSTER_SCALE = 4
 const DEFAULT_MONSTER_SCALE = 1
@@ -345,47 +346,44 @@ abstract class MobileBehavior extends Behavior {
 /**
  * The behavior implemented by avatars.
  * Handles walking and other future stuffs. */
-class AvatarBehavior extends MobileBehavior {
-  static INSTANCE = new AvatarBehavior(ActorKind.Avatar)
+class AvatarMoncherBehavior extends MobileBehavior {
+  static INSTANCE = new AvatarMoncherBehavior(/*ActorKind.Avatar*/)
 
   touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
     stopWalkingOutsideTick(ctx, actor)
 
-    if (TEST_SNAKES) {
-      // create a snake extending from this actor
-      const id = createChatSnake(ctx, actor.data, 5)
+    // create a chat circle right here
+    let radius = 1 + Math.trunc(Math.random() * 4)
+    while (radius >= MIN_CIRCLE_RADIUS) {
+      const id = createChatCircle(ctx, actor.data, radius)
       if (id) {
-        // for now, "join" it manually...
-        actor.data.snakeId = id
-        dirtyServer(actor.data)
-      }
-
-    } else {
-      // create a chat circle right here
-      let radius = 1 + Math.trunc(Math.random() * 4)
-      while (radius >= MIN_CIRCLE_RADIUS) {
-        const id = createChatCircle(ctx, actor.data, radius)
-        if (id) {
-          // let's spawn eggs in all the valid positions
-          const circle = ctx.obj.circles.get(id)!
-          for (let ii = 0; ii < circle.positions.length; ii++) {
-            if (Math.random() < .5) continue
-            const pos = getCirclePosition(ctx, circle, ii)
-            const id = addActor(ctx, ctx.auth.id, MonsterDb.getRandomEgg(), pos)
-            circle.members[ii] = id
-          }
-          // update the circle in the map? now that we've populated positions
-          ctx.obj.circles.set(id, circle)
-
-          // try to join the circle ourselves
-          const result = joinCircle(ctx, actor, id)
-          log.debug("Joined circle? " + result, "radius", circle.radius)
-          return true
+        // let's spawn eggs in all the valid positions
+        const circle = ctx.obj.circles.get(id)!
+        for (let ii = 0; ii < circle.positions.length; ii++) {
+          if (Math.random() < .5) continue
+          const pos = getCirclePosition(ctx, circle, ii)
+          const id = addActor(ctx, ctx.auth.id, MonsterDb.getRandomEgg(), pos)
+          circle.members[ii] = id
         }
-        radius -= .5
+        // update the circle in the map? now that we've populated positions
+        ctx.obj.circles.set(id, circle)
+
+        // try to join the circle ourselves
+        const result = joinCircle(ctx, actor, id)
+        log.debug("Joined circle? " + result, "radius", circle.radius)
+        return true
       }
+      radius -= .5
     }
     return true
+  }
+}
+
+class AvatarSnakeBehavior extends MobileBehavior {
+  static INSTANCE = new AvatarSnakeBehavior(ActorKind.Avatar)
+
+  touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
+    return false
   }
 }
 
@@ -619,7 +617,7 @@ class EatFoodBehavior extends MonsterBehavior {
 
         } else {
           walkTo(ctx, actor, foodData, WALK_TO_FOOD_SPEED)
-          dumpPath(ctx, actor.data.path)
+          //dumpPath(ctx, actor.data.path)
         }
       } else {
         // can't find food: we're just going to wait one tick and reset
@@ -699,8 +697,9 @@ class SleepBehavior extends MonsterBehavior {
 // TODO: Maybe I create an BehaviorRegistry that contains the static elements of Behavior,
 // and then we can just register instances externally so that this gruntling hackery can go away
 if (false) {
-  log.debug("Gruntle: " + DecayBehavior + EggBehavior + WanderBehavior +
-      ChatCircleBehavior + EatFoodBehavior + SleepBehavior + AvatarBehavior)
+  log.debug("Gruntle: " + DecayBehavior + EggBehavior + WanderBehavior + snakeTo +
+      ChatCircleBehavior + EatFoodBehavior + SleepBehavior + AvatarMoncherBehavior +
+      AvatarSnakeBehavior)
 }
 
 /**
@@ -1071,18 +1070,59 @@ function walkTo (
   let info :PathInfo|undefined = undefined
   const speed = getSpeed(ctx, actor) * speedFactor
   while (path.length > 1) {
-    const dest = path.pop()!
-    const src = path[path.length - 1]
-    const duration = src.distanceTo(dest) / speed
+    const dest = vec2loc(path.pop()!)
+    const src = vec2loc(path[path.length - 1])
+    const duration = getDistance2d(src, dest) / speed
     const orient = Math.atan2(dest.x - src.x, dest.z - src.z)
     if (info === undefined) actor.data.orient = orient // set the final orientation
-    info = { src: vec2loc(src), dest: vec2loc(dest), orient, duration, timeLeft: duration,
-        next: info }
+    info = { src, dest, orient, duration, timeLeft: duration, next: info }
   }
   actor.data.path = info
-  maybeSegmentSnake(ctx, actor)
+  //maybeSegmentSnake(ctx, actor)
   actor.data.walkAnimationSpeed = getWalkAnimationSpeed(ctx, actor, speed)
   dirtyClient(actor.data)
+}
+
+/**
+ * Snake to a particular location. */
+function snakeTo (
+  ctx :RanchContext,
+  actor :Actor,
+  newPos :Located,
+) :void {
+  const path = findPath(ctx, actor.data, newPos)
+  if (!path) {
+    log.warn("Unable to move snake: no path",
+        "src", actor.data,
+        "dest", newPos)
+    return
+  }
+
+  const snake = getOrCreateSnake(ctx, actor)
+  path.shift() // remove src (for once)
+  for (const vec of path) {
+    snake.points.unshift(vec2loc(vec))
+  }
+  // update the actor's position immediately
+  copyloc(snake.points[0], actor.data)
+  dirtyClient(actor.data)
+}
+
+function getOrCreateSnake (ctx :RanchContext, actor :Actor) :ChatSnake {
+  const snake = ctx.obj.snakes.get(actor.id)
+  if (snake) return snake
+
+  const members :UUID[] = []
+  const points :Located[] = [copyloc(actor.data)]
+  const newSnake :ChatSnake = {
+    owner: actor.id,
+    speed: getSpeed(ctx, actor),
+    members,
+    spacing: 1,
+    points,
+  }
+  ctx.obj.snakes.set(actor.id, newSnake)
+  return newSnake
 }
 
 function advanceWalk (ctx :RanchContext, actor :Actor, dt :number) :void {
@@ -1096,20 +1136,20 @@ function advanceWalk (ctx :RanchContext, actor :Actor, dt :number) :void {
       data.x = (path.src.x - path.dest.x) * perc + path.dest.x
       data.y = (path.src.y - path.dest.y) * perc + path.dest.y
       data.z = (path.src.z - path.dest.z) * perc + path.dest.z
-      maybeUpdateSnakeHead(ctx, actor)
+      //maybeUpdateSnakeHead(ctx, actor)
       dirtyClient(data)
       return
     }
     // otherwise we used-up a path segment
     if (path.next) {
-      maybeSegmentSnake(ctx, actor)
+      //maybeSegmentSnake(ctx, actor)
       dt -= path.timeLeft
     } else {
       // otherwise we have finished!
       data.x = path.dest.x
       data.y = path.dest.y
       data.z = path.dest.z
-      maybeUpdateSnakeHead(ctx, actor)
+      //maybeUpdateSnakeHead(ctx, actor)
       // proceed to assign path to undefined, and fall out of the while
     }
     path = data.path = path.next
@@ -1117,52 +1157,52 @@ function advanceWalk (ctx :RanchContext, actor :Actor, dt :number) :void {
   }
 }
 
-function maybeSegmentSnake (ctx :RanchContext, actor :Actor) :void {
-  if (!actor.data.snakeId) return
-  const snake = ctx.obj.snakes.get(actor.data.snakeId)
-  if (!snake) return
-  // simply copy the head back
-  snake.tail.unshift(copyloc(snake))
-  ctx.obj.snakes.set(actor.data.snakeId, snake)
-}
-
-function maybeUpdateSnakeHead (ctx :RanchContext, actor :Actor, loc? :Located) :void {
-  if (!actor.data.snakeId) return
-  const snake = ctx.obj.snakes.get(actor.data.snakeId)
-  if (!snake) return
-  if (!loc) loc = actor.data
-  let distChange = getDistance2d(loc, snake)
-  copyloc(loc, snake)
-  // now we're going to peel that much distance off the end of the snake
-  while (distChange > 0) {
-    const end = snake.tail[snake.tail.length - 1]
-    const prev = (snake.tail.length === 1) ? snake : snake.tail[snake.tail.length - 2]
-    const dist = getDistance2d(end, prev)
-    if (dist <= distChange) {
-      snake.tail.pop() // remove the point
-      distChange -= dist
-    } else {
-      // else, trim it!
-      const perc = distChange / dist
-      end.x += (prev.x - end.x) * perc
-      end.y += (prev.y - end.y) * perc
-      end.z += (prev.z - end.z) * perc
-      distChange = 0
-    }
-  }
-  ctx.obj.snakes.set(actor.data.snakeId, snake)
-  checkSnakeLength(snake)
-}
-
-function checkSnakeLength (snake :ChatSnake) :void {
-  let len = 0
-  let point :Located = snake
-  for (const next of snake.tail) {
-    len += getDistance2d(point, next)
-    point = next
-  }
-  log.debug("Snake length", "calculated", len, "configured", snake.length)
-}
+//function maybeSegmentSnake (ctx :RanchContext, actor :Actor) :void {
+//  if (!actor.data.snakeId) return
+//  const snake = ctx.obj.snakes.get(actor.data.snakeId)
+//  if (!snake) return
+//  // simply copy the head back
+//  snake.tail.unshift(copyloc(snake))
+//  ctx.obj.snakes.set(actor.data.snakeId, snake)
+//}
+//
+//function maybeUpdateSnakeHead (ctx :RanchContext, actor :Actor, loc? :Located) :void {
+//  if (!actor.data.snakeId) return
+//  const snake = ctx.obj.snakes.get(actor.data.snakeId)
+//  if (!snake) return
+//  if (!loc) loc = actor.data
+//  let distChange = getDistance2d(loc, snake)
+//  copyloc(loc, snake)
+//  // now we're going to peel that much distance off the end of the snake
+//  while (distChange > 0) {
+//    const end = snake.tail[snake.tail.length - 1]
+//    const prev = (snake.tail.length === 1) ? snake : snake.tail[snake.tail.length - 2]
+//    const dist = getDistance2d(end, prev)
+//    if (dist <= distChange) {
+//      snake.tail.pop() // remove the point
+//      distChange -= dist
+//    } else {
+//      // else, trim it!
+//      const perc = distChange / dist
+//      end.x += (prev.x - end.x) * perc
+//      end.y += (prev.y - end.y) * perc
+//      end.z += (prev.z - end.z) * perc
+//      distChange = 0
+//    }
+//  }
+//  ctx.obj.snakes.set(actor.data.snakeId, snake)
+//  checkSnakeLength(snake)
+//}
+//
+//function checkSnakeLength (snake :ChatSnake) :void {
+//  let len = 0
+//  let point :Located = snake
+//  for (const next of snake.tail) {
+//    len += getDistance2d(point, next)
+//    point = next
+//  }
+//  log.debug("Snake length", "calculated", len, "configured", snake.length)
+//}
 
 function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|undefined {
   if (!ctx.path) {
@@ -1177,15 +1217,15 @@ function findPath (ctx :RanchContext, src :Located, dest :Located) :Vector3[]|un
   return foundPath
 }
 
-function dumpPath (ctx :RanchContext, path :PathInfo|undefined) :void {
-  if (!path) return
-  log.info(  "Path from", "start", path.src)
-  while (path.next) {
-    path = path.next
-    log.info("To...    ", "pnode", path.src)
-  }
-  log.info(  "Finishing", "thend", path.dest)
-}
+//function dumpPath (ctx :RanchContext, path :PathInfo|undefined) :void {
+//  if (!path) return
+//  log.info(  "Path from", "start", path.src)
+//  while (path.next) {
+//    path = path.next
+//    log.info("To...    ", "pnode", path.src)
+//  }
+//  log.info(  "Finishing", "thend", path.dest)
+//}
 
 function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
   if (ctx.auth.isGuest) {
@@ -1436,66 +1476,66 @@ function getCircleByLocation (ctx :RanchContext, loc :Located) :ChatCircle|undef
   return undefined
 }
 
-function createChatSnake (ctx :RanchContext, loc :Located, length :number) :number {
-  if (!ctx.path) {
-    log.warn("No pathfinding, no snake.")
-    return 0
-  }
-
-  // For now, make a snake that goes from our location to a random location
-  // But maybe it coils up as a circle to start out?
-  const src = loc2vec(loc)
-  let dest :Vector3|undefined
-  let tries = 0
-  do {
-    dest = ctx.path.getRandomPositionFrom(src)
-    tries++
-  } while (tries < 100 && (!dest || dest.distanceTo(src) < length))
-  if (!dest) {
-    log.warn("Too many tries to find a suitably far point for starting snake")
-    return 0
-  }
-  const path = ctx.path.findPath(src, dest)
-  if (!path) {
-    log.warn("Couldn't find path while making snake, just giving up.")
-    return 0
-  }
-  const tail :Located[] = []
-  let lengthLeft = length
-  let lastNode = loc
-  for (const pp of path) {
-    let node = vec2loc(pp)
-    const nodeLength = getDistance2d(node, lastNode)
-    if (nodeLength > lengthLeft) {
-      const perc = lengthLeft / nodeLength
-      node.x = lastNode.x + (node.x - lastNode.x) * perc
-      node.y = lastNode.y + (node.y - lastNode.y) * perc
-      node.z = lastNode.z + (node.z - lastNode.z) * perc
-      lengthLeft = 0
-    } else {
-      lengthLeft -= nodeLength
-    }
-    tail.push(node)
-    if (lengthLeft <= 0) break
-    lastNode = node
-  }
-
-  let maxSnakeId = 0
-  for (const id of ctx.obj.snakes.keys()) {
-    maxSnakeId = Math.max(maxSnakeId, id)
-  }
-  const snakeId = maxSnakeId + 1
-  const snake :ChatSnake = {
-    id: snakeId,
-    x: loc.x,
-    y: loc.y,
-    z: loc.z,
-    length,
-    tail,
-  }
-  ctx.obj.snakes.set(snakeId, snake)
-  return snakeId
-}
+//function createChatSnake (ctx :RanchContext, loc :Located, length :number) :number {
+//  if (!ctx.path) {
+//    log.warn("No pathfinding, no snake.")
+//    return 0
+//  }
+//
+//  // For now, make a snake that goes from our location to a random location
+//  // But maybe it coils up as a circle to start out?
+//  const src = loc2vec(loc)
+//  let dest :Vector3|undefined
+//  let tries = 0
+//  do {
+//    dest = ctx.path.getRandomPositionFrom(src)
+//    tries++
+//  } while (tries < 100 && (!dest || dest.distanceTo(src) < length))
+//  if (!dest) {
+//    log.warn("Too many tries to find a suitably far point for starting snake")
+//    return 0
+//  }
+//  const path = ctx.path.findPath(src, dest)
+//  if (!path) {
+//    log.warn("Couldn't find path while making snake, just giving up.")
+//    return 0
+//  }
+//  const tail :Located[] = []
+//  let lengthLeft = length
+//  let lastNode = loc
+//  for (const pp of path) {
+//    let node = vec2loc(pp)
+//    const nodeLength = getDistance2d(node, lastNode)
+//    if (nodeLength > lengthLeft) {
+//      const perc = lengthLeft / nodeLength
+//      node.x = lastNode.x + (node.x - lastNode.x) * perc
+//      node.y = lastNode.y + (node.y - lastNode.y) * perc
+//      node.z = lastNode.z + (node.z - lastNode.z) * perc
+//      lengthLeft = 0
+//    } else {
+//      lengthLeft -= nodeLength
+//    }
+//    tail.push(node)
+//    if (lengthLeft <= 0) break
+//    lastNode = node
+//  }
+//
+//  let maxSnakeId = 0
+//  for (const id of ctx.obj.snakes.keys()) {
+//    maxSnakeId = Math.max(maxSnakeId, id)
+//  }
+//  const snakeId = maxSnakeId + 1
+//  const snake :ChatSnake = {
+//    id: snakeId,
+//    x: loc.x,
+//    y: loc.y,
+//    z: loc.z,
+//    length,
+//    tail,
+//  }
+//  ctx.obj.snakes.set(snakeId, snake)
+//  return snakeId
+//}
 
 function projectOnNavmesh (ctx :RanchContext, vec :Vector3) :Vector3|undefined {
   // TODO: move the navmesh into the RanchContext?

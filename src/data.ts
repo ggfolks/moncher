@@ -239,7 +239,7 @@ export class RanchObject extends DObject {
   circles = this.map<number, ChatCircle>()
 
   @dmap("number", "record", false)
-  snakes = this.map<number, ChatSnake>()
+  snakes = this.map<UUID, ChatSnake>()
 
   /** Keeps the last time we were ticked, from Date.now() */
   @dvalue("number")
@@ -283,7 +283,7 @@ export type RanchReq =
     {type :"reset"} |
     /** Turn on or off debug mode. */
     {type :"debug", value :boolean} |
-    /** A client-initiated tick (TEMP) */
+    /** Tick (server). */
     {type :"tick"}
 
 export const ranchQ = (id :UUID) => RanchObject.queueAddr(["ranches", id], "ranchq")

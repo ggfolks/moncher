@@ -225,19 +225,28 @@ export interface ChatCircle extends Located {
   members :string[]
 }
 
-/** Snek. I do a chatting. */
-export interface ChatSnake extends Located {
-  /** The (reused) numeric (nonzero) id of this snek. */
-  id :number,
+/** Snek. I do a chatting. I do a walking. */
+export interface ChatSnake {
+  /** The id of the player (avatar) that is steering this snake. */
+  owner :UUID
 
-  /** The head of the snake. */
-  x :number
-  y :number
-  z :number
+//  /** The head of the snake. */
+//  x :number
+//  y :number
+//  z :number
 
-  /** The snake extends from the head point and ends at *or prior to* the last point. */
-  length :number,
+  /** The speed at which actors move along this snake. */
+  speed :number
 
-  /** The tail of the snake: an array of locations. */
-  tail :Located[]
+  /** Members of the snake, beyond the owner. */
+  members :UUID[]
+
+  /** The spacing between members. */
+  spacing :number
+
+//  /** The snake extends from the head point and ends at *or prior to* the last point. */
+//  length :number
+
+  /** The points that make up the snake. New points are pushed on the front. */
+  points :Located[]
 }
