@@ -30,7 +30,7 @@ export const PATHFINDER_GLOBAL = "_ranchPathfinder"
 export const NAVMESH_GLOBAL = "_navMesh"
 
 /** Are we testing circles or snakes? */
-//const TEST_SNAKES = false
+const TEST_SNAKES = true
 //const SNAKE_MOVEMENT = true
 
 const MAX_MONSTER_SCALE = 4
@@ -347,7 +347,7 @@ abstract class MobileBehavior extends Behavior {
  * The behavior implemented by avatars.
  * Handles walking and other future stuffs. */
 class AvatarMoncherBehavior extends MobileBehavior {
-  static INSTANCE = new AvatarMoncherBehavior(/*ActorKind.Avatar*/)
+  static INSTANCE = new AvatarMoncherBehavior(...(TEST_SNAKES ? [] : [ActorKind.Avatar]))
 
   touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
     stopWalkingOutsideTick(ctx, actor)
@@ -379,12 +379,10 @@ class AvatarMoncherBehavior extends MobileBehavior {
   }
 }
 
-class AvatarSnakeBehavior extends MobileBehavior {
-  static INSTANCE = new AvatarSnakeBehavior(ActorKind.Avatar)
-
-  touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
-    return false
-  }
+/**
+ * Avatar that is not pathed, instead it follows snakes. */
+class AvatarSnakeBehavior extends Behavior {
+  static INSTANCE = new AvatarSnakeBehavior(...(TEST_SNAKES ? [ActorKind.Avatar] : []))
 }
 
 /**
@@ -697,7 +695,7 @@ class SleepBehavior extends MonsterBehavior {
 // TODO: Maybe I create an BehaviorRegistry that contains the static elements of Behavior,
 // and then we can just register instances externally so that this gruntling hackery can go away
 if (false) {
-  log.debug("Gruntle: " + DecayBehavior + EggBehavior + WanderBehavior + snakeTo +
+  log.debug("Gruntle: " + DecayBehavior + EggBehavior + WanderBehavior +
       ChatCircleBehavior + EatFoodBehavior + SleepBehavior + AvatarMoncherBehavior +
       AvatarSnakeBehavior)
 }
@@ -740,7 +738,7 @@ function newActorData (
  * Publish an actor update derived from the specified ActorData. */
 function actorDataToUpdate (data :ActorData) :ActorUpdate {
   const {x, y, z, scale, orient, state, instant,
-      owner, name, path, walkAnimationSpeed, snakeId} = data
+      owner, name, path, walkAnimationSpeed} = data
   return {
     x, y, z,
     scale,
@@ -751,7 +749,6 @@ function actorDataToUpdate (data :ActorData) :ActorUpdate {
     name,
     path,
     walkAnimationSpeed,
-    snakeId,
   }
 }
 
@@ -1103,6 +1100,7 @@ function snakeTo (
   for (const vec of path) {
     snake.points.unshift(vec2loc(vec))
   }
+  ctx.obj.snakes.set(snake.owner, snake)
   // update the actor's position immediately
   copyloc(snake.points[0], actor.data)
   dirtyClient(actor.data)
@@ -1242,6 +1240,18 @@ function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
     return
   }
 
+  if (TEST_SNAKES) {
+    handleAvatarMoveSnake(ctx, actor, loc)
+  } else {
+    handleAvatarMoveCircles(ctx, actor, loc)
+  }
+}
+
+function handleAvatarMoveSnake (ctx :RanchContext, actor :Actor, loc :Located) :void {
+  snakeTo(ctx, actor, loc)
+}
+
+function handleAvatarMoveCircles (ctx :RanchContext, actor :Actor, loc :Located) :void {
   const circle = getCircleByLocation(ctx, loc)
   if (circle && (actor.data.circleId === circle.id)) {
     const newIndex = maybeRepositionInCircle(ctx, actor, loc)

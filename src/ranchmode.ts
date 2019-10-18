@@ -73,7 +73,7 @@ import {
   ActorState,
   ActorUpdate,
   ChatCircle,
-//  ChatSnake,
+  ChatSnake,
 //  Located,
   PathInfo,
   blankActorUpdate,
@@ -88,7 +88,7 @@ import {InstallAppView, OccupantsView,
         createDialog, createEditNameDialog, label, button, textBox} from "./ui"
 import {showEggInvite, showEggAuth, generateName} from "./egg"
 import {createChatCircle} from "./circles"
-//import {createChatSnake} from "./snakes"
+import {createChatSnake} from "./snakesprite"
 
 class ActorInfo {
 
@@ -581,8 +581,8 @@ export class RanchMode extends Mode {
     this.onDispose.add(this._ranchObj.circles.onChange(this._circleChanged))
     this._ranchObj.circles.forEach((circle, id) => this.updateCircle(id, circle))
 
-//    this.onDispose.add(this._ranchObj.snakes.onChange(this._snakeChanged))
-//    this._ranchObj.snakes.forEach((snake, id) => this.updateSnake(id, snake))
+    this.onDispose.add(this._ranchObj.snakes.onChange(this._snakeChanged))
+    this._ranchObj.snakes.forEach((snake, id) => this.updateSnake(id, snake))
   }
 
   protected updateCircle (id :number, circle :ChatCircle) :void {
@@ -605,21 +605,21 @@ export class RanchMode extends Mode {
 //    this.updateSnake(id, this._ranchObj.snakes.get(id)!, vec2loc(pos))
 //  }
 //
-//  protected updateSnake (id :number, snake :ChatSnake, headAdvance? :Located) :void {
-//    this.deleteSnake(id)
-//
-//    // make a new snake (programmer art for now)
-//    const snakeObj = createChatSnake(snake, headAdvance)
-//    this._scenesys.scene.add(snakeObj)
-//    this._snakes.set(id, snakeObj)
-//  }
-//
-//  protected deleteSnake (id :number) :void {
-//    const obj = this._snakes.get(id)
-//    if (!obj) return
-//    this._scenesys.scene.remove(obj)
-//    this._snakes.delete(id)
-//  }
+  protected updateSnake (id :UUID, snake :ChatSnake) :void {
+    this.deleteSnake(id)
+
+    // make a new snake (programmer art for now)
+    const snakeObj = createChatSnake(snake)
+    this._scenesys.scene.add(snakeObj)
+    this._snakes.set(id, snakeObj)
+  }
+
+  protected deleteSnake (id :UUID) :void {
+    const obj = this._snakes.get(id)
+    if (!obj) return
+    this._scenesys.scene.remove(obj)
+    this._snakes.delete(id)
+  }
 
   /**
    * React to a actor being updated in the ranch model. */
@@ -1361,13 +1361,13 @@ export class RanchMode extends Mode {
 
   protected readonly _snakes :Map<UUID, Object3D> = new Map()
 
-//  protected readonly _snakeChanged = (change :MapChange<number, ChatSnake>) => {
-//    if (change.type === "set") {
-//      this.updateSnake(change.key, change.value)
-//    } else {
-//      this.deleteSnake(change.key)
-//    }
-//  }
+  protected readonly _snakeChanged = (change :MapChange<UUID, ChatSnake>) => {
+    if (change.type === "set") {
+      this.updateSnake(change.key, change.value)
+    } else {
+      this.deleteSnake(change.key)
+    }
+  }
 
   protected readonly _handDowns :Map<number, vec2> = new Map()
 
