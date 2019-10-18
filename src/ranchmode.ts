@@ -89,6 +89,7 @@ import {InstallAppView, OccupantsView,
 import {showEggInvite, showEggAuth, generateName} from "./egg"
 import {createChatCircle} from "./circles"
 import {createChatSnake} from "./snakesprite"
+import {SnakeWrangler} from "./snakes"
 
 class ActorInfo {
 
@@ -160,15 +161,6 @@ class PathSystem extends System {
     })
   }
 
-//  updateSnakes () :void {
-//    this.onEntities(id => {
-//      const update = this.updates.read(id)
-//      if (update.snakeId) {
-//        this.updateSnakeFromPath(update.snakeId, this.trans.readPosition(id, scratchV))
-//      }
-//    })
-//  }
-
   protected updateOrient (id :ID, orient :number) {
     this.trans.updateQuaternion(id, scratchQ.setFromAxisAngle(unitY, orient))
   }
@@ -233,6 +225,20 @@ export class RanchMode extends Mode {
     this.subscribeToRanch()
     this.configureScene(_app)
     this.loadExtras()
+
+    this._snakeWrangler = new SnakeWrangler(
+        (id :UUID, pos :Vector3, rot :number) => {
+          const info = this._actors.get(id)
+          if (!info) {
+            log.warn("Missing actor info for snaking actor? Skipping.", "id", id)
+            return
+          }
+          // TODO: a way to update position and quaternion in one swell foop
+          this.setY(pos)
+          this._trans.updatePosition(info.entityId, pos)
+          this._trans.updateQuaternion(info.entityId, scratchQ.setFromAxisAngle(unitY, rot))
+        })
+    this.onDispose.add(this._snakeWrangler)
 
     // But, let's set things to be ready after a short delay even if there's *trouble at the mill*
     // Dispatches to setReady() unless we've been disposed already, but setReady is idempotent.
@@ -545,7 +551,7 @@ export class RanchMode extends Mode {
     this._camControl.update(clock)
     this._lerpsys.update(clock)
     this._scenesys.update()
-    //this._pathsys.updateSnakes()
+    this._snakeWrangler.update(clock)
     this._scenesys.render(this._webGlRenderer)
   }
 
@@ -581,6 +587,8 @@ export class RanchMode extends Mode {
     this.onDispose.add(this._ranchObj.circles.onChange(this._circleChanged))
     this._ranchObj.circles.forEach((circle, id) => this.updateCircle(id, circle))
 
+    this._snakeWrangler.start(this._ranchObj.snakes)
+
     this.onDispose.add(this._ranchObj.snakes.onChange(this._snakeChanged))
     this._ranchObj.snakes.forEach((snake, id) => this.updateSnake(id, snake))
   }
@@ -601,10 +609,6 @@ export class RanchMode extends Mode {
     this._circles.delete(id)
   }
 
-//  protected updateSnakeFromPath (id :number, pos :Vector3) :void {
-//    this.updateSnake(id, this._ranchObj.snakes.get(id)!, vec2loc(pos))
-//  }
-//
   protected updateSnake (id :UUID, snake :ChatSnake) :void {
     this.deleteSnake(id)
 
@@ -1307,6 +1311,8 @@ export class RanchMode extends Mode {
 
   /** The last actor we tracked. */
   protected _lastTrackedActor? :UUID
+
+  protected _snakeWrangler :SnakeWrangler
 
   // The properties below are all definitely initialized via the constructor
   protected _host! :HTMLHost
