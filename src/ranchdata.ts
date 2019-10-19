@@ -5,6 +5,8 @@ import {PMap} from "tfw/core/util"
 /** The name of the magical global object containing serverside request functions. */
 export const SERVER_FUNCS = "_serverFuncs"
 
+export const TEST_SNAKES = true
+
 /** Actor kinds. */
 export const enum ActorKind {
   /** These will be persisted. Do not reuse ids. */

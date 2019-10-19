@@ -19,6 +19,7 @@ import {
   ChatSnake,
   Located,
   PathInfo,
+  TEST_SNAKES,
 } from "./ranchdata"
 import {copyloc, getDistance2d, loc2vec, locsEqual, vec2loc} from "./ranchutil"
 
@@ -28,10 +29,6 @@ const serverUrl = stripTrailingSlash(process.env.SERVER_URL || "http://localhost
 /** The name of the pathfinder stuffed in global. */
 export const PATHFINDER_GLOBAL = "_ranchPathfinder"
 export const NAVMESH_GLOBAL = "_navMesh"
-
-/** Are we testing circles or snakes? */
-const TEST_SNAKES = true
-//const SNAKE_MOVEMENT = true
 
 const MAX_MONSTER_SCALE = 4
 const DEFAULT_MONSTER_SCALE = 1
@@ -383,6 +380,23 @@ class AvatarMoncherBehavior extends MobileBehavior {
  * Avatar that is not pathed, instead it follows snakes. */
 class AvatarSnakeBehavior extends Behavior {
   static INSTANCE = new AvatarSnakeBehavior(...(TEST_SNAKES ? [ActorKind.Avatar] : []))
+
+  touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
+
+    // get the snake for this actor
+    const snake = ctx.obj.snakes.get(actor.id)
+    if (!snake) return false
+
+    // Let's add a new FAKE avatar, and make it a member of this snake
+    const proto = MonsterDb.getRandomMonster()
+    const avatar :ActorConfig = {...proto, kind: ActorKind.Avatar}
+    const id = addActor(ctx, uuidv1(), avatar, actor.data /* =Located */)
+
+    const data = ctx.obj.actorData.get(id)!
+    data.scale = MIN_MONSTER_SCALE + (Math.random() * (MAX_MONSTER_SCALE - MIN_MONSTER_SCALE))
+    snake.members.push(id)
+    return true
+  }
 }
 
 /**
@@ -1112,11 +1126,12 @@ function getOrCreateSnake (ctx :RanchContext, actor :Actor) :ChatSnake {
 
   const members :UUID[] = []
   const points :Located[] = [copyloc(actor.data)]
+  const speed = getSpeed(ctx, actor) * (.5 + (1.5 * Math.random()))
   const newSnake :ChatSnake = {
     owner: actor.id,
-    speed: getSpeed(ctx, actor),
+    speed,
     members,
-    spacing: 1,
+    spacing: 1.5,
     points,
   }
   ctx.obj.snakes.set(actor.id, newSnake)

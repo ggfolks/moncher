@@ -76,6 +76,7 @@ import {
   ChatSnake,
 //  Located,
   PathInfo,
+  TEST_SNAKES,
   blankActorUpdate,
 } from "./ranchdata"
 import {loc2vec} from "./ranchutil"
@@ -102,10 +103,22 @@ class ActorInfo {
     readonly config :ActorConfig,
     /** The fn to update the walk speed. TODO. */
     protected readonly updateWalkSpeed :(speed :number) => void,
+    /** Is this actor walking? */
+    readonly isWalking :Mutable<boolean>,
   ) {}
 
   update (update :ActorUpdate) :void {
     this.updateWalkSpeed(update.walkAnimationSpeed)
+  }
+
+  /** Update an actor in a snake.
+   * @param scale the actor's scale.
+   * @param the speed of the entire snake. */
+  setSnakeSpeed (scale :number, speed :number) :void {
+    this.isWalking.update(speed > 0)
+    if (speed > 0) {
+      this.updateWalkSpeed(speed / ActorKindAttributes.baseWalkAnimationSpeed(this.config.kind) / scale)
+    }
   }
 }
 
@@ -227,12 +240,14 @@ export class RanchMode extends Mode {
     this.loadExtras()
 
     this._snakeWrangler = new SnakeWrangler(
-        (id :UUID, pos :Vector3, rot :number) => {
+        (id :UUID, pos :Vector3, rot :number, speed :number) => {
           const info = this._actors.get(id)
           if (!info) {
             log.warn("Missing actor info for snaking actor? Skipping.", "id", id)
             return
           }
+          const update = this._ranchObj.actors.get(id)!
+          info.setSnakeSpeed(update.scale, speed)
           // TODO: a way to update position and quaternion in one swell foop
           this.setY(pos)
           this._trans.updatePosition(info.entityId, pos)
@@ -1078,12 +1093,15 @@ export class RanchMode extends Mode {
       },
     })
 
+    const isWalking = Mutable.local(false)
     if (!isEgg && cfg.model.walk) {
-      const realIsWalking = this._paths.getValue(entityId).map(path => {
-        if (!path) return false
-        while (path.next) path = path.next
-        return !path.ended
-      })
+      const realIsWalking = TEST_SNAKES && (cfg.kind === ActorKind.Avatar)
+        ? isWalking
+        : this._paths.getValue(entityId).map(path => {
+            if (!path) return false
+            while (path.next) path = path.next
+            return !path.ended
+          })
 
 //      realIsWalking.onEmit(b => {
 //        log.debug("realIsWalking: " + b)
@@ -1100,7 +1118,7 @@ export class RanchMode extends Mode {
       }
     }
 
-    const actorInfo = new ActorInfo(id, entityId, cfg, updateWalkSpeed)
+    const actorInfo = new ActorInfo(id, entityId, cfg, updateWalkSpeed, isWalking)
     this._actors.set(id, actorInfo)
 
     this.actorAdded(id, update)

@@ -21,7 +21,7 @@ interface Segment extends Located {
   orient :number
 }
 
-type ActorUpdateFn = (id :UUID, pos :Vector3, rot :number) => void
+type ActorUpdateFn = (id :UUID, pos :Vector3, rot :number, speed :number) => void
 
 const scratchV = new Vector3()
 
@@ -71,19 +71,20 @@ class SnakeRec {
 
   update (clock :Clock, updateActor :ActorUpdateFn) :void {
     const segs = this._segments
-    //if (segs.length === 0) return
     // we might just be done with this snake
     if (this._index === 0 && this._progress == segs[0].length) return
 
     // see how much to advance things
     const advance = this.snake.speed * clock.dt
     this._progress += advance
+    let speed = this.snake.speed
     while (this._progress > segs[this._index].length) {
       if (this._index > 0) {
         this._progress -= segs[this._index].length
         this._index--
       } else {
         this._progress = segs[this._index].length
+        speed = 0
         break
       }
     }
@@ -95,7 +96,7 @@ class SnakeRec {
       const id = (ii === -1) ? this.snake.owner : this.snake.members[ii]
       const perc = dist / segs[index].length
       scratchV.lerpVectors(loc2vec(segs[index + 1]), loc2vec(segs[index]), perc)
-      updateActor(id, scratchV, segs[index].orient)
+      updateActor(id, scratchV, segs[index].orient, speed)
 
       if (ii < this.snake.members.length - 1) {
         dist -= this.snake.spacing
