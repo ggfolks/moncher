@@ -92,16 +92,19 @@ class SnakeRec {
     // now calculate the positions of actors along the snake
     let index = this._index
     let dist = this._progress
-    for (let ii = -1; ii < this.snake.members.length; ii++) {
+    // NOTE: checking index against segs.length because when we reload we start the snake over
+    // These checks can go away in the future TODO
+    for (let ii = -1, nn = this.snake.members.length; ii < nn && index < segs.length; ii++) {
       const id = (ii === -1) ? this.snake.owner : this.snake.members[ii]
       const perc = dist / segs[index].length
       scratchV.lerpVectors(loc2vec(segs[index + 1]), loc2vec(segs[index]), perc)
       updateActor(id, scratchV, segs[index].orient, speed)
 
-      if (ii < this.snake.members.length - 1) {
+      if (ii < nn - 1) {
         dist -= this.snake.spacing
         while (dist < 0) {
           index++
+          if (index === segs.length) break // This check too TODO
           dist += segs[index].length
         }
       }

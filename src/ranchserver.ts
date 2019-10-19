@@ -379,7 +379,8 @@ class AvatarMoncherBehavior extends MobileBehavior {
 /**
  * Avatar that is not pathed, instead it follows snakes. */
 class AvatarSnakeBehavior extends Behavior {
-  static INSTANCE = new AvatarSnakeBehavior(...(TEST_SNAKES ? [ActorKind.Avatar] : []))
+  static INSTANCE = new AvatarSnakeBehavior(
+      ...(TEST_SNAKES ? [ActorKind.Avatar, ActorKind.Dummy] : []))
 
   touch (ctx :RanchContext, actor :Actor, arg? :Data) :boolean {
 
@@ -389,8 +390,8 @@ class AvatarSnakeBehavior extends Behavior {
 
     // Let's add a new FAKE avatar, and make it a member of this snake
     const proto = MonsterDb.getRandomMonster()
-    const avatar :ActorConfig = {...proto, kind: ActorKind.Avatar}
-    const id = addActor(ctx, uuidv1(), avatar, actor.data /* =Located */)
+    const dummy :ActorConfig = {...proto, kind: ActorKind.Dummy}
+    const id = addActor(ctx, ctx.auth.id, dummy, actor.data /* =Located */)
 
     const data = ctx.obj.actorData.get(id)!
     data.scale = MIN_MONSTER_SCALE + (Math.random() * (MAX_MONSTER_SCALE - MIN_MONSTER_SCALE))

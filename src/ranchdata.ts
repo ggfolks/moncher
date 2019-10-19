@@ -19,6 +19,7 @@ export const enum ActorKind {
 
   /** A player-controlled actor. */
   Avatar = 100,
+  Dummy = 101,
 }
 
 /**
@@ -35,6 +36,13 @@ export class ActorKindAttributes {
   static isMonster (kind :ActorKind) :boolean {
     switch (kind) {
     case ActorKind.Lobber: case ActorKind.Runner: case ActorKind.Healer: return true
+    default: return false
+    }
+  }
+
+  static isAvatar (kind :ActorKind) :boolean {
+    switch (kind) {
+    case ActorKind.Avatar: case ActorKind.Dummy: return true
     default: return false
     }
   }

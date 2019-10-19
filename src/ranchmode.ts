@@ -1095,7 +1095,7 @@ export class RanchMode extends Mode {
 
     const isWalking = Mutable.local(false)
     if (!isEgg && cfg.model.walk) {
-      const realIsWalking = TEST_SNAKES && (cfg.kind === ActorKind.Avatar)
+      const realIsWalking = TEST_SNAKES && ActorKindAttributes.isAvatar(cfg.kind)
         ? isWalking
         : this._paths.getValue(entityId).map(path => {
             if (!path) return false
