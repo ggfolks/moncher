@@ -21,6 +21,18 @@ interface Easing {
 
 const scratchV = new Vector3()
 
+interface CameraConfig {
+  /** The maximum distance the camera can be pulled back. */
+  maxDistance :number
+  /** The closest distance for the camera. */
+  minDistance :number
+  /** The angle above the horizon to use when the distance is at maximum. */
+  angleAtMax :number
+  /** The angle above the horizon to use when the distance is at minimum. */
+  angleAtMin :number
+  /** The easing speed, in distance per millisecond. */
+  easingSpeed :number
+}
 
 /**
  * Camera controller!
@@ -29,9 +41,18 @@ const scratchV = new Vector3()
 // TODO: possibly have the easing pull the camera back until halfway through the ease and
 // then forward again during the second half. But that's a bit more complicated to let
 // the user adjust distance as well as do the right thing if we start a new ease in the middle. TBD.
-export type CameraController = Lakitu
 export class Lakitu
 {
+  static makeDefaultCameraConfig () :CameraConfig {
+    return {
+      maxDistance: 25,
+      minDistance: 5,
+      angleAtMax: Math.PI / 4, // 45 degrees above
+      angleAtMin: Math.PI / 18, // 10 degrees above
+      easingSpeed: 8 / 1000,
+    }
+  }
+
   constructor (
     /** The entity system's camera ID. */
     public cameraId :ID,
@@ -39,6 +60,8 @@ export class Lakitu
     protected _trans :TransformComponent,
     /** A Function to possibly override the Y value of our target with one from a navmesh. */
     protected readonly _setY :(into :Vector3, terrainFallback? :boolean) => void,
+    /** The configuration (changeable). */
+    public readonly config = Lakitu.makeDefaultCameraConfig(),
   ) {
     this._updateQuaternion()
   }
@@ -52,13 +75,14 @@ export class Lakitu
 
   /** The current distance expressed as a number between 0 and 1. */
   get normalizedDistance () :number {
-    return (this._distance - Lakitu.MIN_DISTANCE) / (Lakitu.MAX_DISTANCE - Lakitu.MIN_DISTANCE)
+    return (this._distance - this.config.minDistance) /
+        (this.config.maxDistance - this.config.minDistance)
   }
 
   /** The current camera angle. */
   get angle () :number {
-    return Lakitu.ANGLE_AT_MIN +
-        (this.normalizedDistance * (Lakitu.ANGLE_AT_MAX - Lakitu.ANGLE_AT_MIN))
+    return this.config.angleAtMin +
+        (this.normalizedDistance * (this.config.angleAtMax - this.config.angleAtMin))
   }
 
   /**
@@ -109,7 +133,7 @@ export class Lakitu
     this._easing = {
       from,
       current: new Vector3().copy(from),
-      duration: this._target.distanceTo(from) / Lakitu.EASING_SPEED
+      duration: this._target.distanceTo(from) / this.config.easingSpeed
     }
   }
 
@@ -125,7 +149,7 @@ export class Lakitu
   /**
    * Make a relative adjustment to the camera's distance from the target. */
   adjustDistance (deltaDistance :number) :void {
-    const newValue = Math.max(Lakitu.MIN_DISTANCE, Math.min(Lakitu.MAX_DISTANCE,
+    const newValue = Math.max(this.config.minDistance, Math.min(this.config.maxDistance,
         this._distance + deltaDistance))
     if (newValue !== this._distance) {
       this._distance = newValue
@@ -211,12 +235,5 @@ export class Lakitu
   /** Our current easing parameters, if any. */
   protected _easing? :Easing
 
-  /** Camera constants. These are tuned for our Ranch but in the future we can make these
-   * configurable. */
-  private static readonly MAX_DISTANCE = 25
   private static readonly DEFAULT_DISTANCE = 10
-  private static readonly MIN_DISTANCE = 5
-  private static readonly ANGLE_AT_MAX = Math.PI / 4 // 45 degrees above
-  private static readonly ANGLE_AT_MIN = Math.PI / 18 // 10 degrees above
-  private static readonly EASING_SPEED = 8 / 1000 // distance per millisecond (average)
 }
