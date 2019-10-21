@@ -575,14 +575,10 @@ export class RanchMode extends Mode {
     this._hud.updateUiState(uiState)
 
     // tweak the camera configuration in debug mode
-    const dist = this._camControl.distance
     this._camControl.config.angleAtMax = (uiState === UiState.Debug)
       ? Math.PI / 2
       : Math.PI / 4
-    // TODO: maybe just make a method for resetting this
-    this._camControl.adjustDistance(1)
-    this._camControl.adjustDistance(-1)
-    this._camControl.adjustDistance(dist - this._camControl.distance)
+    this._camControl.recompute()
   }
 
   protected ranchLoaded (scene :Object3D) :void {

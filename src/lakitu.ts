@@ -167,6 +167,11 @@ export class Lakitu
     this.updateTarget(targ)
   }
 
+  recompute () :void {
+    this.adjustDistance(0)
+    this._updateQuaternion()
+  }
+
   /**
    * Update the position of the camera before rendering, if needed. */
   update (clock :Clock) :void {
