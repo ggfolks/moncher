@@ -30,7 +30,7 @@ const serverUrl = stripTrailingSlash(process.env.SERVER_URL || "http://localhost
 export const PATHFINDER_GLOBAL = "_ranchPathfinder"
 export const NAVMESH_GLOBAL = "_navMesh"
 
-const MAX_MONSTER_SCALE = 4
+const MAX_MONSTER_SCALE = 2
 const DEFAULT_MONSTER_SCALE = 1
 const MIN_MONSTER_SCALE = .8
 
