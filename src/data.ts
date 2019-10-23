@@ -175,6 +175,7 @@ function handleChannelReq (ctx :DContext, obj :ChannelObject, req :ChannelReq) {
     // TEMP: debug some weirdness I've been seeing
     else if (auth.isSystem) log.warn("Got channel join by system?", "auth", auth)
     else if (auth.id === UUID0) log.warn("Got channel join by UUID0?", "auth", auth)
+    else if (obj.members.has(auth.id)) log.warn("Already joined", "auth", auth)
     else {
       obj.members.add(auth.id)
       ctx.post(userQ(auth.id), {type: "joined", channelId: obj.key})
