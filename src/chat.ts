@@ -44,11 +44,14 @@ const chatUiConfig = {
         contents: {
           type: "row",
           gap: 5,
+          contents: [
           // TODO: tooltip with name?
-          // {type: "label", text: "speaker", style: {fill: {type: "color", color: "#663333"}}}
-          contents: [{
+          //{type: "label", text: "speaker", style: {fill: {type: "color", color: "#663333"}}},
+          {
             type: "image",
             image: "photo",
+            //width: 20, // reserving the width avoids a small bit of relayout, but the photo
+            // still "flashes" when it loads-in.
             height: 20,
           }, {
             type: "box",
@@ -114,7 +117,7 @@ function latestMsgs (msgs :ReadonlyMap<string, Message>, count :number) {
 export class ChatView implements Disposable {
   private _onDispose = new Disposer()
 
-  constructor (readonly app :App, host :Host) {
+  constructor (readonly app :App, host :Host, mini? :boolean) {
     const channelId = app.state.ranchId
     const [channel, unchannel] = app.store.resolve(["channels", channelId], ChannelObject)
     this._onDispose.add(unchannel)
@@ -133,7 +136,7 @@ export class ChatView implements Disposable {
         speaker: msg.switchMap(m => app.profiles.profile(m.sender).name),
         photo: msg.switchMap(m => app.profiles.profile(m.sender).photo),
       })),
-      msgkeys: msgs.map(msgs => latestMsgs(msgs, 6)),
+      msgkeys: msgs.map(msgs => latestMsgs(msgs, mini ? 3 : 6)),
       input: Mutable.local(""),
       sendChat: () => {
         const text = modelData.input.current.trim()
@@ -147,16 +150,25 @@ export class ChatView implements Disposable {
       showAuth: () => showAuthDialog(app, host),
     }
 
+    let uiConfig = chatUiConfig
+    if (mini) {
+      uiConfig = Object.assign({}, uiConfig)
+      uiConfig.contents = Object.assign({}, uiConfig.contents)
+      // just cut out the row with the chat entry widget
+      uiConfig.contents.contents = uiConfig.contents.contents.slice(0, 1)
+    }
+
     const root = app.ui.createRoot({
       type: "root",
       scale: app.renderer.scale,
       autoSize: true,
       hintSize: app.renderer.size.map(d => dim2.fromValues(Math.min(d[0], 700), d[1])),
       minSize: Value.constant(dim2.fromValues(300, 0)),
-      contents: chatUiConfig,
+      contents: uiConfig,
     }, new Model(modelData))
 
-    root.bindOrigin(app.renderer.size, "left", "bottom", "left", "bottom")
+    const bindTopBot = mini ? "top" : "bottom"
+    root.bindOrigin(app.renderer.size, "left", bindTopBot, "left", bindTopBot)
     host.addRoot(root)
     this._onDispose.add(() => host.removeRoot(root))
   }

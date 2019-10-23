@@ -265,8 +265,11 @@ export class RanchMode extends Mode {
     this.onDispose.add(this._hud = new Hud(_app, this._host, _app.renderer, this))
     this.setUiState(UiState.Default)
 
+    this.onDispose.add(new ChatView(_app, this._host, true))
     this.onDispose.add(new ChatView(_app, this._host))
-    this.onDispose.add(new InstallAppView(_app, this._host))
+    if (false) {
+      this.onDispose.add(new InstallAppView(_app, this._host))
+    }
     this.onDispose.add(new OccupantsView(_app, this._host))
 
     this.onDispose.add(Keyboard.instance.getKeyState(112 /* F1 */).onEmit(
