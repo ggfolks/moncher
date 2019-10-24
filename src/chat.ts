@@ -5,9 +5,11 @@ import {Host} from "tfw/ui/element"
 import {Model, mapProvider} from "tfw/ui/model"
 
 import {App} from "./app"
-import {ChannelObject, Message} from "./data"
+import {Message} from "./data"
 import {box, label} from "./ui"
 import {showAuthDialog} from "./auth"
+
+//import {log} from "tfw/core/util"
 
 const sausageCorner = 12
 
@@ -119,16 +121,8 @@ export class ChatView implements Disposable {
 
   constructor (readonly app :App, host :Host, mini? :boolean) {
     const channelId = app.state.ranchId
-    const [channel, unchannel] = app.store.resolve(["channels", channelId], ChannelObject)
-    this._onDispose.add(unchannel)
-    const [msgs, unmsgs] = app.store.resolveView(channel.msgsBySent)
-    this._onDispose.add(unmsgs)
-
-    // once we have the channel data, if we're not a guest, and haven't joined the channel, do so
-    this._onDispose.add(Value.join3(channel.state, app.notGuest, app.client.manager.ackedId).onValue(
-      ([cs, ng, id]) => {
-        if (cs === "active" && ng && !channel.members.has(id)) channel.channelq.post({type: "join"})
-      }))
+    const [channel, msgs, remover] = app.chatdir.getChannel(channelId)
+    this._onDispose.add(remover)
 
     const modelData = {
       msgdata: mapProvider(msgs, msg => ({

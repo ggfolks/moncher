@@ -14,6 +14,7 @@ import {ClientStore, addrFromLocation} from "tfw/data/client"
 import {UI} from "tfw/ui/ui"
 import {currentUser} from "tfw/auth/firebase"
 
+import {ChatDirector} from "./chatdirector"
 import {ProfileStore, UserStore} from "./stores"
 import {moncherStyles, moncherTheme} from "./uistyles"
 
@@ -69,6 +70,7 @@ export class App implements Disposable {
   readonly store = new ClientStore(this.client)
   readonly profiles = new ProfileStore(this)
   readonly user = new UserStore(this)
+  readonly chatdir = new ChatDirector(this)
 
   // global app "state"
   readonly state = {
