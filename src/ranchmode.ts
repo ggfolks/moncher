@@ -1157,7 +1157,7 @@ export class RanchMode extends Mode {
             scale: this._app.renderer.scale,
             contents: {
               type: "box",
-              contents: {type: "graphviewer", editable: "editable"},
+              contents: {type: "graphViewer", editable: "editable"},
               style: {halign: "stretch", valign: "stretch", background: "$root"},
             },
           },
