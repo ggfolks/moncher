@@ -138,7 +138,7 @@ export class ChannelObject extends DObject {
   @dqueue(handleChannelReq)
   channelq = this.queue<ChannelReq>()
 
-  @dqueue(handleChannelMetaMsg)
+  @dqueue(handleChannelMetaMsg, true)
   metaq = this.queue<MetaMsg>()
 
   addMessage (sender :UUID, text :string, image? :string, link? :string) {
@@ -192,7 +192,6 @@ function handleChannelReq (ctx :DContext, obj :ChannelObject, req :ChannelReq) {
 
 function handleChannelMetaMsg (ctx :DContext, obj :ChannelObject, msg :MetaMsg) {
   // log.debug("handleChannelMeta", "auth", auth, "msg", msg)
-  if (!ctx.auth.isSystem) return
   switch (msg.type) {
   case "subscribed":
     if (msg.id === UUID0) return // ignore system subscribers
@@ -332,7 +331,7 @@ export class ServerObject extends DObject {
   @dcollection(RanchObject)
   ranches = this.collection<RanchObject>()
 
-  @dqueue(handleServerReq)
+  @dqueue(handleServerReq, true)
   serverq = this.queue<ServerReq>()
 }
 
@@ -341,7 +340,6 @@ type ServerReq = {type: "active", id :UUID, what :"ranch"|"channel"}
 
 function handleServerReq (ctx :DContext, obj :ServerObject, req :ServerReq) {
   // log.debug("handleServerReq", "auth", auth, "req", req)
-  if (!ctx.auth.isSystem) return
   // TODO: create meta messages for this sort of super simple "make this change to this standard
   // distributed object property" machinery
   switch (req.type) {
