@@ -415,7 +415,6 @@ export class RanchMode extends Mode {
     })
 
     const host = this._host = new HTMLHost(root)
-    this.onDispose.add(host.bind(webGlRenderer.domElement))
     this.onDispose.add(host)
 
     const hand = this._hand = new Hand(webGlRenderer.domElement)
