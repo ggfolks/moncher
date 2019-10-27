@@ -49,7 +49,6 @@ import {
   loadGLTF,
   loadGLTFAnimationClip,
 } from "tfw/scene3/entity"
-import {HTMLHost} from "tfw/ui/element"
 
 import {registerLogicNodes} from "tfw/graph/logic"
 import {registerMathNodes} from "tfw/graph/math"
@@ -242,15 +241,15 @@ export class RanchMode extends Mode {
 
     const root = app.root
     root.appendChild(webGlRenderer.domElement)
-    this.onDispose.add(app.rootSize.onValue(size => {
+    this.onDispose.add(app.rootBounds.onValue(bounds => {
+      webGlRenderer.domElement.style.position = "absolute"
+      webGlRenderer.domElement.style.left = `${bounds[0]}px`
+      webGlRenderer.domElement.style.top = `${bounds[1]}px`
       webGlRenderer.setPixelRatio(window.devicePixelRatio)
-      webGlRenderer.setSize(size[0], size[1])
-      dim2.set(this._inspectUiSize, size[0], size[1])
+      webGlRenderer.setSize(bounds[2], bounds[3])
+      dim2.set(this._inspectUiSize, bounds[2], bounds[3])
     }))
     this.onDispose.add(() => root.removeChild(webGlRenderer.domElement))
-
-    const host = this._host = new HTMLHost(root)
-    this.onDispose.add(host)
 
     const hand = this._hand = new Hand(webGlRenderer.domElement)
     this.onDispose.add(hand)
@@ -283,15 +282,15 @@ export class RanchMode extends Mode {
 //    handle = setTimeout(() => { this.onDispose.remove(cancelTimeout); this.setReady() }, 2000)
 //    this.onDispose.add(cancelTimeout)
 
-    this.onDispose.add(this._hud = new Hud(app, this._host, this))
+    this.onDispose.add(this._hud = new Hud(app, this))
     this.setUiState(UiState.Default)
 
-    this.onDispose.add(new ChatView(app, this._host, true))
-    this.onDispose.add(new ChatView(app, this._host))
+    this.onDispose.add(new ChatView(app, true))
+    this.onDispose.add(new ChatView(app))
     if (false) {
-      this.onDispose.add(new InstallAppView(app, this._host))
+      this.onDispose.add(new InstallAppView(app))
     }
-    this.onDispose.add(new OccupantsView(app, this._host))
+    this.onDispose.add(new OccupantsView(app))
 
     this.onDispose.add(Keyboard.instance.getKeyState(112 /* F1 */).onEmit(
         v => this.showNavMesh(v)))
@@ -430,7 +429,7 @@ export class RanchMode extends Mode {
       ),
       subgraphs: new SubgraphRegistry(registerScene3Subgraphs),
       hand,
-      host: this._host,
+      host: app.host,
       theme: DefaultTheme,
       styles: DefaultStyles,
 //      image: {resolve: loadImage},
@@ -556,7 +555,6 @@ export class RanchMode extends Mode {
     this._hand.update()
     this._scenesys.updateHovers(this._webGlRenderer)
     this._graphsys.update(clock)
-    this._host.update(clock)
     this._pathsys.update(clock)
     this._animsys.update(clock)
     this._camControl.update(clock)
@@ -655,7 +653,7 @@ export class RanchMode extends Mode {
 
   protected showNameEgg (actorId :UUID, currentName? :string) {
     const name = Mutable.local(currentName || generateName())
-    const dispose = createDialog(this.app, this._host, "Name your new little buddy!", [
+    const dispose = createDialog(this.app, "Name your new little buddy!", [
       label(Value.constant("What do you want to call your new friend?")),
       textBox("name", "putANameOnIt"),
       label(Value.constant("Don't think too hard, you can change it later.")),
@@ -1203,7 +1201,7 @@ export class RanchMode extends Mode {
     // TEMP: hackery to require invite to touch/hatch egg
     if (!this._ranchObj.debug.current && config.kind === ActorKind.Egg) {
       if (this.app.user.user.key === update.owner) {
-        showEggInvite(this.app, this._host, this.app.state.ranchId, id)
+        showEggInvite(this.app, this.app.state.ranchId, id)
         this.setUiState(UiState.Default)
         return
       }
@@ -1211,7 +1209,7 @@ export class RanchMode extends Mode {
         log.info("No touchy eggy!", "id", id, "focus", this.app.state.focusId)
         return
       } else if (!this.app.notGuest.current) {
-        showEggAuth(this.app, this._host)
+        showEggAuth(this.app)
         return
       }
     }
@@ -1224,7 +1222,7 @@ export class RanchMode extends Mode {
   protected actorShiftTouched (id :UUID, config :ActorConfig, update :ActorUpdate) {
     // show name dialog if you shift-click an actor that you own
     if (this.app.user.user.key === update.owner) {
-      createEditNameDialog(this.app, this._host, "Name Your Moncher", id)
+      createEditNameDialog(this.app, "Name Your Moncher", id)
     }
   }
 
@@ -1334,10 +1332,10 @@ export class RanchMode extends Mode {
 
   protected _snakeWrangler :SnakeWrangler
 
+  protected readonly _webGlRenderer :WebGLRenderer
+  protected readonly _hand :Hand
+
   // The properties below are all definitely initialized via the constructor
-  protected _host! :HTMLHost
-  protected _webGlRenderer! :WebGLRenderer
-  protected _hand! :Hand
   protected _trans! :TransformComponent
   protected _obj! :Component<Object3D>
   protected _updates! :Component<ActorUpdate>

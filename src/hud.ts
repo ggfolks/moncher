@@ -1,6 +1,6 @@
 import {Mutable, Value} from "tfw/core/react"
 import {Disposable, Disposer, log} from "tfw/core/util"
-import {ElementConfig, Host, Root, RootConfig} from "tfw/ui/element"
+import {ElementConfig, Root, RootConfig} from "tfw/ui/element"
 import {Model, ModelData} from "tfw/ui/model"
 import {label, checkBox} from "./ui"
 import {RanchMode} from "./ranchmode"
@@ -18,11 +18,7 @@ export class Hud
   implements Disposable {
   screenWidth :Value<number>
 
-  constructor (
-    readonly app :App,
-    readonly host :Host,
-    private readonly _ranchMode :RanchMode,
-  ) {
+  constructor (readonly app :App, private readonly _ranchMode :RanchMode) {
     this.screenWidth = app.rootSize.map(sz => sz[0])
 
     let tip = 0
@@ -37,13 +33,13 @@ export class Hud
    * Update to reflect our current UI state. */
   updateUiState (uiState :UiState) :void {
     if (this._stateRoot) {
-      this.host.removeRoot(this._stateRoot)
+      this.app.host.removeRoot(this._stateRoot)
     }
     const root = this._stateRoot = this.createRoot(uiState)
     if (root) {
       const pos = (this.screenWidth.current >= 600) ? "bottom" : "top"
-      root.bindOrigin(this.app.rootSize, "right", pos, "right", pos)
-      this.host.addRoot(root)
+      root.bindOrigin(this.app.rootBounds, "right", pos, "right", pos)
+      this.app.host.addRoot(root)
     }
   }
 
@@ -263,7 +259,7 @@ export class Hud
   // from Disposable
   public dispose () :void {
     if (this._stateRoot) {
-      this.host.removeRoot(this._stateRoot)
+      this.app.host.removeRoot(this._stateRoot)
       this._stateRoot = undefined
     }
 

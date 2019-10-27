@@ -1,7 +1,6 @@
 import {dim2} from "tfw/core/math"
 import {Disposable, Disposer} from "tfw/core/util"
 import {Mutable, Value} from "tfw/core/react"
-import {Host} from "tfw/ui/element"
 import {Model, mapProvider} from "tfw/ui/model"
 
 import {App} from "./app"
@@ -119,7 +118,7 @@ function latestMsgs (msgs :ReadonlyMap<string, Message>, count :number) {
 export class ChatView implements Disposable {
   private _onDispose = new Disposer()
 
-  constructor (readonly app :App, host :Host, mini? :boolean) {
+  constructor (readonly app :App, mini? :boolean) {
     const channelId = app.state.ranchId
     const [channel, msgs, remover] = app.chatdir.getChannel(channelId)
     this._onDispose.add(remover)
@@ -141,7 +140,7 @@ export class ChatView implements Disposable {
       },
       showChatInput: app.notGuest,
       profilePhoto: app.client.auth.switchMap(sess => app.profiles.profile(sess.id).photo),
-      showAuth: () => showAuthDialog(app, host),
+      showAuth: () => showAuthDialog(app),
     }
 
     let uiConfig = chatUiConfig
@@ -163,8 +162,8 @@ export class ChatView implements Disposable {
 
     const bindTopBot = mini ? "top" : "bottom"
     root.bindOrigin(app.rootBounds, "left", bindTopBot, "left", bindTopBot)
-    host.addRoot(root)
-    this._onDispose.add(() => host.removeRoot(root))
+    app.host.addRoot(root)
+    this._onDispose.add(() => app.host.removeRoot(root))
   }
 
   dispose () {

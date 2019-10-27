@@ -1,15 +1,14 @@
 import {Value} from "tfw/core/react"
-import {Host} from "tfw/ui/element"
 import {showGoogleLogin, firebaseLogout} from "tfw/auth/firebase"
 
 import {App} from "./app"
 import {box, label, button, createDialog} from "./ui"
 
-export function showAuthDialog (app :App, host :Host) {
+export function showAuthDialog (app :App) {
   const loggedOut = app.client.auth.map(auth => auth.source === "guest")
   const curProfile = app.client.auth.map(sess => app.profiles.profile(sess.id))
 
-  createDialog(app, host, "Account", [{
+  createDialog(app, "Account", [{
     type: "row",
     contents: [box({
       type: "image",

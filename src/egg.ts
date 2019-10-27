@@ -1,7 +1,6 @@
 import {Remover} from "tfw/core/util"
 import {UUID} from "tfw/core/uuid"
 import {Mutable, Value} from "tfw/core/react"
-import {Host} from "tfw/ui/element"
 import {showGoogleLogin} from "tfw/auth/firebase"
 
 import {App} from "./app"
@@ -12,10 +11,10 @@ function makeInviteUrl (app :App, ranchId :UUID, eggId :UUID) :string {
   return `${protocol}//${host}${app.state.appPath}${ranchId}+${eggId}`
 }
 
-export function showEggInvite (app :App, host :Host, ranchId :UUID, eggId :UUID) :Remover {
+export function showEggInvite (app :App, ranchId :UUID, eggId :UUID) :Remover {
   const status = Mutable.local("Click the URL to copy it to the clipboard.")
   const inviteUrl = makeInviteUrl(app, ranchId, eggId)
-  return createDialog(app, host, "Put this egg up for adoption!", [
+  return createDialog(app, "Put this egg up for adoption!", [
     label(Value.constant("Send this URL to a friend and they can adopt this egg:")),
     button("inviteUrl", "copyInviteUrl"),
     label("status"),
@@ -29,8 +28,8 @@ export function showEggInvite (app :App, host :Host, ranchId :UUID, eggId :UUID)
   })
 }
 
-export function showEggAuth (app :App, host :Host) {
-  const close = createDialog(app, host, "Log in to adopt this egg!", [
+export function showEggAuth (app :App) {
+  const close = createDialog(app, "Log in to adopt this egg!", [
     button(Value.constant("Login with Google"), "loginGoogle")
   ], {
     loginGoogle: () => showGoogleLogin(),

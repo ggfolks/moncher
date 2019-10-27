@@ -6,7 +6,7 @@ import {Action, Spec} from "tfw/ui/model"
 import {LabelStyle} from "tfw/ui/text"
 import {BoxStyle} from "tfw/ui/box"
 import {Insets} from "tfw/ui/style"
-import {ElementConfig, Host} from "tfw/ui/element"
+import {ElementConfig} from "tfw/ui/element"
 import {Model, ModelData, makeProvider} from "tfw/ui/model"
 
 import {RanchObject, ranchQ} from "./data"
@@ -85,7 +85,7 @@ const sausageCorner = 12
 
 type Pos = "top" | "left" | "right" | "bottom" | "center"
 
-export function createDialog (app :App, host :Host, title :string, contents :ElementConfig[],
+export function createDialog (app :App, title :string, contents :ElementConfig[],
                               data :ModelData, pos :Pos = "center") :Remover {
   const margin :Insets = [0, 0, 0, 0]
   switch (pos) {
@@ -117,7 +117,7 @@ export function createDialog (app :App, host :Host, title :string, contents :Ele
     minSize: Value.constant(dim2.fromValues(300, 0)),
     contents: config,
   }, new Model({...data, closeDialog}))
-  disposer.add(() => host.removeRoot(root))
+  disposer.add(() => app.host.removeRoot(root))
 
   switch (pos) {
   case    "top": root.bindOrigin(app.rootBounds, "center", "top", "center", "top") ; break
@@ -126,7 +126,7 @@ export function createDialog (app :App, host :Host, title :string, contents :Ele
   case  "right": root.bindOrigin(app.rootBounds, "right", "center", "right", "center") ; break
   case "center": root.bindOrigin(app.rootBounds, "center", "center", "center", "center") ; break
   }
-  host.addRoot(root)
+  app.host.addRoot(root)
 
   return closeDialog
 }
@@ -162,7 +162,7 @@ function showGetApp (app :App) :Value<boolean> {
 export class InstallAppView implements Disposable {
   private _onDispose = new Disposer()
 
-  constructor (readonly app :App, host :Host) {
+  constructor (readonly app :App) {
     const installAppUI = box({
       type: "button",
       onClick: "openAppPage",
@@ -183,8 +183,8 @@ export class InstallAppView implements Disposable {
       openAppPage: () => window.open(getAppURL())
     }))
     root.bindOrigin(app.rootBounds, "left", "top", "left", "top")
-    host.addRoot(root)
-    this._onDispose.add(() => host.removeRoot(root))
+    app.host.addRoot(root)
+    this._onDispose.add(() => app.host.removeRoot(root))
   }
 
   dispose () {
@@ -195,7 +195,7 @@ export class InstallAppView implements Disposable {
 export class OccupantsView implements Disposable {
   private _onDispose = new Disposer()
 
-  constructor (readonly app :App, host :Host) {
+  constructor (readonly app :App) {
     const [ranch, unranch] = app.store.resolve(["ranches", app.state.ranchId], RanchObject)
     this._onDispose.add(unranch)
     const occupantsUI = box({
@@ -220,8 +220,8 @@ export class OccupantsView implements Disposable {
       }),
     }))
     root.bindOrigin(app.rootBounds, "left", "top", "left", "top")
-    host.addRoot(root)
-    this._onDispose.add(() => host.removeRoot(root))
+    app.host.addRoot(root)
+    this._onDispose.add(() => app.host.removeRoot(root))
   }
 
   dispose () {
@@ -229,8 +229,7 @@ export class OccupantsView implements Disposable {
   }
 }
 
-export function createEditNameDialog (
-  app :App, host :Host, title :string, id :UUID, pos :Pos = "top") {
+export function createEditNameDialog (app :App, title :string, id :UUID, pos :Pos = "top") {
   const profile = app.profiles.profile(id)
   const name = Mutable.local(profile.name.current)
   const unlisten = profile.name.onChange(nname => name.update(nname))
@@ -253,5 +252,5 @@ export function createEditNameDialog (
     row(0, button(Value.constant("Cancel"), "close"), hshim(20),
         button(Value.constant("Save"), "updateName"))
   ]
-  return closeDialog = createDialog(app, host, title, nameUI, nameModel, pos)
+  return closeDialog = createDialog(app, title, nameUI, nameModel, pos)
 }

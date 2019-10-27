@@ -12,6 +12,7 @@ import {Surface} from "tfw/scene2/surface"
 import {QuadBatch, UniformQuadBatch} from "tfw/scene2/batch"
 import {ChannelClient} from "tfw/channel/client"
 import {ClientStore, addrFromLocation} from "tfw/data/client"
+import {HTMLHost} from "tfw/ui/element"
 import {UI} from "tfw/ui/ui"
 import {currentUser} from "tfw/auth/firebase"
 
@@ -68,7 +69,10 @@ export class App implements Disposable {
   readonly rootBounds :Value<rect>
   readonly scale = new Scale(window.devicePixelRatio)
   readonly loop  = new Loop()
+
   readonly ui = new UI(moncherTheme, moncherStyles, {resolve: loadImage})
+  readonly host :HTMLHost
+
   readonly client = new ChannelClient({serverUrl: addrFromLocation("data")})
   readonly store = new ClientStore(this.client)
   readonly profiles = new ProfileStore(this)
@@ -95,7 +99,12 @@ export class App implements Disposable {
 
     this.mode = new Mode(this)
     this.loop = new Loop()
-    this.loop.clock.onEmit(clock => this.mode.render(clock))
+    this.host = new HTMLHost(root)
+
+    this.loop.clock.onEmit(clock => {
+      this.host.update(clock)
+      this.mode.render(clock)
+    })
 
     // when we're authed as a Google user, slurp our profile info
     Value.join3(this.client.manager.ackedId, this.client.auth, currentUser).onValue(
