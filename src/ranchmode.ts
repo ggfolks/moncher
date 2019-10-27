@@ -231,12 +231,33 @@ function colorize (obj :Object3D, color :Color) :void {
 
 export class RanchMode extends Mode {
 
-  constructor (
-    protected _app :App,
-  ) {
-    super()
+  constructor (app :App) {
+    super(app)
+
+    const webGlRenderer = this._webGlRenderer = new WebGLRenderer()
+    webGlRenderer.gammaOutput = true
+    webGlRenderer.gammaFactor = 2.2
+    webGlRenderer.shadowMap.enabled = navigator.userAgent.toLowerCase().indexOf('android') === -1
+    this.onDispose.add(webGlRenderer)
+
+    const root = app.root
+    root.appendChild(webGlRenderer.domElement)
+    this.onDispose.add(app.rootSize.onValue(size => {
+      webGlRenderer.setPixelRatio(window.devicePixelRatio)
+      webGlRenderer.setSize(size[0], size[1])
+      dim2.set(this._inspectUiSize, size[0], size[1])
+    }))
+    this.onDispose.add(() => root.removeChild(webGlRenderer.domElement))
+
+    const host = this._host = new HTMLHost(root)
+    this.onDispose.add(host)
+
+    const hand = this._hand = new Hand(webGlRenderer.domElement)
+    this.onDispose.add(hand)
+    this.onDispose.add(hand.pointers.onChange(this._handChanged))
+
     this.subscribeToRanch()
-    this.configureScene(_app)
+    this.configureScene(app)
     this.loadExtras()
 
     this._snakeWrangler = new SnakeWrangler(
@@ -262,15 +283,15 @@ export class RanchMode extends Mode {
 //    handle = setTimeout(() => { this.onDispose.remove(cancelTimeout); this.setReady() }, 2000)
 //    this.onDispose.add(cancelTimeout)
 
-    this.onDispose.add(this._hud = new Hud(_app, this._host, _app.renderer, this))
+    this.onDispose.add(this._hud = new Hud(app, this._host, this))
     this.setUiState(UiState.Default)
 
-    this.onDispose.add(new ChatView(_app, this._host, true))
-    this.onDispose.add(new ChatView(_app, this._host))
+    this.onDispose.add(new ChatView(app, this._host, true))
+    this.onDispose.add(new ChatView(app, this._host))
     if (false) {
-      this.onDispose.add(new InstallAppView(_app, this._host))
+      this.onDispose.add(new InstallAppView(app, this._host))
     }
-    this.onDispose.add(new OccupantsView(_app, this._host))
+    this.onDispose.add(new OccupantsView(app, this._host))
 
     this.onDispose.add(Keyboard.instance.getKeyState(112 /* F1 */).onEmit(
         v => this.showNavMesh(v)))
@@ -338,8 +359,8 @@ export class RanchMode extends Mode {
   }
 
   protected subscribeToRanch () :void {
-    const ranchId = this._app.state.ranchId
-    const [ranch, unranch] = this._app.store.resolve(["ranches", ranchId], RanchObject)
+    const ranchId = this.app.state.ranchId
+    const [ranch, unranch] = this.app.store.resolve(["ranches", ranchId], RanchObject)
     this._ranchObj = ranch
     this.onDispose.add(unranch)
 
@@ -392,34 +413,7 @@ export class RanchMode extends Mode {
   }
 
   protected configureScene (app :App) :void {
-    const webGlRenderer = this._webGlRenderer = new WebGLRenderer()
-    webGlRenderer.gammaOutput = true
-    webGlRenderer.gammaFactor = 2.2
-    webGlRenderer.shadowMap.enabled = navigator.userAgent.toLowerCase().indexOf('android') === -1
-
-    this.onDispose.add(webGlRenderer)
-
-    // replace the 2d canvas
-    const root = app.renderer.canvas.parentElement as HTMLElement
-    root.removeChild(app.renderer.canvas)
-    root.appendChild(webGlRenderer.domElement)
-    this.onDispose.add(app.renderer.size.onValue(size => {
-      webGlRenderer.setPixelRatio(window.devicePixelRatio)
-      webGlRenderer.setSize(size[0], size[1])
-      dim2.set(this._inspectUiSize, size[0], size[1])
-    }))
-    // set up a dispose to restore the 2d canvas
-    this.onDispose.add(() => {
-      root.removeChild(webGlRenderer.domElement)
-      root.appendChild(app.renderer.canvas)
-    })
-
-    const host = this._host = new HTMLHost(root)
-    this.onDispose.add(host)
-
-    const hand = this._hand = new Hand(webGlRenderer.domElement)
-    this.onDispose.add(hand)
-    this.onDispose.add(hand.pointers.onChange(this._handChanged))
+    const hand = this._hand
 
     // TODO: what is the minimum we need?
     const nodeCtx :NodeContext = {
@@ -436,11 +430,11 @@ export class RanchMode extends Mode {
       ),
       subgraphs: new SubgraphRegistry(registerScene3Subgraphs),
       hand,
-      host,
+      host: this._host,
       theme: DefaultTheme,
       styles: DefaultStyles,
 //      image: {resolve: loadImage},
-      screen: app.renderer.size,
+      screen: app.rootSize,
     }
 
     const trans = this._trans = new TransformComponent("trans")
@@ -479,8 +473,8 @@ export class RanchMode extends Mode {
     const wheelHandler = (event :WheelEvent) => {
       this._camControl.adjustDistance(event.deltaY * WHEEL_FACTOR)
     }
-    root.addEventListener("wheel", wheelHandler)
-    this.onDispose.add(() => root.removeEventListener("wheel", wheelHandler))
+    app.root.addEventListener("wheel", wheelHandler)
+    this.onDispose.add(() => app.root.removeEventListener("wheel", wheelHandler))
 
     // set up arrow keys to change focus
     const kb = Keyboard.instance
@@ -661,7 +655,7 @@ export class RanchMode extends Mode {
 
   protected showNameEgg (actorId :UUID, currentName? :string) {
     const name = Mutable.local(currentName || generateName())
-    const dispose = createDialog(this._app, this._host, "Name your new little buddy!", [
+    const dispose = createDialog(this.app, this._host, "Name your new little buddy!", [
       label(Value.constant("What do you want to call your new friend?")),
       textBox("name", "putANameOnIt"),
       label(Value.constant("Don't think too hard, you can change it later.")),
@@ -1153,7 +1147,7 @@ export class RanchMode extends Mode {
           },
           root: {
             type: "root",
-            scale: this._app.renderer.scale,
+            scale: this.app.scale,
             contents: {
               type: "box",
               contents: {type: "graphViewer", editable: "editable"},
@@ -1193,11 +1187,11 @@ export class RanchMode extends Mode {
 
   protected actorAdded (id :UUID, update :ActorUpdate) {
     // if we have a "focus" actor, track it with the camera
-    if (this._app.state.focusId === id) this.trackActor(id)
+    if (this.app.state.focusId === id) this.trackActor(id)
 
     // if we see a Hatching monster added and we're the owner, pop up a name it dialog
     if (update.state === ActorState.Hatching &&
-        update.owner === this._app.client.manager.ackedId.current) {
+        update.owner === this.app.client.manager.ackedId.current) {
       this.showNameEgg(id, update.name)
     }
   }
@@ -1208,16 +1202,16 @@ export class RanchMode extends Mode {
 
     // TEMP: hackery to require invite to touch/hatch egg
     if (!this._ranchObj.debug.current && config.kind === ActorKind.Egg) {
-      if (this._app.user.user.key === update.owner) {
-        showEggInvite(this._app, this._host, this._app.state.ranchId, id)
+      if (this.app.user.user.key === update.owner) {
+        showEggInvite(this.app, this._host, this.app.state.ranchId, id)
         this.setUiState(UiState.Default)
         return
       }
-      else if (this._app.state.focusId !== id) {
-        log.info("No touchy eggy!", "id", id, "focus", this._app.state.focusId)
+      else if (this.app.state.focusId !== id) {
+        log.info("No touchy eggy!", "id", id, "focus", this.app.state.focusId)
         return
-      } else if (!this._app.notGuest.current) {
-        showEggAuth(this._app, this._host)
+      } else if (!this.app.notGuest.current) {
+        showEggAuth(this.app, this._host)
         return
       }
     }
@@ -1229,8 +1223,8 @@ export class RanchMode extends Mode {
 
   protected actorShiftTouched (id :UUID, config :ActorConfig, update :ActorUpdate) {
     // show name dialog if you shift-click an actor that you own
-    if (this._app.user.user.key === update.owner) {
-      createEditNameDialog(this._app, this._host, "Name Your Moncher", id)
+    if (this.app.user.user.key === update.owner) {
+      createEditNameDialog(this.app, this._host, "Name Your Moncher", id)
     }
   }
 
@@ -1247,7 +1241,7 @@ export class RanchMode extends Mode {
   /**
    * Target the next actor, possibly constraining to owned ones. */
   targetNextActor (owned :boolean) :void {
-    const myId = this._app.client.auth.current.id
+    const myId = this.app.client.auth.current.id
     const ids :UUID[] = []
     this._ranchObj.actors.forEach((update, id) => {
       if (owned ? (update.owner === myId) : (update.owner !== UUID0)) {
@@ -1423,7 +1417,7 @@ export class RanchMode extends Mode {
   protected readonly _handChanged = (change :MapChange<number, Pointer>) => {
     if (this._handDowns.has(change.key)) {
       if (change.type === "deleted" || !change.value.pressed) {
-        if (this._app.notGuest.current && !this._ignoreNextHandUp &&
+        if (this.app.notGuest.current && !this._ignoreNextHandUp &&
             (this._uiState === UiState.Default || this._uiState === UiState.Debug)) {
           let size
           let curpos

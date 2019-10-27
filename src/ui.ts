@@ -110,9 +110,9 @@ export function createDialog (app :App, host :Host, title :string, contents :Ele
 
   const root = app.ui.createRoot({
     type: "root",
-    scale: app.renderer.scale,
+    scale: app.scale,
     autoSize: true,
-    hintSize: app.renderer.size,
+    hintSize: app.rootSize,
     // TODO: allow subclass to specify?
     minSize: Value.constant(dim2.fromValues(300, 0)),
     contents: config,
@@ -120,11 +120,11 @@ export function createDialog (app :App, host :Host, title :string, contents :Ele
   disposer.add(() => host.removeRoot(root))
 
   switch (pos) {
-  case    "top": root.bindOrigin(app.renderer.size, "center", "top", "center", "top") ; break
-  case   "left": root.bindOrigin(app.renderer.size, "left", "center", "left", "center") ; break
-  case "bottom": root.bindOrigin(app.renderer.size, "center", "bottom", "center", "bottom") ; break
-  case  "right": root.bindOrigin(app.renderer.size, "right", "center", "right", "center") ; break
-  case "center": root.bindOrigin(app.renderer.size, "center", "center", "center", "center") ; break
+  case    "top": root.bindOrigin(app.rootBounds, "center", "top", "center", "top") ; break
+  case   "left": root.bindOrigin(app.rootBounds, "left", "center", "left", "center") ; break
+  case "bottom": root.bindOrigin(app.rootBounds, "center", "bottom", "center", "bottom") ; break
+  case  "right": root.bindOrigin(app.rootBounds, "right", "center", "right", "center") ; break
+  case "center": root.bindOrigin(app.rootBounds, "center", "center", "center", "center") ; break
   }
   host.addRoot(root)
 
@@ -175,14 +175,14 @@ export class InstallAppView implements Disposable {
     }, {margin: 5})
     const root = app.ui.createRoot({
       type: "root",
-      scale: app.renderer.scale,
+      scale: app.scale,
       autoSize: true,
       contents: installAppUI,
       visible: showGetApp(app),
     }, new Model({
       openAppPage: () => window.open(getAppURL())
     }))
-    root.bindOrigin(app.renderer.size, "left", "top", "left", "top")
+    root.bindOrigin(app.rootBounds, "left", "top", "left", "top")
     host.addRoot(root)
     this._onDispose.add(() => host.removeRoot(root))
   }
@@ -208,7 +208,7 @@ export class OccupantsView implements Disposable {
     }, {margin: 5})
     const root = app.ui.createRoot({
       type: "root",
-      scale: app.renderer.scale,
+      scale: app.scale,
       autoSize: true,
       contents: occupantsUI,
       visible: showGetApp(app).map(s => !s),
@@ -219,7 +219,7 @@ export class OccupantsView implements Disposable {
         return {name: profile.name, photo: profile.photo}
       }),
     }))
-    root.bindOrigin(app.renderer.size, "left", "top", "left", "top")
+    root.bindOrigin(app.rootBounds, "left", "top", "left", "top")
     host.addRoot(root)
     this._onDispose.add(() => host.removeRoot(root))
   }

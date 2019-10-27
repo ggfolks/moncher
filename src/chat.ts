@@ -154,15 +154,15 @@ export class ChatView implements Disposable {
 
     const root = app.ui.createRoot({
       type: "root",
-      scale: app.renderer.scale,
+      scale: app.scale,
       autoSize: true,
-      hintSize: app.renderer.size.map(d => dim2.fromValues(Math.min(d[0], 700), d[1])),
+      hintSize: app.rootSize.map(d => dim2.fromValues(Math.min(d[0], 700), d[1])),
       minSize: Value.constant(dim2.fromValues(300, 0)),
       contents: uiConfig,
     }, new Model(modelData))
 
     const bindTopBot = mini ? "top" : "bottom"
-    root.bindOrigin(app.renderer.size, "left", bindTopBot, "left", bindTopBot)
+    root.bindOrigin(app.rootBounds, "left", bindTopBot, "left", bindTopBot)
     host.addRoot(root)
     this._onDispose.add(() => host.removeRoot(root))
   }

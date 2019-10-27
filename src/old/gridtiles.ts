@@ -126,8 +126,7 @@ type GridTileSceneViz = {
 /**
  * Chop the texture into uniform tiles of size [w, h], ignoring any extra pixels.
  */
-function chopTiles (tex :Texture, w :number, h :number) :Tile[]
-{
+function chopTiles (tex :Texture, w :number, h :number) :Tile[] {
   const retval :Tile[] = []
   for (let xx = 0; xx + w <= tex.size[0]; xx += w) {
     for (let yy = 0; yy + h <= tex.size[1]; yy += h) {
@@ -207,11 +206,11 @@ export class GridTileSceneViewMode extends SurfaceMode {
   constructor (protected _app :App, protected _model :GridTileSceneModel) {
     super(_app)
 
-    const tss :Subject<GridTileSet> = makeGridTileSet(_app.renderer.glc, _model.config)
+    const tss :Subject<GridTileSet> = makeGridTileSet(this.renderer.glc, _model.config)
     this.onDispose.add(tss.onValue(tileset => {
       this._viz = this.makeViz(_model, tileset)
     }))
-    this.onDispose.add(_app.renderer.size.onValue(this._adjustOffset))
+    this.onDispose.add(this.renderer.size.onValue(this._adjustOffset))
     this.onDispose.add(this._hand = new Hand(this._app.root))
     this.onDispose.add(this._hand.pointers.onChange(this._handChanged))
   }
@@ -229,11 +228,10 @@ export class GridTileSceneViewMode extends SurfaceMode {
   /**
    * Helper for subclass.
    */
-  protected getTexture (texture :string, scale? :number) :Subject<Texture>
-  {
+  protected getTexture (texture :string, scale? :number) :Subject<Texture> {
     const theScale = (scale === undefined) ? this._model.config.scale : scale
     const tcfg = { ...Texture.DefaultConfig, scale: new Scale(theScale) }
-    return makeTexture(this._app.renderer.glc, loadImage(texture), tcfg)
+    return makeTexture(this.renderer.glc, loadImage(texture), tcfg)
   }
 
   renderTo (clock :Clock, surf :Surface) {
@@ -258,8 +256,7 @@ export class GridTileSceneViewMode extends SurfaceMode {
   /**
    * Render during surface translation.
    */
-  protected renderToOffset (clock :Clock, surf :Surface) :void
-  {
+  protected renderToOffset (clock :Clock, surf :Surface) :void {
     const viz = this._viz! // this method doesn't get called unless viz is defined
     const xi = this._model.config.tileWidth
     const yi = this._model.config.tileHeight
@@ -284,8 +281,7 @@ export class GridTileSceneViewMode extends SurfaceMode {
    * Make the visualization model for the scene. This involves picking specific tiles
    * for features where more than one will do.
    */
-  protected makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileSceneViz
-  {
+  protected makeViz (model :GridTileSceneModel, tileset :GridTileSet) :GridTileSceneViz {
     const viz :GridTileSceneViz = {
       tiles: [],
       props: [],
@@ -319,8 +315,7 @@ export class GridTileSceneViewMode extends SurfaceMode {
     return viz
   }
 
-  protected pointerUpdated (p :Pointer) :void
-  {
+  protected pointerUpdated (p :Pointer) :void {
     if (p.pressed) {
       vec2.add(this._offset, this._offset, p.movement)
       this._adjustOffset()
@@ -336,13 +331,12 @@ export class GridTileSceneViewMode extends SurfaceMode {
   protected readonly _offset :vec2 = vec2.create()
 
   /** Adjust our drawing offset after the mouse moves or renderer changes size. */
-  protected readonly _adjustOffset = () =>
-    {
-      const surfSize = this._app.renderer.size.current
-      const offset = this._offset
-      offset[0] = clamp(offset[0], Math.min(0, surfSize[0] - this.logicalWidth), 0)
-      offset[1] = clamp(offset[1], Math.min(0, surfSize[1] - this.logicalHeight), 0)
-    }
+  protected readonly _adjustOffset = () => {
+    const surfSize = this.renderer.size.current
+    const offset = this._offset
+    offset[0] = clamp(offset[0], Math.min(0, surfSize[0] - this.logicalWidth), 0)
+    offset[1] = clamp(offset[1], Math.min(0, surfSize[1] - this.logicalHeight), 0)
+  }
 
   /** React to mouse/touch events. */
   protected readonly _handChanged = (change :MapChange<number, Pointer>) =>

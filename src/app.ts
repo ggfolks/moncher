@@ -1,14 +1,15 @@
 import * as firebase from "firebase/app"
 
 import {Disposable, Disposer} from "tfw/core/util"
-import {dim2} from "tfw/core/math"
+import {Scale, windowSize} from "tfw/core/ui"
+import {dim2, rect, vec2zero} from "tfw/core/math"
 import {uuidv1} from "tfw/core/uuid"
 import {Clock, Loop} from "tfw/core/clock"
 import {loadImage} from "tfw/core/assets"
 import {Value} from "tfw/core/react"
-import {Renderer, windowSize} from "tfw/scene2/gl"
+import {Renderer} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
-import {UniformQuadBatch} from "tfw/scene2/batch"
+import {QuadBatch, UniformQuadBatch} from "tfw/scene2/batch"
 import {ChannelClient} from "tfw/channel/client"
 import {ClientStore, addrFromLocation} from "tfw/data/client"
 import {UI} from "tfw/ui/ui"
@@ -63,7 +64,9 @@ if (ranchId === "") {
 export class App implements Disposable {
   private mode :Mode
 
-  readonly renderer :Renderer
+  readonly rootSize :Value<dim2>
+  readonly rootBounds :Value<rect>
+  readonly scale = new Scale(window.devicePixelRatio)
   readonly loop  = new Loop()
   readonly ui = new UI(moncherTheme, moncherStyles, {resolve: loadImage})
   readonly client = new ChannelClient({serverUrl: addrFromLocation("data")})
@@ -84,16 +87,13 @@ export class App implements Disposable {
     ([sess, sid]) => sess.source !== "guest" && sess.id === sid)
 
   constructor (readonly root :HTMLElement) {
-    this.renderer = new Renderer({
-      // kind of a hack: when the window size changes, we emit an update with our div size
-      // browsers don't emit resize events for arbitrary divs (there's apparently a proposal, yay)
-      size: windowSize(window).map(size => dim2.set(size, root.clientWidth, root.clientHeight)),
-      scaleFactor: window.devicePixelRatio,
-      gl: {alpha: false}
-    })
-    root.appendChild(this.renderer.canvas)
+    // kind of a hack: when the window size changes, we emit an update with our div size
+    // browsers don't emit resize events for arbitrary divs (there's apparently a proposal, yay)
+    this.rootSize = windowSize(window).map(
+      size => dim2.set(size, root.clientWidth, root.clientHeight))
+    this.rootBounds = this.rootSize.map(size => rect.fromPosSize(vec2zero, size))
 
-    this.mode = new BlankMode(this)
+    this.mode = new Mode(this)
     this.loop = new Loop()
     this.loop.clock.onEmit(clock => this.mode.render(clock))
 
@@ -125,24 +125,69 @@ export class App implements Disposable {
   }
 }
 
-export abstract class Mode implements Disposable {
+export class Mode implements Disposable {
   protected onDispose = new Disposer()
 
-  abstract render (clock :Clock) :void
+  constructor (readonly app :App) {}
+
+  render (clock :Clock) {}
+
+  dispose () { this.onDispose.dispose() }
+}
+
+export abstract class Scene2Mode extends Mode {
+  readonly renderer :Renderer
+
+  constructor (app :App) {
+    super(app)
+    const root = app.root
+    const renderer = this.renderer = new Renderer({
+      size: app.rootSize,
+      scaleFactor: app.scale.factor,
+      gl: {alpha: false}
+    })
+    this.onDispose.add(renderer)
+    root.appendChild(renderer.canvas)
+    this.onDispose.add(app.rootBounds.onValue(bounds => {
+      renderer.canvas.style.position = "absolute"
+      renderer.canvas.style.left = `${bounds[0]}px`
+      renderer.canvas.style.top = `${bounds[1]}px`
+    }))
+  }
 
   dispose () {
-    this.onDispose.dispose()
+    super.dispose()
+    this.app.root.removeChild(this.renderer.canvas)
   }
 }
 
-export abstract class SurfaceMode extends Mode {
+export abstract class BatchMode extends Scene2Mode {
+  readonly batch :UniformQuadBatch
+
+  constructor (app :App) {
+    super(app)
+    this.onDispose.add(this.batch = new UniformQuadBatch(this.renderer))
+  }
+
+  render (clock :Clock) {
+    const batch = this.batch, target = this.renderer.target
+    target.bind()
+    batch.begin(target.size, target.flip)
+    this.renderTo(clock, batch)
+    batch.end()
+  }
+
+  abstract renderTo (clock :Clock, batch :QuadBatch) :void
+}
+
+export abstract class SurfaceMode extends Scene2Mode {
   readonly batch :UniformQuadBatch
   readonly surf :Surface
 
   constructor (app :App) {
-    super()
-    this.onDispose.add(this.batch = new UniformQuadBatch(app.renderer))
-    this.surf = new Surface(app.renderer.target, this.batch)
+    super(app)
+    this.onDispose.add(this.batch = new UniformQuadBatch(this.renderer))
+    this.surf = new Surface(this.renderer.target, this.batch)
   }
 
   render (clock :Clock) {
@@ -153,10 +198,4 @@ export abstract class SurfaceMode extends Mode {
   }
 
   abstract renderTo (clock :Clock, surf :Surface) :void
-}
-
-class BlankMode extends SurfaceMode {
-  renderTo (clock :Clock, surf :Surface) {
-    surf.clearTo(0.25, 0.5, 1, 1)
-  }
 }

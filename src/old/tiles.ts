@@ -34,7 +34,7 @@ export class ShowTilesetMode extends SurfaceMode {
 
   constructor (app :App, info :TileSetInfo) {
     super(app)
-    const tss = makeTileSet(app.renderer.glc, info)
+    const tss = makeTileSet(this.renderer.glc, info)
     this.onDispose.add(tss.onValue(tiles => this.tiles = tiles))
   }
 

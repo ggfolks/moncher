@@ -1,6 +1,5 @@
 import {Mutable, Value} from "tfw/core/react"
 import {Disposable, Disposer, log} from "tfw/core/util"
-import {Renderer} from "tfw/scene2/gl"
 import {ElementConfig, Host, Root, RootConfig} from "tfw/ui/element"
 import {Model, ModelData} from "tfw/ui/model"
 import {label, checkBox} from "./ui"
@@ -22,10 +21,9 @@ export class Hud
   constructor (
     readonly app :App,
     readonly host :Host,
-    readonly renderer :Renderer,
     private readonly _ranchMode :RanchMode,
   ) {
-    this.screenWidth = app.renderer.size.map(sz => sz[0])
+    this.screenWidth = app.rootSize.map(sz => sz[0])
 
     let tip = 0
     const handle = setInterval(() => {
@@ -44,7 +42,7 @@ export class Hud
     const root = this._stateRoot = this.createRoot(uiState)
     if (root) {
       const pos = (this.screenWidth.current >= 600) ? "bottom" : "top"
-      root.bindOrigin(this.renderer.size, "right", pos, "right", pos)
+      root.bindOrigin(this.app.rootSize, "right", pos, "right", pos)
       this.host.addRoot(root)
     }
   }
@@ -253,9 +251,9 @@ export class Hud
 
     const rootConfig :RootConfig = {
       type: "root",
-      scale: this.renderer.scale,
+      scale: this.app.scale,
       autoSize: true,
-      hintSize: this.renderer.size,
+      hintSize: this.app.rootSize,
       contents: contents,
     }
     model.notGuest = notGuest
