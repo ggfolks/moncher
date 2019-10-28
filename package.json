@@ -1,5 +1,5 @@
 {
-  "name": "moncher",
+  "name": "@tfwdev/moncher",
   "version": "1.0.0",
   "description": "Moncher: Monster Ranching with Friends",
   "author": "tfw, Inc.",
@@ -10,10 +10,11 @@
   },
   "sideEffects": false,
   "scripts": {
-    "start": "webpack-dev-server --config webpack.dev.js",
-    "webpack": "webpack --config webpack.prod.js",
     "build": "tsc -b",
-    "server": "NODE_PATH=./node_modules node lib/server.js"
+    "linktfw": "yarn link --cwd ../platform/lib ; yarn link @tfwdev/platform",
+    "server": "NODE_PATH=./node_modules node lib/server.js",
+    "start": "webpack-dev-server --config webpack.dev.js",
+    "webpack": "webpack --config webpack.prod.js"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -25,8 +26,8 @@
     }
   },
   "dependencies": {
+    "@tfwdev/platform": "file:../platform/lib",
     "esm": "^3.2.25",
-    "tfw": "file:../platform/lib",
     "three-gltf-loader": "^1.108.0",
     "web-blob": "^1.0.0"
   },

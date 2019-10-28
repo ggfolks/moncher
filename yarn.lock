@@ -306,6 +306,18 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha1-p3c2C1s5oaLlEG+OhY8v0tBgxXA=
 
+"@tfwdev/platform@file:../platform/lib":
+  version "0.1.0"
+  dependencies:
+    "@types/cannon" "^0.1.4"
+    "@types/gl-matrix" "^2.4.5"
+    cannon "^0.6.2"
+    firebase "^6.6.1"
+    firebase-admin "^8.5.0"
+    gl-matrix "^3.0.0"
+    three "^0.108.0"
+    ws "^7.1.2"
+
 "@types/bytebuffer@^5.0.40":
   version "5.0.40"
   resolved "https://registry.yarnpkg.com/@types/bytebuffer/-/bytebuffer-5.0.40.tgz#d6faac40dcfb09cd856cdc4c01d3690ba536d3ee"
@@ -4606,18 +4618,6 @@ terser@^4.0.0:
     commander "^2.20.0"
     source-map "~0.6.1"
     source-map-support "~0.5.12"
-
-"tfw@file:../platform/lib":
-  version "1.0.0"
-  dependencies:
-    "@types/cannon" "^0.1.4"
-    "@types/gl-matrix" "^2.4.5"
-    cannon "^0.6.2"
-    firebase "^6.6.1"
-    firebase-admin "^8.5.0"
-    gl-matrix "^3.0.0"
-    three "^0.108.0"
-    ws "^7.1.2"
 
 three-gltf-loader@^1.108.0:
   version "1.108.0"
