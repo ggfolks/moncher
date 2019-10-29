@@ -2,6 +2,7 @@ import * as firebase from "firebase/app"
 import * as admin from "firebase-admin"
 import * as http from "http"
 import * as fs from "fs"
+import "module-alias/register"
 
 import {TextEncoder, TextDecoder} from "util"
 import {setTextCodec} from "tfw/core/codec"
