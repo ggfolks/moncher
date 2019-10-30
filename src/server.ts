@@ -59,7 +59,7 @@ function urlToPath (url :string) :string {
 const httpPort = parseInt(process.env.HTTP_PORT || "8080")
 const httpServer = http.createServer((req, rsp) => {
   const path = urlToPath(req.url || "/")
-  log.info("HTTP request", "url", req.url, "path", path)
+  // log.info("HTTP request", "url", req.url, "path", path)
   fs.readFile(`dist/${path}`, (err, content) => {
     if (err) {
       if (err.code === "ENOENT") {
@@ -114,11 +114,6 @@ const signalHandler = () => {
 }
 process.on('SIGTERM', signalHandler)
 process.on('SIGINT', signalHandler)
-
-// write our pid out to a file
-fs.writeFile("server.pid", `${process.pid}`, err => {
-  if (err) log.warn("Failed to write pid file", err)
-})
 
 if (haveFBCreds) {
   const adminApp = admin.initializeApp()
