@@ -8,7 +8,7 @@ RUN yarn install --prod
 
 COPY lib ./lib
 COPY dist ./dist
-COPY firebase-creds.json ./
+COPY --chown=node firebase-creds.json ./
 
 ENV HTTP_PORT 8080
 ENV GOOGLE_APPLICATION_CREDENTIALS firebase-creds.json
