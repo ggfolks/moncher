@@ -29,7 +29,7 @@
     "tfw": "node_modules/@tfwdev/platform"
   },
   "dependencies": {
-    "@tfwdev/platform": "file:../platform/lib",
+    "@tfwdev/platform": "^0.2.0-snapshot",
     "esm": "^3.2.25",
     "module-alias": "^2.2.2",
     "three-gltf-loader": "^1.108.0",
