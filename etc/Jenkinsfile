@@ -1,0 +1,59 @@
+pipeline {
+  agent {
+    label "master"
+  }
+  environment {
+    CI = "true"
+    NOW = "${new Date()}"
+    IMAGE = "tfwdev/moncher"
+    CLUSTER = "tfwdev-ECSCluster-1DK98N03E2Y73"
+    SERVICE = "tfw-moncher"
+  }
+  stages {
+    stage("Build") {
+      agent {
+        docker {
+          image "node:12.13.0-alpine"
+          args "-p 3000:3000 --tmpfs /.npm"
+          reuseNode true
+        }
+      }
+      steps {
+        sh "yarn install --no-lockfile"
+        sh "sed -i.bak \"s/non-ci-build/$NOW/\" src/build.ts"
+        sh "yarn build"
+        sh "yarn webpack"
+        sh "mv src/build.ts.bak src/build.ts"
+      }
+    }
+    // stage("Test") {
+    //   steps {
+    //     sh "yarn test"
+    //   }
+    // }
+    stage("Image") {
+      steps {
+        script {
+          docker.build("$IMAGE", "-f etc/Dockerfile .")
+        }
+      }
+    }
+    stage("Publish") {
+      steps {
+        script {
+          docker.withRegistry("https://733329275076.dkr.ecr.us-east-2.amazonaws.com",
+                              "ecr:us-east-2:aws-jenkins") {
+            docker.image("$IMAGE").push("latest")
+          }
+        }
+      }
+    }
+    stage("Deploy") {
+      steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-jenkins']]) {
+          sh "aws --region us-east-2 ecs update-service --cluster $CLUSTER --service $SERVICE --force-new-deployment"
+        }
+      }
+    }
+  }
+}
