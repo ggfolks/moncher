@@ -10,9 +10,10 @@ COPY lib ./lib
 COPY dist ./dist
 COPY firebase-creds.json ./
 
+ENV HTTP_PORT 8080
+ENV GOOGLE_APPLICATION_CREDENTIALS firebase-creds.json
+
 USER node
 CMD node lib/server.js
-
-ENV HTTP_PORT 8080
 
 EXPOSE 8080
