@@ -8,6 +8,7 @@ RUN yarn install --prod
 
 COPY lib ./lib
 COPY dist ./dist
+COPY firebase-creds.json ./
 
 USER node
 CMD node lib/server.js

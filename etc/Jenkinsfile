@@ -33,8 +33,11 @@ pipeline {
     // }
     stage("Image") {
       steps {
-        script {
-          docker.build("$IMAGE", "-f etc/Dockerfile .")
+        configFileProvider([configFile(fileId: 'firebase-creds',
+                                       targetLocation: 'firebase-creds.json')]) {
+          script {
+            docker.build("$IMAGE", "-f etc/Dockerfile .")
+          }
         }
       }
     }
