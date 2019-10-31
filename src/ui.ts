@@ -7,7 +7,7 @@ import {LabelStyle} from "tfw/ui/text"
 import {BoxStyle} from "tfw/ui/box"
 import {Insets} from "tfw/ui/style"
 import {ElementConfig} from "tfw/ui/element"
-import {Model, ModelData, makeProvider} from "tfw/ui/model"
+import {Model, ModelData, makeModel} from "tfw/ui/model"
 
 import {RanchObject, ranchQ} from "./data"
 import {App} from "./app"
@@ -201,8 +201,7 @@ export class OccupantsView implements Disposable {
     const occupantsUI = box({
       type: "hlist",
       gap: 5,
-      keys: "occkeys",
-      data: "occdata",
+      model: "occmodel",
       // TODO: tooltip with person's name...
       element: {type: "image", image: "photo", height: 20},
     }, {margin: 5})
@@ -213,8 +212,7 @@ export class OccupantsView implements Disposable {
       contents: occupantsUI,
       visible: showGetApp(app).map(s => !s),
     }, new Model({
-      occkeys: ranch.occupants.map(Array.from),
-      occdata: makeProvider<UUID>(key => {
+      occmodel: makeModel<UUID>(ranch.occupants, key => {
         const profile = app.profiles.profile(key)
         return {name: profile.name, photo: profile.photo}
       }),

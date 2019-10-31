@@ -1,7 +1,7 @@
 import {dim2} from "tfw/core/math"
 import {Disposable, Disposer} from "tfw/core/util"
 import {Mutable, Value} from "tfw/core/react"
-import {Model, mapProvider} from "tfw/ui/model"
+import {Model, mapModel} from "tfw/ui/model"
 
 import {App} from "./app"
 import {Message} from "./data"
@@ -35,8 +35,7 @@ const chatUiConfig = {
       type: "vlist",
       offPolicy: "stretch",
       gap: 5,
-      data: "msgdata",
-      keys: "msgkeys",
+      model: "msgmodel",
       element: {
         type: "box",
         style: {
@@ -124,12 +123,11 @@ export class ChatView implements Disposable {
     this._onDispose.add(remover)
 
     const modelData = {
-      msgdata: mapProvider(msgs, msg => ({
+      msgmodel: mapModel(msgs.map(msgs => latestMsgs(msgs, mini ? 3 : 6)), msgs, msg => ({
         text: msg.map(m => m.text),
         speaker: msg.switchMap(m => app.profiles.profile(m.sender).name),
         photo: msg.switchMap(m => app.profiles.profile(m.sender).photo),
       })),
-      msgkeys: msgs.map(msgs => latestMsgs(msgs, mini ? 3 : 6)),
       input: Mutable.local(""),
       sendChat: () => {
         const text = modelData.input.current.trim()
