@@ -19,11 +19,17 @@ pipeline {
         }
       }
       steps {
-        sh "yarn install --no-lockfile"
+        sh "yarn install"
+        sh "yarn add @tfwdev/platform@snapshot"
         sh "sed -i.bak \"s/non-ci-build/$NOW/\" src/build.ts"
         sh "yarn build"
         sh "yarn webpack"
         sh "mv src/build.ts.bak src/build.ts"
+      }
+    }
+    stage("Cleanup") {
+      steps {
+        sh "git checkout package.json yarn.lock"
       }
     }
     // stage("Test") {
