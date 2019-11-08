@@ -5,7 +5,7 @@ import {Scale, windowSize} from "tfw/core/ui"
 import {dim2, rect, vec2zero} from "tfw/core/math"
 import {uuidv1} from "tfw/core/uuid"
 import {Clock, Loop} from "tfw/core/clock"
-import {loadImage} from "tfw/core/assets"
+import {loadImage, setBaseUrl} from "tfw/core/assets"
 import {Value} from "tfw/core/react"
 import {Renderer} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
@@ -46,6 +46,7 @@ function parseLocation () :[string, string, string|undefined] {
   return [stripTrailSlash(path), "", undefined]
 }
 const [appPath, ranchId, focusId] = parseLocation()
+setBaseUrl(appPath)
 
 // if we have no ranch id, redirect to one
 if (ranchId === "") {
