@@ -728,7 +728,7 @@ function newActorData (
     x: loc.x,
     y: loc.y,
     z: loc.z,
-    scale: DEFAULT_MONSTER_SCALE,
+    scale: config.scale || DEFAULT_MONSTER_SCALE,
     orient: 0,
     walkAnimationSpeed: 1,
 
@@ -1250,9 +1250,7 @@ function handleAvatarMove (ctx :RanchContext, loc :Located) :void {
   const actor = getActor(ctx, ctx.auth.id)
   if (!actor) {
     // make a new avatar for the player!
-    const proto = MonsterDb.getRandomMonster()
-    const avatar :ActorConfig = {...proto, kind: ActorKind.Avatar}
-    addActor(ctx, ctx.auth.id, avatar, loc)
+    addActor(ctx, ctx.auth.id, MonsterDb.getAvatar(), loc)
     return
   }
 

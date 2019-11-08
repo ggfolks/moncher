@@ -55,7 +55,7 @@ export class ActorKindAttributes {
 
   static baseMovementSpeed (kind :ActorKind) :number {
     switch (kind) {
-    case ActorKind.Avatar: return 1.4
+    case ActorKind.Avatar: return 3
     default: return .7
     }
   }
@@ -98,6 +98,7 @@ export interface ActorConfig {
   spawn? :ActorConfig
   color? :number
   imageBase? :string
+  scale? :number // default is 1
 }
 
 export const enum ActorState {

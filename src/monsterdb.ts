@@ -20,6 +20,15 @@ export class MonsterDb {
        model: { model: "ranch/Firefly.glb", idle: "ranch/Firefly.glb#Drift"}}
   }
 
+  static getAvatar () :ActorConfig {
+    const model :ActorModel = {
+      model: "avatar/Wizard.glb",
+      idle: "avatar/Wizard.glb#Idle",
+      walk: "avatar/Wizard.glb#Run",
+    }
+    return MonsterDb.colorize({kind: ActorKind.Avatar, model, scale: .5})
+  }
+
   static makeEgg (monster :ActorConfig) :ActorConfig {
     const eggModel :ActorModel = {
       model: "monsters/Egg.glb",
@@ -27,8 +36,14 @@ export class MonsterDb {
       readyToHatch: "monsters/Egg.glb#Ready",
       hatch: "monsters/Egg.glb#Hatch",
     }
-    const color = MonsterDb._colors[Math.trunc(Math.random() * MonsterDb._colors.length)]
-    return { kind: ActorKind.Egg, model: eggModel, spawn: monster, color: color }
+    return MonsterDb.colorize({kind: ActorKind.Egg, model: eggModel, spawn: monster})
+  }
+
+  /**
+   * Jam a random color into the specified ActorConfig and return it. */
+  static colorize (actor :ActorConfig) :ActorConfig {
+    actor.color = MonsterDb._colors[Math.trunc(Math.random() * MonsterDb._colors.length)]
+    return actor
   }
 
   /**
