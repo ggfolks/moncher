@@ -61,7 +61,10 @@ export class ActorKindAttributes {
   }
 
   static baseWalkAnimationSpeed (kind :ActorKind) :number {
-    return .7
+    switch (kind) {
+    case ActorKind.Avatar: return 6
+    default: return .7
+    }
   }
 }
 
