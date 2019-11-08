@@ -12,6 +12,7 @@ COPY --chown=node firebase-creds.json ./
 
 ENV HTTP_PORT 8080
 ENV GOOGLE_APPLICATION_CREDENTIALS firebase-creds.json
+ENV SERVER_URL https://moncher.tfw.dev/
 
 USER node
 CMD node lib/server.js
