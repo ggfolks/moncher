@@ -1,6 +1,6 @@
 import {Mutable, Value} from "tfw/core/react"
 import {Disposable, Disposer, log} from "tfw/core/util"
-import {ElementConfig, Root, RootConfig} from "tfw/ui/element"
+import {Element, Root} from "tfw/ui/element"
 import {Model, ModelData} from "tfw/ui/model"
 import {label, checkBox} from "./ui"
 import {RanchMode} from "./ranchmode"
@@ -46,7 +46,7 @@ export class Hud
   /**
    * Create the root for the specified ui state. */
   protected createRoot (uiState :UiState) :Root|undefined {
-    let contents :ElementConfig
+    let contents :Element.Config
     const model :ModelData = {}
     const BUTTON_WIDTH = 64
     const notGuest = Value.join2(this.app.notGuest, this._ranchMode.debugMode).map(
@@ -245,7 +245,7 @@ export class Hud
       break // end: Debug
     }
 
-    const rootConfig :RootConfig = {
+    const rootConfig :Root.Config = {
       type: "root",
       scale: this.app.scale,
       autoSize: true,

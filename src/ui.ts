@@ -6,7 +6,7 @@ import {Action, Spec} from "tfw/ui/model"
 import {LabelStyle} from "tfw/ui/text"
 import {BoxStyle} from "tfw/ui/box"
 import {Insets} from "tfw/ui/style"
-import {ElementConfig} from "tfw/ui/element"
+import {Element} from "tfw/ui/element"
 import {Model, ModelData, makeModel} from "tfw/ui/model"
 
 import {RanchObject, ranchQ} from "./data"
@@ -42,17 +42,17 @@ export function button (text :Spec<Value<string>>, onClick :Spec<Action>,
   return mergeExtra({type: "button", onClick, contents: box(label(text, style))}, extra)
 }
 
-export function column (gap :number, ...contents :ElementConfig[]) {
+export function column (gap :number, ...contents :Element.Config[]) {
   return {type: "column", gap, contents}
 }
-export function stretchColumn (gap :number, ...contents :ElementConfig[]) {
+export function stretchColumn (gap :number, ...contents :Element.Config[]) {
   return {type: "column", offPolicy: "stretch", gap, contents}
 }
 
-export function row (gap :number, ...contents :ElementConfig[]) {
+export function row (gap :number, ...contents :Element.Config[]) {
   return {type: "row", gap, contents}
 }
-export function stretchRow (gap :number, ...contents :ElementConfig[]) {
+export function stretchRow (gap :number, ...contents :Element.Config[]) {
   return {type: "row", offPolicy: "stretch", gap, contents}
 }
 
@@ -85,7 +85,7 @@ const sausageCorner = 12
 
 type Pos = "top" | "left" | "right" | "bottom" | "center"
 
-export function createDialog (app :App, title :string, contents :ElementConfig[],
+export function createDialog (app :App, title :string, contents :Element.Config[],
                               data :ModelData, pos :Pos = "center") :Remover {
   const margin :Insets = [0, 0, 0, 0]
   switch (pos) {
