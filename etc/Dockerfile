@@ -5,6 +5,7 @@ WORKDIR /usr/src/app
 COPY package.json ./
 COPY .yarnrc ./
 RUN yarn install --prod
+RUN yarn add @tfwdev/platform@snapshot
 
 COPY lib ./lib
 COPY dist ./dist
