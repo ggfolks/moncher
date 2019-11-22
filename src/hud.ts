@@ -38,7 +38,7 @@ export class Hud
     const root = this._stateRoot = this.createRoot(uiState)
     if (root) {
       const pos = (this.screenWidth.current >= 600) ? "bottom" : "top"
-      root.bindOrigin(this.app.rootBounds, "right", pos, "right", pos)
+      root.bindOrigin("right", pos, Root.rectAnchor(this.app.rootBounds, "right", pos))
       this.app.host.addRoot(root)
     }
   }

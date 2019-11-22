@@ -2,6 +2,7 @@ import {dim2} from "tfw/core/math"
 import {Disposable, Disposer} from "tfw/core/util"
 import {Mutable, Value} from "tfw/core/react"
 import {Model, mapModel} from "tfw/ui/model"
+import {Root} from "tfw/ui/element"
 
 import {App} from "./app"
 import {Message} from "./data"
@@ -159,7 +160,7 @@ export class ChatView implements Disposable {
     }, new Model(modelData))
 
     const bindTopBot = mini ? "top" : "bottom"
-    root.bindOrigin(app.rootBounds, "left", bindTopBot, "left", bindTopBot)
+    root.bindOrigin("left", bindTopBot, Root.rectAnchor(app.rootBounds, "left", bindTopBot))
     app.host.addRoot(root)
     this._onDispose.add(() => app.host.removeRoot(root))
   }

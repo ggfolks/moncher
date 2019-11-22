@@ -6,7 +6,7 @@ import {Action, Spec} from "tfw/ui/model"
 import {LabelStyle} from "tfw/ui/text"
 import {BoxStyle} from "tfw/ui/box"
 import {Insets} from "tfw/ui/style"
-import {Element} from "tfw/ui/element"
+import {Element, Root} from "tfw/ui/element"
 import {Model, ModelData, makeModel} from "tfw/ui/model"
 
 import {RanchObject, ranchQ} from "./data"
@@ -119,12 +119,14 @@ export function createDialog (app :App, title :string, contents :Element.Config[
   }, new Model({...data, closeDialog}))
   disposer.add(() => app.host.removeRoot(root))
 
+  const bind = (h :Root.HAnchor, v :Root.VAnchor) => root.bindOrigin(
+    h, v, Root.rectAnchor(app.rootBounds, h, v))
   switch (pos) {
-  case    "top": root.bindOrigin(app.rootBounds, "center", "top", "center", "top") ; break
-  case   "left": root.bindOrigin(app.rootBounds, "left", "center", "left", "center") ; break
-  case "bottom": root.bindOrigin(app.rootBounds, "center", "bottom", "center", "bottom") ; break
-  case  "right": root.bindOrigin(app.rootBounds, "right", "center", "right", "center") ; break
-  case "center": root.bindOrigin(app.rootBounds, "center", "center", "center", "center") ; break
+  case    "top": bind("center", "top") ; break
+  case   "left": bind("left", "center") ; break
+  case "bottom": bind("center", "bottom") ; break
+  case  "right": bind("right", "center") ; break
+  case "center": bind("center", "center") ; break
   }
   app.host.addRoot(root)
 
@@ -182,7 +184,7 @@ export class InstallAppView implements Disposable {
     }, new Model({
       openAppPage: () => window.open(getAppURL())
     }))
-    root.bindOrigin(app.rootBounds, "left", "top", "left", "top")
+    root.bindOrigin("left", "top", Root.rectAnchor(app.rootBounds, "left", "top"))
     app.host.addRoot(root)
     this._onDispose.add(() => app.host.removeRoot(root))
   }
@@ -217,7 +219,7 @@ export class OccupantsView implements Disposable {
         return {name: profile.name, photo: profile.photo}
       }),
     }))
-    root.bindOrigin(app.rootBounds, "left", "top", "left", "top")
+    root.bindOrigin("left", "top", Root.rectAnchor(app.rootBounds, "left", "top"))
     app.host.addRoot(root)
     this._onDispose.add(() => app.host.removeRoot(root))
   }
