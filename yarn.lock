@@ -339,10 +339,10 @@
   resolved "https://build1.tfw.dev:443/registry/@protobufjs%2futf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha1-p3c2C1s5oaLlEG+OhY8v0tBgxXA=
 
-"@tfwdev/platform@^0.2.0-snapshot":
-  version "0.2.0-snapshot.186"
-  resolved "https://build1.tfw.dev:443/registry/@tfwdev%2fplatform/-/platform-0.2.0-snapshot.186.tgz#571ea961e724c368a054d6849726b2e1a31d2c92"
-  integrity sha512-GdyWqR3kB9znosMgzZ9YsxKH8Z0VN06QINvL7s4NdxqXI/i4W56C2+aMyT1MlaMQR7GJY81pJEEhjUnEaluLUg==
+"@tfwdev/platform@^0.2.0-snapshot.202":
+  version "0.2.0-snapshot.202"
+  resolved "https://build1.tfw.dev:443/registry/@tfwdev%2fplatform/-/platform-0.2.0-snapshot.202.tgz#eded1e0cf0ed9f0e0e47020839488c5feb7edd24"
+  integrity sha512-vT9IKx0zbJ3BUDyS5Gn3WW04oxrGKfeOr8R0QwDjl9coTG8tks3ibTrrvM8OxcCueSTULHnEWqaclqhUrHdOKQ==
   dependencies:
     "@types/cannon" "^0.1.4"
     "@types/gl-matrix" "^2.4.5"
