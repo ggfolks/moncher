@@ -1,7 +1,7 @@
 import {Data, Record} from "tfw/core/data"
 import {log} from "tfw/core/util"
 import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
-import {DContext, MetaMsg} from "tfw/data/data"
+import {DContext} from "tfw/data/data"
 import {Object3D, Raycaster, Vector3} from "three"
 import {RanchObject, RanchReq, ProfileType, profileQ, channelQ} from "./data"
 import {MonsterDb} from "./monsterdb"
@@ -77,26 +77,24 @@ interface RanchContext extends DContext {
 }
 
 /**
- * Observe (we don't need to handle) meta messages. */
-export function observeRanchMetaMsg (dctx :DContext, obj :RanchObject, msg :MetaMsg) :void {
-  if (msg.type === "subscribed" || msg.type === "unsubscribed") {
-    const ctx :RanchContext = {obj, path: global[PATHFINDER_GLOBAL], ...dctx}
-    if (msg.type === "subscribed") {
-      // check to see if we're starting up after (potentially) being suspended
-      if (ctx.obj.occupants.size === 1) {
-        // freeze any avatars other than the one player
-        freezeOtherAvatars(ctx, msg.id)
-        // then, publish all ActorUpdates if it looks like we might need to
-        if (obj.actors.size === 0) {
-          obj.actorData.forEach((data, id) => {
-            obj.actors.set(id, actorDataToUpdate(data))
-          })
-        }
+ * Observe occupant entry & departure from ranch. */
+export function noteOccupant (dctx :DContext, obj :RanchObject, entered :boolean) :void {
+  const ctx :RanchContext = {obj, path: global[PATHFINDER_GLOBAL], ...dctx}
+  if (entered) {
+    // check to see if we're starting up after (potentially) being suspended
+    if (ctx.obj.occupants.size === 1) {
+      // freeze any avatars other than the one player
+      freezeOtherAvatars(ctx, dctx.auth.id)
+      // then, publish all ActorUpdates if it looks like we might need to
+      if (obj.actors.size === 0) {
+        obj.actorData.forEach((data, id) => {
+          obj.actors.set(id, actorDataToUpdate(data))
+        })
       }
-      maybeDefrostAvatar(ctx, msg.id)
-    } else { // unsubscribed
-      maybeFreezeAvatar(ctx, msg.id)
     }
+    maybeDefrostAvatar(ctx, dctx.auth.id)
+  } else { // unsubscribed
+    maybeFreezeAvatar(ctx, dctx.auth.id)
   }
 }
 

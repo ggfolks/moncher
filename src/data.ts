@@ -2,7 +2,7 @@ import {Data} from "tfw/core/data"
 import {Auth} from "tfw/auth/auth"
 import {Timestamp, log} from "tfw/core/util"
 import {UUID, UUID0, uuidv1} from "tfw/core/uuid"
-import {DContext, DObject, MetaMsg} from "tfw/data/data"
+import {DContext, DObject} from "tfw/data/data"
 import {dcollection, dmap, dobject, dqueue, dset, dtable, dvalue, dview,
         orderBy} from "tfw/data/meta"
 import {ActorConfig, ActorData, ActorUpdate, ChatCircle, ChatSnake, SERVER_FUNCS} from "./ranchdata"
@@ -138,9 +138,6 @@ export class ChannelObject extends DObject {
   @dqueue(handleChannelReq)
   channelq = this.queue<ChannelReq>()
 
-  @dqueue(handleChannelMetaMsg, true)
-  metaq = this.queue<MetaMsg>()
-
   addMessage (sender :UUID, text :string, image? :string, link? :string) {
     const mid = uuidv1(), msg :Message = {sender, text, sent: Timestamp.now()}
     if (image) msg.image = image
@@ -150,6 +147,18 @@ export class ChannelObject extends DObject {
   }
 
   canSubscribe (auth :Auth) { return true /* TODO: ranch/channel membership */ }
+
+  noteSubscribed (ctx :DContext) {
+    if (ctx.auth.isSystem) return // ignore system subscribers
+    if (this.viewers.size === 0) ctx.post(serverQ, {type: "active", what: "channel", id: this.key})
+    this.viewers.add(ctx.auth.id)
+  }
+
+  noteUnsubscribed (ctx :DContext) {
+    if (ctx.auth.isSystem) return // ignore system subscribers
+    this.viewers.delete(ctx.auth.id)
+    if (this.viewers.size === 0) ctx.post(serverQ, {type: "inactive", what: "channel", id: this.key})
+  }
 }
 
 export const channelQ = (id :UUID) => ChannelObject.queueAddr(["channels", id], "channelq")
@@ -187,22 +196,6 @@ function handleChannelReq (ctx :DContext, obj :ChannelObject, req :ChannelReq) {
   //     obj.messages.set(req.mid, {...msg, text: req.newText, edited: Timestamp.now()})
   //   }
   //   break
-  }
-}
-
-function handleChannelMetaMsg (ctx :DContext, obj :ChannelObject, msg :MetaMsg) {
-  // log.debug("handleChannelMeta", "auth", auth, "msg", msg)
-  switch (msg.type) {
-  case "subscribed":
-    if (msg.id === UUID0) return // ignore system subscribers
-    if (obj.viewers.size === 0) ctx.post(serverQ, {type: "active", what: "channel", id: obj.key})
-    obj.viewers.add(msg.id)
-    break
-  case "unsubscribed":
-    if (msg.id === UUID0) return // ignore system subscribers
-    obj.viewers.delete(msg.id)
-    if (obj.viewers.size === 0) ctx.post(serverQ, {type: "inactive", what: "channel", id: obj.key})
-    break
   }
 }
 
@@ -245,9 +238,6 @@ export class RanchObject extends DObject {
   @dvalue("number")
   lastTick = this.value(0)
 
-  @dqueue(handleRanchMetaMsg)
-  metaq = this.queue<MetaMsg>()
-
   /** The queue on which all client requests are handled. */
   @dqueue(handleRanchReq)
   ranchq = this.queue<RanchReq>()
@@ -263,6 +253,21 @@ export class RanchObject extends DObject {
   }
 
   canSubscribe (auth :Auth) { return true /* TODO: ranch membership */ }
+
+  noteSubscribed (ctx :DContext) {
+    if (ctx.auth.isSystem) return // ignore system subscribers
+    if (this.occupants.size === 0) ctx.post(serverQ, {type: "active", what: "ranch", id: this.key})
+    this.occupants.add(ctx.auth.id)
+    sendFeedback(ctx, ctx.auth.id, `Welcome to ${this.name.current}`)
+    global[SERVER_FUNCS].noteOccupant(ctx, this, true)
+  }
+
+  noteUnsubscribed (ctx :DContext) {
+    if (ctx.auth.isSystem) return // ignore system subscribers
+    this.occupants.delete(ctx.auth.id)
+    if (this.occupants.size === 0) ctx.post(serverQ, {type: "inactive", what: "ranch", id: this.key})
+    global[SERVER_FUNCS].noteOccupant(ctx, this, false)
+  }
 }
 
 /** Player requests to the ranch. */
@@ -290,24 +295,6 @@ export const ranchQ = (id :UUID) => RanchObject.queueAddr(["ranches", id], "ranc
 
 function handleRanchReq (ctx :DContext, obj :RanchObject, req :RanchReq) :void {
   global[SERVER_FUNCS].handleRanchReq(ctx, obj, req)
-}
-
-function handleRanchMetaMsg (ctx :DContext, obj :RanchObject, msg :MetaMsg) {
-  // log.debug("handleRanchMeta", "auth", auth, "msg", msg)
-  switch (msg.type) {
-  case "subscribed":
-    if (msg.id === UUID0) return // ignore system subscribers
-    if (obj.occupants.size === 0) ctx.post(serverQ, {type: "active", what: "ranch", id: obj.key})
-    obj.occupants.add(msg.id)
-    sendFeedback(ctx, msg.id, `Welcome to ${obj.name.current}`)
-    break
-  case "unsubscribed":
-    if (msg.id === UUID0) return // ignore system subscribers
-    obj.occupants.delete(msg.id)
-    if (obj.occupants.size === 0) ctx.post(serverQ, {type: "inactive", what: "ranch", id: obj.key})
-    break
-  }
-  global[SERVER_FUNCS].observeRanchMetaMsg(ctx, obj, msg)
 }
 
 @dobject
