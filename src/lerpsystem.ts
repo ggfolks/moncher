@@ -1,6 +1,6 @@
-import {ResourceLoader} from "tfw/core/assets"
 import {Clock} from "tfw/core/clock"
 import {log} from "tfw/core/util"
+import {ResourceLoader} from "tfw/asset/loader"
 import {Component, Domain, EntityConfig, ID, Matcher, System} from "tfw/entity/entity"
 import {TransformComponent} from "tfw/space/entity"
 import {JsonConfig, GLTFConfig, createObject3D} from "tfw/scene3/entity"
