@@ -1,7 +1,7 @@
 import {Scale} from "tfw/core/ui"
 import {clamp, vec2} from "tfw/core/math"
 import {Clock} from "tfw/core/clock"
-import {loadImage} from "tfw/core/assets"
+import {ResourceLoader} from "tfw/core/assets"
 import {Subject} from "tfw/core/react"
 import {MapChange} from "tfw/core/rcollect"
 import {Hand, Pointer} from "tfw/input/hand"
@@ -139,11 +139,13 @@ function chopTiles (tex :Texture, w :number, h :number) :Tile[] {
 /**
  * Load the tiles for a prop.
  */
-function makeProp (glc :GLC, tcfg :TextureConfig, cfg :PropTileInfo) :Subject<PropTile> {
+function makeProp (
+  loader :ResourceLoader, glc :GLC, tcfg :TextureConfig, cfg :PropTileInfo
+) :Subject<PropTile> {
   if (cfg.scale !== undefined) {
     tcfg = {...tcfg, scale: new Scale(cfg.scale)}
   }
-  return makeTexture(glc, loadImage(cfg.base), tcfg).map(tex => {
+  return makeTexture(glc, loader.getImage(cfg.base), tcfg).map(tex => {
     let tiles :Tile[]
     if (cfg.width !== undefined && cfg.height !== undefined) {
       tiles = chopTiles(tex, cfg.width, cfg.height)
@@ -154,19 +156,21 @@ function makeProp (glc :GLC, tcfg :TextureConfig, cfg :PropTileInfo) :Subject<Pr
   })
 }
 
-function makeGridTiles (glc :GLC, tcfg :TextureConfig, image :string, cfg :GridTileSceneConfig)
-    :Subject<Tile[]> {
-  return makeTexture(glc, loadImage(image), tcfg)
+function makeGridTiles (
+  loader :ResourceLoader, glc :GLC, tcfg :TextureConfig, image :string, cfg :GridTileSceneConfig
+) :Subject<Tile[]> {
+  return makeTexture(glc, loader.getImage(image), tcfg)
       .map(tex => chopTiles(tex, cfg.tileWidth, cfg.tileHeight))
 }
 
 function makeGridTile (
-  glc :GLC, tcfg :TextureConfig, tileInfo :GridTileInfo, cfg :GridTileSceneConfig
+  loader :ResourceLoader, glc :GLC, tcfg :TextureConfig, tileInfo :GridTileInfo,
+  cfg :GridTileSceneConfig
 ) :Subject<GridTile> {
   let tiles :Subject<Tile[]>[] = []
-  tiles.push(makeGridTiles(glc, tcfg, tileInfo.base, cfg))
+  tiles.push(makeGridTiles(loader, glc, tcfg, tileInfo.base, cfg))
   if (tileInfo.fringe) {
-    tiles.push(makeGridTiles(glc, tcfg, tileInfo.fringe, cfg))
+    tiles.push(makeGridTiles(loader, glc, tcfg, tileInfo.fringe, cfg))
   }
   return Subject.join(...tiles).map(v => {
     const tile :GridTile = { id: tileInfo.id, tiles: v[0] }
@@ -177,17 +181,18 @@ function makeGridTile (
   })
 }
 
-function makeGridTileSet (glc :GLC, cfg :GridTileSceneConfig) :Subject<GridTileSet>
-{
+function makeGridTileSet (
+  loader :ResourceLoader, glc :GLC, cfg :GridTileSceneConfig
+) :Subject<GridTileSet> {
   const tcfg = { ...Texture.DefaultConfig, scale: new Scale(cfg.scale) }
   const sets :Subject<GridTile>[] = []
   for (const tileset of cfg.tiles) {
-    sets.push(makeGridTile(glc, tcfg, tileset, cfg))
+    sets.push(makeGridTile(loader, glc, tcfg, tileset, cfg))
   }
   const propSets :Subject<PropTile>[] = []
   if (cfg.props) {
     for (const prop of cfg.props) {
-      propSets.push(makeProp(glc, tcfg, prop))
+      propSets.push(makeProp(loader, glc, tcfg, prop))
     }
   }
   return Subject.join2(Subject.join(...sets), Subject.join(...propSets)).map(v => {
@@ -206,7 +211,7 @@ export class GridTileSceneViewMode extends SurfaceMode {
   constructor (protected _app :App, protected _model :GridTileSceneModel) {
     super(_app)
 
-    const tss :Subject<GridTileSet> = makeGridTileSet(this.renderer.glc, _model.config)
+    const tss :Subject<GridTileSet> = makeGridTileSet(_app.loader, this.renderer.glc, _model.config)
     this.onDispose.add(tss.onValue(tileset => {
       this._viz = this.makeViz(_model, tileset)
     }))
@@ -231,7 +236,7 @@ export class GridTileSceneViewMode extends SurfaceMode {
   protected getTexture (texture :string, scale? :number) :Subject<Texture> {
     const theScale = (scale === undefined) ? this._model.config.scale : scale
     const tcfg = { ...Texture.DefaultConfig, scale: new Scale(theScale) }
-    return makeTexture(this.renderer.glc, loadImage(texture), tcfg)
+    return makeTexture(this.renderer.glc, this._app.loader.getImage(texture), tcfg)
   }
 
   renderTo (clock :Clock, surf :Surface) {

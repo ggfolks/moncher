@@ -5,7 +5,7 @@ import {Scale, windowSize} from "tfw/core/ui"
 import {dim2, rect, vec2zero} from "tfw/core/math"
 import {uuidv1} from "tfw/core/uuid"
 import {Clock, Loop} from "tfw/core/clock"
-import {loadImage, setBaseUrl} from "tfw/core/assets"
+import {ResourceLoader, FetchResourceLoader} from "tfw/core/assets"
 import {Value} from "tfw/core/react"
 import {Renderer} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
@@ -46,7 +46,6 @@ function parseLocation () :[string, string, string|undefined] {
   return [stripTrailSlash(path), "", undefined]
 }
 const [appPath, ranchId, focusId] = parseLocation()
-setBaseUrl(appPath)
 
 // if we have no ranch id, redirect to one
 if (ranchId === "") {
@@ -69,9 +68,10 @@ export class App implements Disposable {
   readonly rootSize :Value<dim2>
   readonly rootBounds :Value<rect>
   readonly scale = new Scale(window.devicePixelRatio)
-  readonly loop  = new Loop()
+  readonly loop = new Loop()
 
-  readonly ui = new UI(moncherTheme, moncherStyles, {resolve: loadImage})
+  readonly loader :ResourceLoader
+  readonly ui :UI
   readonly host :HTMLHost
 
   readonly client = new ChannelClient({serverUrl: addrFromLocation("data")})
@@ -98,9 +98,10 @@ export class App implements Disposable {
       size => dim2.set(size, root.clientWidth, root.clientHeight))
     this.rootBounds = this.rootSize.map(size => rect.fromPosSize(vec2zero, size))
 
-    this.mode = new Mode(this)
-    this.loop = new Loop()
+    this.loader = new FetchResourceLoader(appPath)
+    this.ui = new UI(moncherTheme, moncherStyles, this.loader)
     this.host = new HTMLHost(root)
+    this.mode = new Mode(this)
 
     this.loop.clock.onEmit(clock => {
       this.host.update(clock)

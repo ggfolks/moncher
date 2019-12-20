@@ -1,3 +1,4 @@
+import {ResourceLoader} from "tfw/core/assets"
 import {Clock} from "tfw/core/clock"
 import {log} from "tfw/core/util"
 import {Component, Domain, EntityConfig, ID, Matcher, System} from "tfw/entity/entity"
@@ -57,6 +58,7 @@ export class LerpSystem extends System {
 
   constructor (
     domain :Domain,
+    readonly loader :ResourceLoader,
     readonly lerps :Component<LerpRecord>,
     readonly trans :TransformComponent,
     readonly obj :Component<Object3D>,
@@ -103,7 +105,8 @@ export class LerpSystem extends System {
     // load the sources into the record
     for (let ii = 0; ii < sourceCount; ii++) {
       const index = ii
-      createObject3D(cfg.sources[index]).onValue((v :any) => this.configureSource(rec, index, v))
+      createObject3D(this.loader, cfg.sources[index]).onValue(
+        (v :any) => this.configureSource(rec, index, v))
     }
   }
 

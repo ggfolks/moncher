@@ -2,7 +2,7 @@ import {Subject} from "tfw/core/react"
 import {Scale} from "tfw/core/ui"
 import {Clock} from "tfw/core/clock"
 import {vec2} from "tfw/core/math"
-import {loadImage} from "tfw/core/assets"
+import {ResourceLoader} from "tfw/core/assets"
 import {GLC, Texture, Tile, makeTexture} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {App, SurfaceMode} from "../app"
@@ -17,9 +17,11 @@ type TileSetInfo = {
 
 type TileSet = {[key :string] :Tile}
 
-export function makeTileSet (glc :GLC, info :TileSetInfo) :Subject<TileSet> {
+export function makeTileSet (
+  loader :ResourceLoader, glc :GLC, info :TileSetInfo
+) :Subject<TileSet> {
   const tcfg = {...Texture.DefaultConfig, scale: new Scale(info.scale)}
-  return makeTexture(glc, loadImage(info.image), tcfg).map(tex => {
+  return makeTexture(glc, loader.getImage(info.image), tcfg).map(tex => {
     const ts :TileSet = {}, scale = info.scale
     for (const key in info.tiles) {
       const {x, y, width, height} = info.tiles[key]
@@ -34,7 +36,7 @@ export class ShowTilesetMode extends SurfaceMode {
 
   constructor (app :App, info :TileSetInfo) {
     super(app)
-    const tss = makeTileSet(this.renderer.glc, info)
+    const tss = makeTileSet(app.loader, this.renderer.glc, info)
     this.onDispose.add(tss.onValue(tiles => this.tiles = tiles))
   }
 

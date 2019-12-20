@@ -338,11 +338,11 @@ export class RanchMode extends Mode {
   }
 
   protected preloadObj (url :string) :void {
-    this.preload(url, () => loadGLTF(url))
+    this.preload(url, () => loadGLTF(this.app.loader, url))
   }
 
   protected preloadAnim (url :string) :void {
-    this.preload(url, () => loadGLTFAnimationClip(url))
+    this.preload(url, () => loadGLTFAnimationClip(this.app.loader, url))
   }
 
   protected preload<T> (url :string, doLoad :() => Subject<T>) :void {
@@ -427,12 +427,12 @@ export class RanchMode extends Mode {
         registerInputNodes,
         registerUINodes,
       ),
+      loader: this.app.loader,
       subgraphs: new SubgraphRegistry(registerScene3Subgraphs),
       hand,
       host: app.host,
       theme: DefaultTheme,
       styles: DefaultStyles,
-//      image: {resolve: loadImage},
       screen: app.rootSize,
     }
 
@@ -451,9 +451,8 @@ export class RanchMode extends Mode {
     const domain = this._domain = new Domain({},
         {trans, obj, mixer, /*body,*/ updates, paths, hovers, graph, lerps})
     this._pathsys = new PathSystem(domain, trans, paths, updates, this.setY.bind(this))
-    this._lerpsys = new LerpSystem(domain, lerps, trans, obj, 1.2)
-    this._scenesys = new SceneSystem(
-        domain, trans, obj, hovers, hand.pointers)
+    this._lerpsys = new LerpSystem(domain, this.app.loader, lerps, trans, obj, 1.2)
+    this._scenesys = new SceneSystem(domain, this.app.loader, trans, obj, hovers, hand.pointers)
     this._graphsys = new GraphSystem(nodeCtx, domain, graph)
 
     /*const animsys =*/ this._animsys = new AnimationSystem(domain, obj, mixer)
