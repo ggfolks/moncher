@@ -6,7 +6,7 @@ import {dim2, rect, vec2zero} from "tfw/core/math"
 import {uuidv1} from "tfw/core/uuid"
 import {Clock, Loop} from "tfw/core/clock"
 import {Value} from "tfw/core/react"
-import {ResourceLoader, FetchResourceLoader} from "tfw/asset/loader"
+import {ResourceLoader} from "tfw/asset/loader"
 import {Renderer} from "tfw/scene2/gl"
 import {Surface} from "tfw/scene2/surface"
 import {QuadBatch, UniformQuadBatch} from "tfw/scene2/batch"
@@ -98,7 +98,7 @@ export class App implements Disposable {
       size => dim2.set(size, root.clientWidth, root.clientHeight))
     this.rootBounds = this.rootSize.map(size => rect.fromPosSize(vec2zero, size))
 
-    this.loader = new FetchResourceLoader(appPath)
+    this.loader = ResourceLoader.fetchLoader(appPath)
     this.ui = new UI(moncherTheme, moncherStyles, this.loader)
     this.host = new HTMLHost(root)
     this.mode = new Mode(this)
