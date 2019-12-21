@@ -42,13 +42,8 @@ import {
 } from "tfw/entity/entity"
 import {TransformComponent} from "tfw/space/entity"
 import {StateConfig, TransitionConfig} from "tfw/scene3/animation"
-import {
-  AnimationSystem,
-  HoverMap,
-  SceneSystem,
-  loadGLTF,
-  loadGLTFAnimationClip,
-} from "tfw/scene3/entity"
+import {loadGLTF, loadGLTFAnimationClip} from "tfw/asset/gltf"
+import {AnimationSystem, HoverMap, SceneSystem} from "tfw/scene3/entity"
 
 import {registerLogicNodes} from "tfw/graph/logic"
 import {registerMathNodes} from "tfw/graph/math"
