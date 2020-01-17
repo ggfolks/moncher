@@ -12,6 +12,7 @@ import {Surface} from "tfw/scene2/surface"
 import {QuadBatch, UniformQuadBatch} from "tfw/scene2/batch"
 import {ChannelClient} from "tfw/channel/client"
 import {ClientStore, addrFromLocation} from "tfw/data/client"
+import {InteractionManager} from "tfw/input/interact"
 import {HTMLHost} from "tfw/ui/element"
 import {UI} from "tfw/ui/ui"
 import {currentUser} from "tfw/auth/firebase"
@@ -70,6 +71,7 @@ export class App implements Disposable {
   readonly scale = new Scale(window.devicePixelRatio)
   readonly loop = new Loop()
 
+  readonly interact = new InteractionManager()
   readonly loader :ResourceLoader
   readonly ui :UI
   readonly host :HTMLHost
@@ -100,7 +102,7 @@ export class App implements Disposable {
 
     this.loader = ResourceLoader.fetchLoader(appPath)
     this.ui = new UI(moncherTheme, moncherStyles, this.loader)
-    this.host = new HTMLHost(root)
+    this.host = new HTMLHost(root, this.interact)
     this.mode = new Mode(this)
 
     this.loop.clock.onEmit(clock => {
